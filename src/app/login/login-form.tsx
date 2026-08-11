@@ -9,10 +9,35 @@ type LoginResponse = {
   redirectTo?: string;
 };
 
+const modeContent = {
+  email: {
+    description: "使用您的 Email 與密碼登入。",
+    identifierLabel: "Email",
+    identifierPlaceholder: "name@example.com",
+    submitLabel: "會員登入",
+  },
+  "customer-code": {
+    description: "供已開通的合作客戶使用，請輸入企業客戶代碼與密碼。",
+    identifierLabel: "企業客戶代碼",
+    identifierPlaceholder: "例如：B2B-TEST-001",
+    submitLabel: "企業客戶登入",
+  },
+} satisfies Record<
+  LoginMode,
+  {
+    description: string;
+    identifierLabel: string;
+    identifierPlaceholder: string;
+    submitLabel: string;
+  }
+>;
+
 export function LoginForm() {
   const [mode, setMode] = useState<LoginMode>("email");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const content = modeContent[mode];
+  const isEmail = mode === "email";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,43 +64,42 @@ export function LoginForm() {
     window.location.assign(result.redirectTo);
   }
 
-  const isEmail = mode === "email";
+  function chooseMode(nextMode: LoginMode) {
+    setMode(nextMode);
+    setMessage("");
+  }
 
   return (
     <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
       <fieldset className="grid grid-cols-2 rounded-xl bg-slate-100 p-1" disabled={isSubmitting}>
-        <legend className="sr-only">登入身分</legend>
+        <legend className="sr-only">選擇登入方式</legend>
         <button
           aria-pressed={isEmail}
-          className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-            isEmail ? "bg-white text-slate-950 shadow-sm" : "text-slate-600"
+          className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+            isEmail ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"
           }`}
-          onClick={() => {
-            setMode("email");
-            setMessage("");
-          }}
+          onClick={() => chooseMode("email")}
           type="button"
         >
-          B2C／管理者
+          會員登入
         </button>
         <button
           aria-pressed={!isEmail}
-          className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-            !isEmail ? "bg-white text-slate-950 shadow-sm" : "text-slate-600"
+          className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+            !isEmail ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"
           }`}
-          onClick={() => {
-            setMode("customer-code");
-            setMessage("");
-          }}
+          onClick={() => chooseMode("customer-code")}
           type="button"
         >
-          B2B 企業客戶
+          企業客戶
         </button>
       </fieldset>
 
+      <p className="rounded-xl bg-teal-50 px-4 py-3 text-sm leading-6 text-teal-950">{content.description}</p>
+
       <div>
         <label className="block text-sm font-semibold text-slate-800" htmlFor="identifier">
-          {isEmail ? "Email" : "客戶代碼"}
+          {content.identifierLabel}
         </label>
         <input
           autoComplete={isEmail ? "email" : "username"}
@@ -83,7 +107,7 @@ export function LoginForm() {
           id="identifier"
           key={mode}
           name="identifier"
-          placeholder={isEmail ? "name@example.com" : "例如：B2B-TEST-001"}
+          placeholder={content.identifierPlaceholder}
           required
           type={isEmail ? "email" : "text"}
         />
@@ -110,17 +134,17 @@ export function LoginForm() {
       ) : null}
 
       <button
-        className="w-full rounded-xl bg-teal-800 px-4 py-3 font-semibold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:bg-slate-400"
+        className="w-full rounded-xl bg-teal-800 px-4 py-3 font-semibold text-white transition hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         disabled={isSubmitting}
         type="submit"
       >
-        {isSubmitting ? "登入中…" : "登入"}
+        {isSubmitting ? "登入中…" : content.submitLabel}
       </button>
 
       <p className="text-center text-sm leading-6 text-slate-600">
         {isEmail
-          ? "一般會員與管理者請使用 Email 登入。"
-          : "企業客戶請使用公司提供的客戶代碼與共用密碼。"}
+          ? "尚未建立會員帳號？可先瀏覽商品，或依網站指示申請會員服務。"
+          : "尚未取得企業客戶代碼？請聯繫元家業務窗口協助開通。"}
       </p>
     </form>
   );
