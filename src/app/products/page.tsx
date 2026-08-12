@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { products } from "@/lib/fixtures/products";
 import { toCardData } from "@/lib/types/product";
+import { ProductCard } from "@/components/ProductCard";
 
 export const metadata: Metadata = {
   title: "商品列表 | 元家",
@@ -15,7 +15,6 @@ export const metadata: Metadata = {
  * docs/b2c-product-field-spec-v1.md）：
  * - 改用真正的商品查詢（依 ProductListState 處理 loading／error／empty／ready）。
  * - 搜尋框、分類篩選目前是靜態骨架，尚未接邏輯（本週 8/11–8/12 任務範圍）。
- * - 商品卡片目前用行內 markup 暫代，正式 ProductCard 元件完成後在這裡替換。
  */
 export default async function ProductsPage() {
   const cards = products.map(toCardData);
@@ -49,63 +48,7 @@ export default async function ProductsPage() {
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((product) => (
-            <li
-              key={product.id}
-              className="relative rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-            >
-              <div
-                aria-hidden="true"
-                className="mb-3 flex h-32 items-center justify-center rounded-md bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900"
-              >
-                無商品圖片
-              </div>
-
-              {/* 卡片整體點擊用 stretched-link（見 docs/B2C商品展示資料.md §7.5）；
-                  標籤另外給 relative z-10，確保點標籤不會誤觸卡片跳轉。 */}
-              <Link
-                href={`/products/${product.slug}`}
-                className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-50">
-                  {product.name}
-                </h2>
-              </Link>
-
-              <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                {product.shortDescription}
-              </p>
-
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  NT$ {product.price}
-                </span>
-                {product.inventoryStatus === "out_of_stock" ? (
-                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                    缺貨
-                  </span>
-                ) : null}
-              </div>
-
-              {product.tags.length > 0 ? (
-                <ul className="relative z-10 mt-2 flex flex-wrap gap-1">
-                  {product.tags.slice(0, 3).map((tag) => (
-                    <li key={tag.slug}>
-                      <Link
-                        href={`/products/tags/${tag.slug}`}
-                        className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                      >
-                        {tag.name}
-                      </Link>
-                    </li>
-                  ))}
-                  {product.tags.length > 3 ? (
-                    <li className="px-2 py-0.5 text-xs text-zinc-400">
-                      +{product.tags.length - 3}
-                    </li>
-                  ) : null}
-                </ul>
-              ) : null}
-            </li>
+            <ProductCard key={product.id} product={product} />
           ))}
         </ul>
       )}

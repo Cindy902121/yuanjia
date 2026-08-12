@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getProductsByTagSlug } from "@/lib/fixtures/products";
 import { toCardData } from "@/lib/types/product";
+import { ProductCard } from "@/components/ProductCard";
 
 /**
  * /products/tags/[slug] 骨架頁。
@@ -9,7 +10,6 @@ import { toCardData } from "@/lib/types/product";
  * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §4.1、§9）：
  * - 改為呼叫商品標籤查詢 API，多標籤 AND 篩選邏輯見上面文件。
  * - 觸發 b2c_tag_view 事件（已在 FDD 6.7 白名單內）。
- * - 正式 ProductCard 元件完成後，這裡跟 /products 重複的卡片 markup 要合併成同一個元件。
  */
 
 function resolveTagName(slug: string): string {
@@ -51,31 +51,7 @@ export default async function ProductTagPage({
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {matches.map((product) => (
-            <li
-              key={product.id}
-              className="relative rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-            >
-              <div
-                aria-hidden="true"
-                className="mb-3 flex h-32 items-center justify-center rounded-md bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900"
-              >
-                無商品圖片
-              </div>
-              <Link
-                href={`/products/${product.slug}`}
-                className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-50">
-                  {product.name}
-                </h2>
-              </Link>
-              <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                {product.shortDescription}
-              </p>
-              <span className="mt-2 block text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                NT$ {product.price}
-              </span>
-            </li>
+            <ProductCard key={product.id} product={product} />
           ))}
         </ul>
       )}
