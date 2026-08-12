@@ -24,6 +24,14 @@ export interface ProductImageRef {
 export interface ProductTagRef {
   slug: string;
   name: string;
+  /**
+   * 標籤群組（例如「食材」「料理方式」「需求特性」「加工方式」）。
+   * docs/b2c-product-field-spec-v1.md §8 的範例型別沒有列出這個欄位，但同一份文件
+   * §7「標籤與 AND 篩選」本身就是照群組在描述標籤，且已套用／PR #1 的 b2c_tags
+   * 都有真實的 group_name 欄位——這裡補上是為了讓多選篩選 UI 能依群組分區，
+   * 不是要推翻已確認的欄位範圍。
+   */
+  groupName: string;
 }
 
 export interface ProductCategoryRef {
