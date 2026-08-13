@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/fixtures/products";
 import { ProductDetail } from "@/components/ProductDetail";
+import { TrackPageView } from "@/components/analytics/TrackPageView";
 
 /**
  * /products/[slug] 頁面。
@@ -12,6 +13,8 @@ import { ProductDetail } from "@/components/ProductDetail";
  *   的 HTTP 404／SEO 語意）；接上真正非同步查詢後，改成組出 ProductDetailState
  *   （loading／error／not_found／ready）傳給 <ProductDetail />——商品不存在或已
  *   下架時仍應呼叫 notFound()，不是把 not_found 狀態傳給元件（見元件內註解）。
+ *
+ * 8/15：載入完成時觸發 b2c_product_view（見 src/lib/analytics）。
  */
 
 export async function generateMetadata({
@@ -46,6 +49,7 @@ export default async function ProductDetailPage({
         ← 返回商品列表
       </Link>
 
+      <TrackPageView eventName="b2c_product_view" productId={product.id} />
       <ProductDetail state={{ status: "ready", product }} />
     </main>
   );

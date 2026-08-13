@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProductCardData } from "@/lib/types/product";
+import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -18,8 +19,9 @@ interface ProductCardProps {
  * - 卡片整體點擊用 stretched-link（<Link> 加 after:absolute after:inset-0）導向
  *   /products/[slug]；不要把整張卡片包進最外層 <a> 或改用 role="button" 的 <div onClick>，
  *   那樣鍵盤與螢幕閱讀器操作標籤會有困難，也容易做出無效的巢狀 <a>。
- * - 標籤是獨立的 <Link>，用 relative z-10 疊在 stretched-link 之上，確保點標籤只會
- *   導向 /products/tags/[slug]，不會同時觸發卡片跳轉。
+ * - 標籤是獨立的 TrackedTagLink（見 src/components/analytics），用 relative z-10
+ *   疊在 stretched-link 之上，確保點標籤只會導向 /products/tags/[slug]，不會同時
+ *   觸發卡片跳轉；點擊時也會送出 b2c_tag_click 事件（8/15）。
  * - 圖片目前一律是佔位圖（Supabase 尚無任何商品圖片），alt="" 且 aria-hidden，因為
  *   它是裝飾用、不承載資訊，商品名稱已經由旁邊的文字傳達。
  */
@@ -64,12 +66,12 @@ export function ProductCard({ product, maxVisibleTags = 3 }: ProductCardProps) {
         <ul className="relative z-10 mt-2 flex flex-wrap gap-1">
           {visibleTags.map((tag) => (
             <li key={tag.slug}>
-              <Link
+              <TrackedTagLink
                 href={`/products/tags/${tag.slug}`}
                 className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 {tag.name}
-              </Link>
+              </TrackedTagLink>
             </li>
           ))}
           {hiddenTagCount > 0 ? (

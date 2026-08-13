@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProductDetailState } from "@/lib/types/product";
+import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 
 interface ProductDetailProps {
   state: ProductDetailState;
@@ -113,12 +114,12 @@ export function ProductDetail({ state }: ProductDetailProps) {
         <ul className="flex flex-wrap gap-2">
           {product.tags.map((tag) => (
             <li key={tag.slug}>
-              <Link
+              <TrackedTagLink
                 href={`/products/tags/${tag.slug}`}
                 className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 {tag.name}
-              </Link>
+              </TrackedTagLink>
             </li>
           ))}
         </ul>

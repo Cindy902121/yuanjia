@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
 import type { ProductCategoryOption } from "@/lib/fixtures/categories";
+import { trackEvent } from "@/lib/analytics/track";
+
+/** 篩選條件變動後，等使用者停手多久才送出 b2c_search_category，避免每個按鍵／點擊都送一次。 */
+const SEARCH_EVENT_DEBOUNCE_MS = 500;
 
 interface ProductListWithFiltersProps {
   products: ProductDetailData[];
@@ -53,8 +57,10 @@ function collectTagGroups(products: ProductDetailData[]): [string, ProductTagRef
  * 每一個標籤，商品都要同時符合才會出現。目前純前端 Array.filter，接上 Supabase 後
  * 改成呼叫 /api/b2c/products?tags=... 這類查詢，UI 與這層 AND 邏輯不需要大改。
  *
- * TODO：之後接 b2c_search_category、b2c_search_no_result、b2c_filter_no_result
- * 事件（見 docs/B2C商品展示資料.md §9），目前這些事件都還沒有白名單／API 可送。
+ * 8/15：搜尋字串或篩選條件變動時，防抖動 500ms 後送出 b2c_search_category
+ * （見 src/lib/analytics）；只在有實際篩選條件時送，清空篩選不會另外觸發一次。
+ * b2c_search_no_result、b2c_filter_no_result 還沒加入 FDD 6.7 白名單，維持
+ * 待新增狀態（見 docs/B2C商品展示資料.md §9）。
  */
 export function ProductListWithFilters({ products, categories }: ProductListWithFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +86,17 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
 
   const hasActiveFilters =
     searchTerm.length > 0 || selectedCategorySlugs.length > 0 || selectedTagSlugs.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveFilters) {
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      trackEvent({ event_name: "b2c_search_category" });
+    }, SEARCH_EVENT_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedCategorySlugs, selectedTagSlugs, hasActiveFilters]);
 
   function clearFilters() {
     setSearchTerm("");
