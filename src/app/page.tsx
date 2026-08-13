@@ -17,8 +17,8 @@ export const metadata: Metadata = {
  * 品質、產地等公開信任內容）。目前沒有任何真實圖片或最終文案，全部是可替換的
  * 佔位文字／佔位圖片區塊，也不做輪播、視差或動畫（PRD B2C-01 明確排除）。
  *
- * 目前只有 /products 是真正存在的頁面，會員登入、企業合作、購物車頁面本週還沒做，
- * 先把這三個入口做成視覺上存在但不可點擊的佔位。
+ * 會員登入、企業合作、購物車這三個 PRD 要求的入口改放在全站 Header（見
+ * src/components/Header.tsx），不在首頁重複顯示一次。
  *
  * 視覺樣式維持中性灰階，跟 /products 一致；等團隊確定設計方向（design.md 是候選提案，
  * 尚未拍板）後統一套用，這裡先不上色。
@@ -49,16 +49,6 @@ export default function HomePage() {
         >
           開始挑選
         </Link>
-
-        {/* PRD 要求首屏入口涵蓋會員登入、企業合作、購物車；這三個頁面本週還沒做，
-            先視覺呈現、不可點擊，避免連到不存在的路由。 */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-400">
-          <span>會員登入（即將推出）</span>
-          <span aria-hidden="true">・</span>
-          <span>企業合作（即將推出）</span>
-          <span aria-hidden="true">・</span>
-          <span>購物車（即將推出）</span>
-        </div>
       </div>
 
       {/* ABOUT／品牌故事：對應 PRD B2C-02 公開信任內容。文字為佔位草稿，非最終文案。 */}
