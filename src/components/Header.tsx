@@ -11,11 +11,13 @@ import { logout } from "@/lib/actions/auth";
  * 的路由（/business/lead、/cart）。原本放在首頁 Hero 區塊的同一組佔位入口已移除，
  * 改由這裡統一顯示，避免同一頁重複出現兩次。
  *
- * 登入狀態（2026-08-13 補上，已跟 B 確認可以做）：
+ * 登入狀態（2026-08-13 補上，已跟 B 確認可以做；同日依 B 的意見再簡化一次）：
  * - 現在是 async Server Component，用 B 的 createClient()（src/lib/supabase/server.ts）
- *   讀 session，登入後顯示「已登入」＋登出按鈕，取代原本永遠顯示的「會員登入」連結。
- * - 刻意簡化，不判斷角色（B2C／B2B／Admin）：不管哪種身分登入，這裡都只顯示同一種
- *   「已登入」狀態，不做角色專屬的文字或導轉。PRD AUTH-03 要求的角色分流（例如 B2B
+ *   讀 session。B 的要求：登入後**不要顯示「已登入」文字或 email**，只需要確保「會員
+ *   登入」這個按鈕／連結不再出現就好，所以登入後這裡只留一個「登出」按鈕，沒有其他
+ *   狀態文字。
+ * - 刻意簡化，不判斷角色（B2C／B2B／Admin）：不管哪種身分登入，這裡都只顯示同一顆
+ *   「登出」按鈕，不做角色專屬的文字或導轉。PRD AUTH-03 要求的角色分流（例如 B2B
  *   session 開啟 / 要導向 /business、B2C 不能進 B2B 路由）沒有在這裡處理，那是 B 的
  *   Auth／權限範圍，這裡只負責「有沒有登入」這一件事，避免搶做或跟他之後的設計衝突。
  * - 註冊功能不需要：PRD 3.2 明確排除「正式會員註冊」，AUTH-02 也明確排除 B2B 自助註冊，
@@ -31,9 +33,7 @@ import { logout } from "@/lib/actions/auth";
 export async function Header() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-  const isLoggedIn = Boolean(claims);
-  const email = typeof claims?.email === "string" ? claims.email : null;
+  const isLoggedIn = Boolean(data?.claims);
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
@@ -54,19 +54,14 @@ export async function Header() {
           </Link>
 
           {isLoggedIn ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="text-zinc-600 dark:text-zinc-300">
-                已登入{email ? `（${email}）` : ""}
-              </span>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
-                >
-                  登出
-                </button>
-              </form>
-            </div>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                登出
+              </button>
+            </form>
           ) : (
             <Link
               href="/login"
