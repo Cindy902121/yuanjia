@@ -2,16 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/fixtures/products";
+import { ProductDetail } from "@/components/ProductDetail";
 
 /**
- * /products/[slug] 骨架頁。
+ * /products/[slug] 頁面。
  *
  * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §8）：
- * - 改依 ProductDetailState 呈現 loading／error／not_found／ready。
- * - not_found 同時涵蓋「slug 不存在」與「商品已下架」——B2C 公開查詢的 RLS
- *   只會回傳 is_active = true 的商品，兩種情況在前台無法區分。
- * - 圖片區塊目前一律顯示佔位圖，因為 Supabase 尚無任何商品圖片。
- * - 正式 ProductDetail 元件完成後，這裡的行內 markup 要換成 <ProductDetail />。
+ * - 目前用同步的 fixture 查詢，找不到商品時直接呼叫 Next.js notFound()（保留正確
+ *   的 HTTP 404／SEO 語意）；接上真正非同步查詢後，改成組出 ProductDetailState
+ *   （loading／error／not_found／ready）傳給 <ProductDetail />——商品不存在或已
+ *   下架時仍應呼叫 notFound()，不是把 not_found 狀態傳給元件（見元件內註解）。
  */
 
 export async function generateMetadata({
@@ -46,83 +46,7 @@ export default async function ProductDetailPage({
         ← 返回商品列表
       </Link>
 
-      <div
-        aria-hidden="true"
-        className="flex h-64 items-center justify-center rounded-lg bg-zinc-100 text-sm text-zinc-400 dark:bg-zinc-900"
-      >
-        無商品圖片
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {product.name}
-        </h1>
-        {product.brand ? (
-          <p className="text-sm text-zinc-500">品牌：{product.brand}</p>
-        ) : null}
-        <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          NT$ {product.price}
-        </p>
-        {product.inventoryStatus === "out_of_stock" ? (
-          <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/40 dark:text-red-300">
-            缺貨
-          </span>
-        ) : null}
-      </div>
-
-      <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-zinc-500">規格</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.specification}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">產地</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.origin}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">保存方式</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.storageMethod}</dd>
-        </div>
-        <div>
-          <dt className="text-zinc-500">分類</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">
-            {product.categories.map((category) => category.name).join("、")}
-          </dd>
-        </div>
-      </dl>
-
-      <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">{product.description}</p>
-
-      {product.foodSafetyInfo ? (
-        <section>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">食品安全</h2>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-            {product.foodSafetyInfo}
-          </p>
-        </section>
-      ) : null}
-
-      {product.qualityInfo ? (
-        <section>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">認證／品質</h2>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{product.qualityInfo}</p>
-        </section>
-      ) : null}
-
-      {product.tags.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
-          {product.tags.map((tag) => (
-            <li key={tag.slug}>
-              <Link
-                href={`/products/tags/${tag.slug}`}
-                className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              >
-                {tag.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ProductDetail state={{ status: "ready", product }} />
     </main>
   );
 }
