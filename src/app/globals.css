@@ -24,3 +24,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* The catalogue's keyword search should be useful, not dominate the desktop workspace. */
+@media (min-width: 1024px) {
+  main:has(input[placeholder="也可直接搜尋：品名、商品編號、規格或包裝"])
+    .grid:has(> label > input[placeholder="也可直接搜尋：品名、商品編號、規格或包裝"]) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    max-width: 52rem;
+  }
+}

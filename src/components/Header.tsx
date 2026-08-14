@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /**
  * 全站導覽列，掛在 root layout，所有頁面都會顯示（見 8/11–8/12 任務「首頁基本區塊與導覽」）。
@@ -17,6 +20,13 @@ import Link from "next/link";
  * 8/16 任務再處理，現在先用 flex-wrap 讓小螢幕自動換行，不至於無法使用。
  */
 export function Header() {
+  const pathname = usePathname();
+
+  // B2B 型錄與後台不應混入消費者用的會員／購物車導覽。
+  if (pathname.startsWith("/business") || pathname.startsWith("/admin") || pathname.startsWith("/catalog-preview")) {
+    return null;
+  }
+
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
       <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
