@@ -51,8 +51,8 @@ export default async function ProductDetailPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">
-      <Link href="/products" className="text-sm text-zinc-500 hover:underline">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-10 sm:px-8">
+      <Link href="/products" className="text-sm text-ink-600 hover:text-brand-ocean-700 hover:underline">
         ← 返回商品列表
       </Link>
 

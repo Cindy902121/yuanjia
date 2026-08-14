@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/**
+ * 品牌設計 tokens，來自 design.md §5.2（色彩）與 §5.3（字體）——這次只套用這兩節，
+ * 不動 design.md 其他章節（IA／首頁改版等）。數值跟 B 在 /login
+ * （src/app/login/page.tsx、login-form.tsx）用的完全一致，統一從這裡定義成
+ * Tailwind v4 的 @theme 顏色 token（例如 bg-brand-ocean-700），全站共用同一組值，
+ * 之後要調整只需要改這裡一個地方。
+ *
+ * 刻意拿掉原本 create-next-app 預設的 Geist 字體與深色模式（prefers-color-scheme）：
+ * Geist 沒有中文字符集，中文原本就是靠系統字型 fallback 顯示，實際沒在用；深色模式
+ * PRD／design.md 都沒有規範，先前的 dark: 只是預設樣板留下來的，跟 B 的 /login 一樣
+ * 沒有做深色模式，這裡先移除，避免出現沒設計過的配色組合。
+ *
+ * 沒有另外寫 body { background/color/font-family: ... } 這種未分層（unlayered）的
+ * 純 CSS 規則——那樣的規則在 CSS cascade layers 裡優先權會蓋過 Tailwind 的 utility
+ * class（不管 class 的 specificity 多高），之前就是因為留了這種規則，body 上的
+ * bg-surface-warm 一直套不上去。背景／文字色／字體直接在 src/app/layout.tsx 的
+ * <body> className 用 utility class 指定（bg-surface-warm、text-ink-900、
+ * font-sans）就好。
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand-ocean-800: #00457f;
+  --color-brand-ocean-700: #005daa;
+  --color-brand-ocean-050: #eaf5fb;
+  --color-brand-fresh-700: #00712f;
+  --color-brand-fresh-050: #eaf6ee;
+  --color-accent-coral-700: #c84b31;
+  --color-ink-900: #17242a;
+  --color-ink-600: #536168;
+  --color-surface-warm: #f7f6f2;
+  --color-surface-white: #ffffff;
+  --color-border-subtle: #d9e1e5;
+  --color-error-700: #b42318;
+  --color-error-050: #fff1f0;
+  --color-error-border: #f4c7c3;
+
+  --font-sans: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  /* design.md §5.3：只用在 Hero 主標與品牌故事標題等少數敘事位置，不是全站字體。 */
+  --font-serif: "Noto Serif TC", "PMingLiU", serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Header 錨點連結（食安與產地／關於元家）用的平滑捲動；尊重 prefers-reduced-motion
+   （design.md §7.3），不喜歡動態效果的使用者維持預設的瞬間跳轉。 */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

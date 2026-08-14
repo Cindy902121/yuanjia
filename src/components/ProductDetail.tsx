@@ -19,6 +19,13 @@ interface ProductDetailProps {
  *
  * 顯示規則見 docs/B2C商品展示資料.md §8.3：品牌／食安／認證缺漏時對應區塊直接
  * 隱藏，不顯示「無提供資料」等佔位文字。
+ *
+ * 2026-08-14：套用 design.md §5.2／§5.3 的品牌色彩與字體，跟 B 的 /login 對齊
+ * （token 見 src/app/globals.css）。缺貨徽章沿用 B 在 /login 錯誤訊息用的淡紅
+ * （error-050／error-700）。
+ *
+ * 2026-08-14（同日）：主圖依 design.md §6.3「詳情主圖可用 1:1」改用 aspect-square，
+ * 圓角改 16px（rounded-2xl），跟卡片、快速分類卡統一。
  */
 export function ProductDetail({ state }: ProductDetailProps) {
   if (state.status === "loading") {
@@ -27,7 +34,7 @@ export function ProductDetail({ state }: ProductDetailProps) {
 
   if (state.status === "error") {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <div className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
         <p>載入商品資料時發生問題，請稍後再試一次。</p>
       </div>
     );
@@ -35,11 +42,11 @@ export function ProductDetail({ state }: ProductDetailProps) {
 
   if (state.status === "not_found") {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <div className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
         <p>找不到這項商品。</p>
         <Link
           href="/products"
-          className="mt-3 inline-block text-zinc-900 underline underline-offset-2 dark:text-zinc-50"
+          className="mt-3 inline-block text-brand-ocean-700 underline underline-offset-2 hover:text-brand-ocean-800"
         >
           返回商品列表
         </Link>
@@ -53,19 +60,17 @@ export function ProductDetail({ state }: ProductDetailProps) {
     <div className="flex flex-col gap-6">
       <div
         aria-hidden="true"
-        className="flex h-64 items-center justify-center rounded-lg bg-zinc-100 text-sm text-zinc-400 dark:bg-zinc-900"
+        className="flex aspect-square max-h-[28rem] items-center justify-center rounded-2xl border border-border-subtle bg-surface-warm text-sm text-ink-600"
       >
         無商品圖片
       </div>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{product.name}</h1>
-        {product.brand ? <p className="text-sm text-zinc-500">品牌：{product.brand}</p> : null}
-        <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          NT$ {product.price}
-        </p>
+        <h1 className="text-2xl font-semibold text-ink-900">{product.name}</h1>
+        {product.brand ? <p className="text-sm text-ink-600">品牌：{product.brand}</p> : null}
+        <p className="text-lg font-semibold text-ink-900">NT$ {product.price}</p>
         {product.inventoryStatus === "out_of_stock" ? (
-          <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/40 dark:text-red-300">
+          <span className="w-fit rounded bg-error-050 px-2 py-0.5 text-xs text-error-700">
             缺貨
           </span>
         ) : null}
@@ -73,40 +78,38 @@ export function ProductDetail({ state }: ProductDetailProps) {
 
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-zinc-500">規格</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.specification}</dd>
+          <dt className="text-ink-600">規格</dt>
+          <dd className="text-ink-900">{product.specification}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">產地</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.origin}</dd>
+          <dt className="text-ink-600">產地</dt>
+          <dd className="text-ink-900">{product.origin}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">保存方式</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">{product.storageMethod}</dd>
+          <dt className="text-ink-600">保存方式</dt>
+          <dd className="text-ink-900">{product.storageMethod}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">分類</dt>
-          <dd className="text-zinc-900 dark:text-zinc-50">
+          <dt className="text-ink-600">分類</dt>
+          <dd className="text-ink-900">
             {product.categories.map((category) => category.name).join("、")}
           </dd>
         </div>
       </dl>
 
-      <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">{product.description}</p>
+      <p className="text-sm leading-6 text-ink-600">{product.description}</p>
 
       {product.foodSafetyInfo ? (
         <section>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">食品安全</h2>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-            {product.foodSafetyInfo}
-          </p>
+          <h2 className="text-sm font-semibold text-ink-900">食品安全</h2>
+          <p className="mt-1 text-sm text-ink-600">{product.foodSafetyInfo}</p>
         </section>
       ) : null}
 
       {product.qualityInfo ? (
         <section>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">認證／品質</h2>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{product.qualityInfo}</p>
+          <h2 className="text-sm font-semibold text-ink-900">認證／品質</h2>
+          <p className="mt-1 text-sm text-ink-600">{product.qualityInfo}</p>
         </section>
       ) : null}
 
@@ -116,7 +119,7 @@ export function ProductDetail({ state }: ProductDetailProps) {
             <li key={tag.slug}>
               <TrackedTagLink
                 href={`/products/tags/${tag.slug}`}
-                className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="rounded-full bg-brand-ocean-050 px-3 py-1 text-xs text-brand-ocean-800 hover:bg-brand-ocean-700/15"
               >
                 {tag.name}
               </TrackedTagLink>
@@ -132,12 +135,12 @@ export function ProductDetail({ state }: ProductDetailProps) {
 function ProductDetailSkeleton() {
   return (
     <div className="flex flex-col gap-6" aria-busy="true" aria-live="polite">
-      <div className="h-64 rounded-lg bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-900" />
+      <div className="aspect-square max-h-[28rem] rounded-2xl bg-surface-warm motion-safe:animate-pulse" />
       <div className="flex flex-col gap-2">
-        <div className="h-7 w-2/3 rounded bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-900" />
-        <div className="h-5 w-1/3 rounded bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-900" />
+        <div className="h-7 w-2/3 rounded bg-surface-warm motion-safe:animate-pulse" />
+        <div className="h-5 w-1/3 rounded bg-surface-warm motion-safe:animate-pulse" />
       </div>
-      <div className="h-20 rounded bg-zinc-100 motion-safe:animate-pulse dark:bg-zinc-900" />
+      <div className="h-20 rounded bg-surface-warm motion-safe:animate-pulse" />
     </div>
   );
 }

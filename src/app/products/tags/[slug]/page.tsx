@@ -39,17 +39,17 @@ export default async function ProductTagPage({
   const tagName = resolveTagName(slug);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-      <Link href="/products" className="text-sm text-zinc-500 hover:underline">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 px-5 py-10 sm:px-8 lg:px-10">
+      <Link href="/products" className="text-sm text-ink-600 hover:text-brand-ocean-700 hover:underline">
         ← 返回商品列表
       </Link>
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">標籤：{tagName}</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">標籤：{tagName}</h1>
 
       <TrackPageView eventName="b2c_tag_view" />
 
       {matches.length === 0 ? (
         // 對應 PRD「無符合商品」規則。可用不存在的標籤 slug（例如 /products/tags/beef）測試。
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
           無符合商品
         </p>
       ) : (
