@@ -1,6 +1,10 @@
-# 資料庫設計草案（需三人確認）
+# 資料庫設計與契約
 
-> 狀態：草案。此文件用於確認名詞、資料歸屬與權限；尚未建立任何 Supabase 資料表。
+> 狀態：schema 已建立，功能整合與契約驗證進行中。
+> 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
+> `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
+> `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
+> 不是尚未建立的草案。
 
 ## 不可違反的規則
 
@@ -20,23 +24,23 @@
 | `b2b_products` | B2B 私有型錄，不含價格 | B | 只限 B2B／管理者讀取 |
 | `b2c_tags`、`b2b_tags` | 兩套固定標籤清單 | A／B | 對應商品範圍讀取 |
 | `b2c_product_tags`、`b2b_product_tags` | 商品與標籤的多對多關聯 | A／B | 依商品權限讀取 |
-| `rfqs` | B2B 詢價單主檔與公司快照 | B | 同公司與管理者 |
-| `rfq_items` | 詢價單品項、數量、單位與備註 | B | 同公司與管理者 |
-| `mock_orders` | B2C 展示用模擬訂單主檔 | A | 只限伺服器與管理者 |
-| `mock_order_items` | 模擬訂單品項 | A | 只限伺服器與管理者 |
+| `b2b_rfqs` | B2B 詢價單主檔與公司快照 | B | 同公司與管理者 |
+| `b2b_rfq_items` | 詢價單品項、數量、單位與備註 | B | 同公司與管理者 |
+| `b2c_orders` | B2C 展示用模擬訂單主檔 | A | 只限伺服器與管理者 |
+| `b2c_order_items` | 模擬訂單品項 | A | 只限伺服器與管理者 |
 | `analytics_events` | 不含個資的 B2C／B2B 行為事件 | C | 伺服器寫入；管理者讀取 |
 
 ## 主要關係
 
 ```text
-companies 1 ── * rfqs 1 ── * rfq_items
-b2b_products 1 ── * rfq_items
+companies 1 ── * b2b_rfqs 1 ── * b2b_rfq_items
+b2b_products 1 ── * b2b_rfq_items
 
 b2c_products * ── * b2c_tags
 b2b_products * ── * b2b_tags
 
-mock_orders 1 ── * mock_order_items
-b2c_products 1 ── * mock_order_items
+b2c_orders 1 ── * b2c_order_items
+b2c_products 1 ── * b2c_order_items
 ```
 
 ## 三人各自確認的項目
@@ -62,12 +66,12 @@ b2c_products 1 ── * mock_order_items
 - [ ] 事件資料不包含姓名、電話、Email、完整客戶代碼或 company_id。
 - [ ] 分析篩選項：日期、級距、通路、產品、分類與品牌。
 
-## 本次共同決策
+## 建立狀態與下一步
 
-三人確認後，下一步會建立：
-
-1. 資料表欄位與資料型別。
-2. 展示資料（種子資料）。
-3. 每張表的 `GRANT`、RLS 政策與驗收案例。
+- [x] 資料表欄位、資料型別、外鍵與 trigger 已建立。
+- [x] 所有 public table 已啟用 RLS；公開 B2C 讀取、B2B 公司讀取、同公司 RFQ 讀取與 server-only 寫入邊界已建立。
+- [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
+- [ ] C API 與 B 的登入／前端整合測試完成（本分支的契約測試涵蓋矩陣、事件、隔離、fallback 與 seed 靜態契約）。
+- [ ] P2 外鍵索引 migration 審核後再套用；不阻塞功能整合。
 
 在此之前，不建立 ERP 串接、CRM、團購、真實金流、正式訂單或個人 B2B 帳號。
