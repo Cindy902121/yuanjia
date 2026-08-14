@@ -21,9 +21,24 @@ export const metadata: Metadata = {
  *   /products 頁面會用這個 query string 預先選取對應分類篩選（見
  *   ProductListWithFilters、products/page.tsx）。
  * - ABOUT／QUALITY 區塊維持既有結構跟色彩（8/14 稍早已套用 design.md 色彩），
- *   只補上 id="about"／id="quality" 給 Header 的錨點導覽連結用，重做食安流程／
- *   認證卡屬於 design.md §8 Phase 2（品牌信任），不在這次範圍。
+ *   只補上 id="about"／id="quality" 給 Header 的錨點導覽連結用。
  * - 卡片／圖片圓角依 design.md §5.4 統一改用 16px（rounded-2xl）。
+ *
+ * 2026-08-14（同日）：QUALITY 區塊提早套用 design.md §6.4（原本歸在 Phase 2），
+ * 使用者明確要求先做這部分（純內容區塊，沒有假按鈕問題）：
+ * - 5 步驟食安／冷鏈流程（全球採購→專業加工→品質檢驗→冷鏈倉儲→安心到家），
+ *   文案直接取自 design.md §6.4。
+ * - §6.4 原本要放「認證標章（名稱＋適用範圍＋詳情連結）」，但元家官網的食安頁
+ *   （https://www.yens.com.tw/msg/message-FoodSafety.html）沒有列出具體的認證
+ *   名稱（例如 ISO 22000、HACCP 這類），只列了具體做法／事實。不編造沒有依據的
+ *   認證名稱，改用該頁列出的真實內容做成「食安亮點」卡片，一樣是取自該公開頁面、
+ *   不是憑空杜撰。
+ * - 移除原本的三欄 TrustPillar（食品安全把關／產地溯源／品質認證）——內容比較
+ *   空泛，被上面這兩塊有實際內容支撐的區塊取代，避免旁邊放兩份意思重複、一份
+ *   空泛一份具體的內容。
+ * - 底部「查看完整食安說明」連到元家官網真實的食安頁（外部連結，新分頁開啟），
+ *   不是假連結——我們自己還沒有食安詳情頁，與其做一個假的，不如連到真的、
+ *   已經存在的來源頁面。
  *
  * 2026-08-14（同日）：Hero 改成用元家官網真實的首頁 Banner 照片（來源：
  * yens.com.tw／proimages/indexbanner001.jpg，經使用者確認同意才下載）。原圖左半
@@ -174,9 +189,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* QUALITY／信任訴求：三項對應 PRD 商品欄位的食品安全、產地、品質／認證。 */}
+      {/* QUALITY／食安與冷鏈：design.md §6.4，5 步驟流程＋真實食安亮點（來源：
+          yens.com.tw 食安頁，見上方檔案註解）。 */}
       <section id="quality" className="scroll-mt-20 bg-brand-fresh-050">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-12 px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
           <div className="flex flex-col gap-2 text-center">
             <p className="text-xs font-semibold tracking-widest text-brand-fresh-700">QUALITY</p>
             <h2 className="text-2xl font-semibold text-ink-900">
@@ -184,45 +200,70 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-            <TrustPillar
-              index="01"
-              title="食品安全把關"
-              description="每項商品皆標示食品安全與檢驗相關資訊，讓您安心選購。"
-            />
-            <TrustPillar
-              index="02"
-              title="產地溯源"
-              description="清楚標示每項商品的產地來源，吃得清楚、買得安心。"
-            />
-            <TrustPillar
-              index="03"
-              title="品質認證"
-              description="重視品質與認證資訊，持續把關每一項商品的標準。"
-            />
+          {/* 5 步驟流程，design.md §6.4：全球採購 → 專業加工 → 品質檢驗 → 冷鏈倉儲 → 安心到家。 */}
+          <ol className="flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 lg:flex-nowrap">
+            {[
+              "全球採購",
+              "專業加工",
+              "品質檢驗",
+              "冷鏈倉儲",
+              "安心到家",
+            ].map((step, i, arr) => (
+              <li key={step} className="flex flex-1 items-center gap-4 sm:flex-col sm:text-center">
+                <div className="flex flex-col items-center gap-3 sm:flex-1">
+                  <div
+                    aria-hidden="true"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-fresh-700 text-sm font-bold text-white"
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                  <p className="text-sm font-semibold text-ink-900">{step}</p>
+                </div>
+                {i < arr.length - 1 ? (
+                  <span aria-hidden="true" className="hidden text-brand-fresh-700/50 sm:block">
+                    →
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+
+          {/* 食安亮點：取自元家官網食安頁的真實內容，不是編造的認證標章。 */}
+          <div className="flex flex-col gap-6">
+            <h3 className="text-center text-lg font-semibold text-ink-900">
+              食安控管重點
+            </h3>
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                "全台超過 20 位專職品保人員",
+                "每批進貨自主性品質檢測與嚴格溫度管制",
+                "主要產品皆依食品安全計畫通過第三方檢驗證明",
+                "專業儲位與效期管理系統，100% 無過期產品",
+                "大型專業冷凍倉庫、24hr 監控，全年溫度低於 -20℃",
+                "自有專業品質檢驗實驗室，配置通過證照之檢測人員",
+                "導入企業資源管理系統，產銷履歷記載完整、可追溯",
+                "落實食品安全管制系統，配合政府食安推動政策",
+              ].map((fact) => (
+                <li
+                  key={fact}
+                  className="rounded-2xl border border-border-subtle bg-surface-white p-4 text-sm leading-6 text-ink-600"
+                >
+                  {fact}
+                </li>
+              ))}
+            </ul>
+            <a
+              href="https://www.yens.com.tw/msg/message-FoodSafety.html"
+              target="_blank"
+              rel="noreferrer"
+              className="mx-auto text-sm font-semibold text-brand-fresh-700 underline underline-offset-2 hover:text-brand-ocean-700"
+            >
+              查看元家官網完整食安說明 ↗
+            </a>
           </div>
         </div>
       </section>
     </main>
-  );
-}
-
-function TrustPillar({
-  index,
-  title,
-  description,
-}: {
-  index: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <ImagePlaceholder label={`${title} 圖示預留位置`} className="h-32 w-32 rounded-full" />
-      <p className="text-xs font-medium text-brand-fresh-700">{index}</p>
-      <h3 className="text-base font-semibold text-ink-900">{title}</h3>
-      <p className="text-sm leading-6 text-ink-600">{description}</p>
-    </div>
   );
 }
 
