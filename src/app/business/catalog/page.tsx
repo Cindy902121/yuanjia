@@ -111,7 +111,11 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
 
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-8 lg:grid-cols-[17rem_1fr] lg:px-8 lg:py-10">
         <aside className="rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)] lg:sticky lg:top-6 lg:h-fit">
-          <form className="space-y-6" method="get">
+          <form
+            className="space-y-6"
+            key={[params.q ?? "", category, brand, ...selectedTags].join("|")}
+            method="get"
+          >
             <div className="border-b border-[#D9E1E5] pb-5">
               <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">CATALOG FILTER</p>
               <h2 className="mt-2 text-lg font-bold">篩選商品</h2>
