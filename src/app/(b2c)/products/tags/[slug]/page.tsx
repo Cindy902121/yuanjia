@@ -5,7 +5,7 @@ import { toCardData } from "@/lib/types/product";
 import { ProductCard } from "@/components/ProductCard";
 
 /**
- * /products/tags/[slug] 骨架頁。
+ * B2C /products/tags/[slug] 骨架頁。
  *
  * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §4.1、§9）：
  * - 改為呼叫商品標籤查詢 API，多標籤 AND 篩選邏輯見上面文件。
@@ -44,7 +44,6 @@ export default async function ProductTagPage({
       <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">標籤：{tagName}</h1>
 
       {matches.length === 0 ? (
-        // 對應 PRD「無符合商品」規則。可用不存在的標籤 slug（例如 /products/tags/beef）測試。
         <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
           無符合商品
         </p>

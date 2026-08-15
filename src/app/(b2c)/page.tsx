@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * / 首頁骨架。
+ * B2C / 首頁骨架。
  *
  * 版面參考 https://takamaru-fukuoka.com/ 的資訊架構（Hero banner → 品牌故事 ABOUT →
  * 三項信任訴求 QUALITY），但只取「首頁需要哪些區塊」這個結構層面的參考，內容改成

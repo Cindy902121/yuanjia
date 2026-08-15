@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * /products 骨架頁。
+ * B2C /products 骨架頁。
  *
  * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §6～§9 與
  * docs/b2c-product-field-spec-v1.md）：

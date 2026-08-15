@@ -5,7 +5,7 @@ import { getProductBySlug } from "@/lib/fixtures/products";
 import { ProductDetail } from "@/components/ProductDetail";
 
 /**
- * /products/[slug] 頁面。
+ * B2C /products/[slug] 頁面。
  *
  * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §8）：
  * - 目前用同步的 fixture 查詢，找不到商品時直接呼叫 Next.js notFound()（保留正確
