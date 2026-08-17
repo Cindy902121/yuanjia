@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ProductDetailState } from "@/lib/types/product";
 import { AddToCartWithQuantity } from "@/components/AddToCartWithQuantity";
@@ -37,6 +38,10 @@ interface ProductDetailProps {
  * 2026-08-17（同日，第二次調整）：依使用者要求改成左右兩欄——左邊圖片、右邊
  * 品名／價格／數量／加入購物車；下方商品詳情／規格／食品認證（見
  * src/components/ProductDetailTabs.tsx）維持滿版寬度，不是兩欄的一部分。
+ *
+ * 2026-08-17（同日，第三次調整）：多數商品仍顯示「無商品圖片」佔位；5 筆真實商品
+ * 有 src/lib/product-photos.ts 補上的近似商品照時改顯示真的圖片（見該檔案的
+ * 落差說明，使用者已確認「用接近的照片，注明不完全對應」）。
  */
 export function ProductDetail({ state }: ProductDetailProps) {
   if (state.status === "loading") {
@@ -70,12 +75,25 @@ export function ProductDetail({ state }: ProductDetailProps) {
   return (
     <div className="flex flex-col gap-10">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
-        <div
-          aria-hidden="true"
-          className="flex aspect-square items-center justify-center rounded-2xl border border-border-subtle bg-surface-warm text-sm text-ink-600"
-        >
-          無商品圖片
-        </div>
+        {product.coverImage ? (
+          <div className="relative aspect-square overflow-hidden rounded-2xl border border-border-subtle bg-surface-warm">
+            <Image
+              src={product.coverImage.url}
+              alt={product.coverImage.alt}
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+              priority
+            />
+          </div>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="flex aspect-square items-center justify-center rounded-2xl border border-border-subtle bg-surface-warm text-sm text-ink-600"
+          >
+            無商品圖片
+          </div>
+        )}
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

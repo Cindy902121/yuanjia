@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ProductCardData } from "@/lib/types/product";
 import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
@@ -23,8 +24,9 @@ interface ProductCardProps {
  * - 標籤是獨立的 TrackedTagLink（見 src/components/analytics），用 relative z-10
  *   疊在 stretched-link 之上，確保點標籤只會導向 /products/tags/[slug]，不會同時
  *   觸發卡片跳轉；點擊時也會送出 b2c_tag_click 事件（8/15）。
- * - 圖片目前一律是佔位圖（Supabase 尚無任何商品圖片），alt="" 且 aria-hidden，因為
- *   它是裝飾用、不承載資訊，商品名稱已經由旁邊的文字傳達。
+ * - 圖片：多數商品 Supabase 尚無圖片，此時維持佔位圖，alt="" 且 aria-hidden（裝飾用、
+ *   不承載資訊，商品名稱已經由旁邊的文字傳達）。5 筆真實商品有 src/lib/product-photos.ts
+ *   補上的近似商品照時改顯示真的圖片（2026-08-17，見該檔案的落差說明）。
  *
  * 2026-08-14：套用 design.md §5.2／§5.3 的品牌色彩與字體，跟 B 的 /login 對齊
  * （token 見 src/app/globals.css）。標籤 chip 用海洋藍淡色（brand-ocean-050／
@@ -60,12 +62,24 @@ export function ProductCard({ product, maxVisibleTags = 3 }: ProductCardProps) {
 
   return (
     <li className="group relative rounded-2xl bg-surface-white p-4 transition duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_8px_20px_rgba(23,36,42,0.1)]">
-      <div
-        aria-hidden="true"
-        className="mb-3 flex aspect-[4/3] items-center justify-center rounded-xl bg-surface-warm text-xs text-ink-600"
-      >
-        無商品圖片
-      </div>
+      {product.coverImage ? (
+        <div className="relative mb-3 aspect-[4/3] overflow-hidden rounded-xl bg-surface-warm">
+          <Image
+            src={product.coverImage.url}
+            alt={product.coverImage.alt}
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="mb-3 flex aspect-[4/3] items-center justify-center rounded-xl bg-surface-warm text-xs text-ink-600"
+        >
+          無商品圖片
+        </div>
+      )}
 
       <Link
         href={`/products/${product.slug}`}

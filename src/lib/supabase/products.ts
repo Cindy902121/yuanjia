@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { attachProductTags, findProductIdsByTags } from "@/lib/catalog";
+import { getProductPhoto } from "@/lib/product-photos";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
 
 /**
@@ -27,6 +28,12 @@ import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
  *
  * `images`／`certifications` 維持空陣列——正式資料庫也沒有對應的表，跟 fixture
  * 時期的處理方式一致（不是這次新增的落差）。
+ *
+ * `coverImage`：`image_path` 目前全部是 null，但 2026-08-17 使用者要求「抓真實
+ * 五筆商品的照片，然後應用到現在開發的網頁」，這裡改用 src/lib/product-photos.ts
+ * 的 slug 對照表補上這 5 筆的近似商品照（來源 yens.com.tw／asf.com.tw，使用者
+ * 已確認「用接近的照片，注明不完全對應」，各筆已知落差見該檔案）。查不到對照表的
+ * slug（未來新增的商品）維持 null，元件顯示「無商品圖片」佔位，行為不變。
  */
 
 const B2C_PRODUCT_FIELDS =
@@ -72,7 +79,7 @@ function mapRow(row: RawProductRow): ProductDetailData {
     currency: "TWD",
     shortDescription: toShortDescription(row.description),
     inventoryStatus: row.mock_inventory > 0 ? "in_stock" : "out_of_stock",
-    coverImage: null,
+    coverImage: getProductPhoto(row.slug),
     tags,
     brand: row.brand ?? "",
     specification: row.specification,
