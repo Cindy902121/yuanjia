@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { B2CHelpWidget } from "@/components/B2CHelpWidget";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,13 @@ export const metadata: Metadata = {
  * 2026-08-14（同日）：加上全站 Footer（src/components/Footer.tsx，design.md §6.5
  * 提早做）。各頁 <main> 都帶 flex-1，Footer 排在 children 後面，內容不夠長時
  * Footer 還是會貼齊視窗底部，不會浮在中間。
+ *
+ * 2026-08-17：加上 B2C 需求釐清浮動工具（src/components/B2CHelpWidget.tsx，
+ * PRD B2C-05／FDD §6.6）。跟 Header 不一樣，這裡沒有用 route group 排除
+ * /login、/business、/admin——B2CHelpWidget 本身是 Client Component，直接用
+ * usePathname() 判斷要不要渲染（見該檔案），不需要像 Header 那樣為了在 Server
+ * Component 裡 await Supabase 查詢而依賴版面結構排除，兩種元件的限制不同，
+ * 不是同一套解法硬套。
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -31,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         {children}
         <Footer />
+        <B2CHelpWidget />
       </body>
     </html>
   );

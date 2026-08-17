@@ -67,6 +67,12 @@ function collectTagGroups(products: ProductDetailData[]): [string, ProductTagRef
  * 2026-08-14：套用 design.md §5.2／§5.3 的品牌色彩與字體，跟 B 的 /login 對齊
  * （token 見 src/app/globals.css）。已選取的篩選 chip 用海洋藍實心，呼應
  * design.md §7.1 Primary 按鈕的用法。
+ *
+ * 2026-08-17：依使用者要求改版面——搜尋框跟篩選面板從商品網格上方移到左側欄，
+ * 桌面（lg 以上）用 sticky 固定在畫面上，上下捲動商品網格時篩選欄留在原地不
+ * 跟著跑；手機／平板螢幕太窄放不下側欄，維持原本堆疊在商品上方、不做 sticky
+ * （sticky 側欄在窄螢幕會佔掉太多可視高度，反而更難用）。sticky 的 top 值抓
+ * 96px，扣掉 Header 的 72px 高度後留一點呼吸空間，不會整個貼在 Header 下緣。
  */
 export function ProductListWithFilters({
   products,
@@ -117,8 +123,9 @@ export function ProductListWithFilters({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-border-subtle bg-surface-white p-4 sm:p-6">
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+      {/* 左側篩選欄：桌面 sticky 固定在畫面上，商品網格上下捲動時不會跟著跑。 */}
+      <aside className="flex w-full flex-col gap-4 rounded-2xl border border-border-subtle bg-surface-white p-4 sm:p-6 lg:sticky lg:top-24 lg:w-72 lg:shrink-0">
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"
@@ -164,33 +171,41 @@ export function ProductListWithFilters({
             ))}
           </FilterGroup>
         ))}
-      </div>
+      </aside>
 
-      <p className="text-xs text-ink-600" aria-live="polite">
-        {hasActiveFilters ? `已套用篩選，符合 ${filtered.length} 筆商品` : `顯示全部 ${filtered.length} 筆商品`}
-      </p>
-
-      {filtered.length === 0 ? (
-        // 對應 PRD「無符合商品」規則——關鍵字搜尋、分類篩選、標籤篩選任何組合造成 0 筆，文案統一。
-        <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
-          無符合商品
+      {/* 右側商品網格。 */}
+      <div className="flex flex-1 flex-col gap-4">
+        <p className="text-xs text-ink-600" aria-live="polite">
+          {hasActiveFilters ? `已套用篩選，符合 ${filtered.length} 筆商品` : `顯示全部 ${filtered.length} 筆商品`}
         </p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={toCardData(product)} />
-          ))}
-        </ul>
-      )}
+
+        {filtered.length === 0 ? (
+          // 對應 PRD「無符合商品」規則——關鍵字搜尋、分類篩選、標籤篩選任何組合造成 0 筆，文案統一。
+          <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
+            無符合商品
+          </p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={toCardData(product)} />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
+/**
+ * 2026-08-17：標籤跟 chip 從左右並排改成上下堆疊——原本是設計給滿版寬度的篩選面板，
+ * 現在篩選欄縮到側欄只有 18rem 寬（見上面 <aside>），並排在窄欄位裡容易被擠壓
+ * 換行換得很亂，堆疊起來在窄欄位比較好讀。
+ */
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
-      <span className="mt-1 w-16 shrink-0 text-xs font-medium text-ink-600">{label}</span>
-      <div className="flex flex-1 flex-wrap gap-2" role="group" aria-label={`依${label}篩選`}>
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium text-ink-600">{label}</span>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={`依${label}篩選`}>
         {children}
       </div>
     </div>
