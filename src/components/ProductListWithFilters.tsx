@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
-import { toCardData } from "@/lib/types/product";
+import { sortByAvailability, toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
 import type { ProductCategoryOption } from "@/lib/fixtures/categories";
 import { trackEvent } from "@/lib/analytics/track";
@@ -90,7 +90,7 @@ export function ProductListWithFilters({
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    return products.filter((product) => {
+    const matched = products.filter((product) => {
       const matchesSearch = term.length === 0 || product.name.toLowerCase().includes(term);
       const matchesCategories = selectedCategorySlugs.every((slug) =>
         product.categories.some((category) => category.slug === slug),
@@ -100,6 +100,8 @@ export function ProductListWithFilters({
       );
       return matchesSearch && matchesCategories && matchesTags;
     });
+    // 缺貨商品排到最後（2026-08-17 使用者要求），見 sortByAvailability 的說明。
+    return sortByAvailability(matched);
   }, [products, searchTerm, selectedCategorySlugs, selectedTagSlugs]);
 
   const hasActiveFilters =

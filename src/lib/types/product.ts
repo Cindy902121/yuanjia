@@ -109,6 +109,23 @@ export type ProductDetailState =
   | { status: "not_found" }
   | { status: "ready"; product: ProductDetailData };
 
+/**
+ * 排序：庫存中的商品在前，缺貨排到最後；同一種庫存狀態內維持原本順序（穩定排序，
+ * Array.prototype.sort 自 ES2019 起保證穩定）。2026-08-17 使用者要求缺貨商品排在
+ * 最後——用排序而不是手動調整 fixture 陣列順序，之後不管加幾筆新商品、不管
+ * 哪一筆缺貨，順序都會自動正確，不用每次手動搬動陣列位置。
+ */
+export function sortByAvailability<T extends { inventoryStatus: InventoryStatus }>(
+  items: T[],
+): T[] {
+  return [...items].sort((a, b) => {
+    if (a.inventoryStatus === b.inventoryStatus) {
+      return 0;
+    }
+    return a.inventoryStatus === "out_of_stock" ? 1 : -1;
+  });
+}
+
 /** 由 ProductDetailData 取出卡片所需欄位，確保卡片與詳情頁資料永遠一致（單一資料來源）。 */
 export function toCardData(product: ProductDetailData): ProductCardData {
   const {

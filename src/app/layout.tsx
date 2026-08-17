@@ -31,10 +31,15 @@ export const metadata: Metadata = {
  * usePathname() 判斷要不要渲染（見該檔案），不需要像 Header 那樣為了在 Server
  * Component 裡 await Supabase 查詢而依賴版面結構排除，兩種元件的限制不同，
  * 不是同一套解法硬套。
+ *
+ * 2026-08-17（同日）：`data-scroll-behavior="smooth"` 是 Next.js 16 要求的明確
+ * 標記——globals.css 有設定 `scroll-behavior: smooth`（給 Header 錨點連結用），
+ * Next 偵測到這個 CSS 設定但沒看到這個屬性時會印警告，怕它跟路由切換的捲動
+ * 還原互相干擾；加上這個屬性等於明確告訴 Next「這是刻意的」。
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="zh-Hant" className="h-full antialiased">
+    <html lang="zh-Hant" data-scroll-behavior="smooth" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-surface-warm font-sans text-ink-900">
         <Header />
         {children}

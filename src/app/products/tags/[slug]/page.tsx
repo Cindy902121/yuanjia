@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getProductsByTagSlug } from "@/lib/fixtures/products";
-import { toCardData } from "@/lib/types/product";
+import { sortByAvailability, toCardData } from "@/lib/types/product";
 import { ProductCard } from "@/components/ProductCard";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 
@@ -35,7 +35,8 @@ export default async function ProductTagPage({
   params,
 }: PageProps<"/products/tags/[slug]">) {
   const { slug } = await params;
-  const matches = getProductsByTagSlug(slug).map(toCardData);
+  // 缺貨商品排到最後（2026-08-17 使用者要求），見 sortByAvailability 的說明。
+  const matches = sortByAvailability(getProductsByTagSlug(slug).map(toCardData));
   const tagName = resolveTagName(slug);
 
   return (

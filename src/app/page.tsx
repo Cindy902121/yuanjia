@@ -172,20 +172,58 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ABOUT／品牌故事：對應 PRD B2C-02 公開信任內容。文字為佔位草稿，非最終文案。 */}
+      {/* ABOUT／品牌故事＋企業優勢：對應 PRD B2C-02 公開信任內容。
+          2026-08-17：文字內容改寫自元家官網「企業介紹」「企業優勢」四個子頁（國際
+          採購／研發生產／食品安全／倉儲物流），依使用者要求分析後套用，不是逐字
+          照抄——原網頁段落較長，這裡濃縮成適合首頁閱讀的長度，事實（年份、認證
+          名稱、地點）保留正確，文字重新組織過。來源：
+          https://www.yens.com.tw/msg/message-CompanyIntroduction.html、
+          https://www.yens.com.tw/msg/message-GlobalPurchasing.html、
+          https://www.yens.com.tw/msg/message-R-DAndProduction.html、
+          https://www.yens.com.tw/msg/message-LogisticManagement.html。
+          「食品安全」卡片故意不重複展開內容，直接連到下面 QUALITY 區塊（已經有
+          5 步驟流程＋食安亮點），避免同一頁兩處講同一件事。 */}
       <section id="about" className="scroll-mt-20 border-b border-border-subtle bg-surface-white">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-14 sm:px-8 lg:flex-row lg:items-center lg:px-10 lg:py-20">
-          <div className="flex flex-1 flex-col gap-4">
-            <p className="text-xs font-semibold tracking-widest text-brand-ocean-700">ABOUT</p>
-            <h2 className="text-2xl font-semibold text-ink-900">關於元家</h2>
-            <p className="text-sm leading-7 text-ink-600">
-              元家企業長期投入冷凍水產與食材供應，累積豐富的品牌與產品經驗。這個網站將元家的品牌內容與產品資訊，和宅鮮配的線上購物體驗整合在一起，讓您能在同一個地方認識元家，也能安心選購。
-            </p>
-            <p className="text-sm leading-7 text-ink-600">
-              我們相信好的食材需要用心對待——從產地挑選、低溫保存，到送到您手上的每一個環節，元家都希望能讓您安心。
-            </p>
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+            <div className="flex flex-1 flex-col gap-4">
+              <p className="text-xs font-semibold tracking-widest text-brand-ocean-700">ABOUT</p>
+              <h2 className="text-2xl font-semibold text-ink-900">關於元家</h2>
+              <p className="text-sm leading-7 text-ink-600">
+                元家企業的故事，最早可追溯到 1968
+                年於澎湖草創的「元進行」商行；1979
+                年於台北正式成立元家企業股份有限公司，隔年在高雄設立冷凍草蝦外銷廠，以自創品牌行銷日本、美國，奠定日後發展的基礎。此後陸續拓展冷凍水產的進口、銷售與生產加工，並跨足調理食品領域，2012
+                年起積極開拓海外市場，成為橫跨零售、餐飲、電商與國際貿易的水產食品供應商。
+              </p>
+              <p className="text-sm leading-7 text-ink-600">
+                我們期望透過食的流通，將幸福傳遞給世界——提供穩定、值得信賴的商品與服務，同時關懷生態環境的平衡，引領安心的飲食文化。
+              </p>
+            </div>
+            <ImagePlaceholder label="品牌故事圖片預留位置" className="aspect-[4/3] flex-1" />
           </div>
-          <ImagePlaceholder label="品牌故事圖片預留位置" className="aspect-[4/3] flex-1" />
+
+          <div className="flex flex-col gap-6">
+            <h3 className="text-lg font-semibold text-ink-900">企業優勢</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <AdvantageCard
+                title="國際採購"
+                description="掌握全球水產源頭，通過 MSC、ASC 等國際永續漁業認證，兼顧美味與海洋永續。"
+              />
+              <AdvantageCard
+                title="研發生產"
+                description="自有食品研發中心與生產工廠，取得 FSSC 22000、HACCP 等多項國際品質認證。"
+              />
+              <AdvantageCard
+                title="食品安全"
+                description="專職品保團隊層層把關，詳見下方食安專區。"
+                href="#quality"
+              />
+              <AdvantageCard
+                title="倉儲物流"
+                description="大型冷凍倉庫全年溫控 -20°C 以下，搭配專業物流管理系統，確保新鮮送達。"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -264,6 +302,44 @@ export default function HomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+/**
+ * 企業優勢卡片。有 href 時整張卡是連結（目前只有「食品安全」連到 #quality 錨點，
+ * 避免同一頁重複展開食安內容），沒有 href 時是純資訊卡片，不假裝可以點擊。
+ */
+function AdvantageCard({
+  title,
+  description,
+  href,
+}: {
+  title: string;
+  description: string;
+  href?: string;
+}) {
+  const content = (
+    <>
+      <h4 className="text-sm font-semibold text-ink-900">{title}</h4>
+      <p className="text-sm leading-6 text-ink-600">{description}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface-white p-4 transition hover:border-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface-white p-4">
+      {content}
+    </div>
   );
 }
 
