@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ProductDetailState } from "@/lib/types/product";
 import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
+import { AddToCartWithQuantity } from "@/components/AddToCartWithQuantity";
 
 interface ProductDetailProps {
   state: ProductDetailState;
@@ -26,6 +27,12 @@ interface ProductDetailProps {
  *
  * 2026-08-14（同日）：主圖依 design.md §6.3「詳情主圖可用 1:1」改用 aspect-square，
  * 圓角改 16px（rounded-2xl），跟卡片、快速分類卡統一。
+ *
+ * 2026-08-17：補上 PRD B2C-03「明確標示 MVP 為展示資料，實際價格與庫存以正式
+ * 商城為準」，放在價格／缺貨徽章下方，跟 /products 列表頁用同一句文案。
+ *
+ * 2026-08-17（同日）：加上數量選擇器＋「加入購物車」（PRD B2C-04，見
+ * src/components/AddToCartWithQuantity.tsx）。
  */
 export function ProductDetail({ state }: ProductDetailProps) {
   if (state.status === "loading") {
@@ -74,7 +81,12 @@ export function ProductDetail({ state }: ProductDetailProps) {
             缺貨
           </span>
         ) : null}
+        <p className="text-xs text-ink-600">
+          本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+        </p>
       </div>
+
+      <AddToCartWithQuantity product={product} />
 
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>

@@ -20,6 +20,11 @@ export const metadata: Metadata = {
  * 字串，當成 ProductListWithFilters 的初始篩選——只在字串真的對到一個已知分類時
  * 才套用，避免有人手動改網址帶垃圾值時篩選邏輯出錯。用伺服器端讀 searchParams
  * 直接把初始值傳給 client component，不用 useSearchParams（不用額外包 Suspense）。
+ *
+ * 2026-08-17：補上 PRD B2C-03「明確標示 MVP 為展示資料，實際價格與庫存以正式
+ * 商城為準」——下面「目前顯示本機展示資料...」那行是給我們自己看的開發註記
+ * （講的是還沒接 Supabase），不是 PRD 要的、給真實使用者看的展示資料聲明，
+ * 兩者分開各自成立，不是同一句話改寫。
  */
 export default async function ProductsPage({
   searchParams,
@@ -36,6 +41,9 @@ export default async function ProductsPage({
         <h1 className="text-2xl font-semibold text-ink-900">商品列表</h1>
         <p className="text-sm text-ink-600">
           目前顯示本機展示資料（{products.length} 筆），尚未接上 Supabase。
+        </p>
+        <p className="text-xs text-ink-600">
+          本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
         </p>
       </div>
 

@@ -47,3 +47,24 @@
     scroll-behavior: smooth;
   }
 }
+
+/* 購物車抽屜（src/components/CartDrawer.tsx）的滑入／淡入動畫。用在
+   motion-safe: 底下，尊重 prefers-reduced-motion 的使用者不會看到這個動畫，
+   面板直接以最終位置顯示。 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

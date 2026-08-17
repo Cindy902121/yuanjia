@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ProductCardData } from "@/lib/types/product";
 import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
+import { AddToCartButton } from "@/components/AddToCartButton";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -41,6 +42,11 @@ interface ProductCardProps {
  * 這次依專案既定的優先順序（已確認的欄位規格文件 > design.md 這種候選視覺提案）
  * 只套用 design.md 的版面／間距／圓角，沒有動欄位內容，如果要真的改欄位範圍，
  * 需要先跟已確認那份規格文件的人對過。
+ *
+ * 2026-08-17：加上「加入購物車」按鈕（PRD B2C-04，2026-08-17 已跟使用者確認卡片
+ * 跟詳情頁都要放，見 src/components/AddToCartButton.tsx）。按鈕跟標籤一樣需要
+ * relative z-10 疊在 stretched-link 之上，不然點擊會被卡片整體的連結吃掉、變成
+ * 導向商品詳情頁而不是加入購物車。
  */
 export function ProductCard({ product, maxVisibleTags = 3 }: ProductCardProps) {
   const visibleTags = product.tags.slice(0, maxVisibleTags);
@@ -69,6 +75,13 @@ export function ProductCard({ product, maxVisibleTags = 3 }: ProductCardProps) {
         {product.inventoryStatus === "out_of_stock" ? (
           <span className="rounded bg-error-050 px-2 py-0.5 text-xs text-error-700">缺貨</span>
         ) : null}
+      </div>
+
+      <div className="relative z-10 mt-2">
+        <AddToCartButton
+          product={product}
+          className="min-h-9 w-full rounded-lg bg-brand-ocean-700 px-3 text-xs font-semibold text-white transition hover:bg-brand-ocean-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700 disabled:cursor-not-allowed disabled:bg-border-subtle disabled:text-ink-600"
+        />
       </div>
 
       {visibleTags.length > 0 ? (

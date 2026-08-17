@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
+import { CartDrawer } from "@/components/CartDrawer";
 
 /**
  * 全站導覽列，掛在 root layout，所有頁面都會顯示（見 8/11–8/12 任務「首頁基本區塊與導覽」）。
@@ -44,6 +45,13 @@ import { logout } from "@/lib/actions/auth";
  * 抓自 yens.com.tw 官網 header 用的同一個檔案，389×135px；經使用者確認同意才下載
  * ／套用）。原本純文字「元家」在白底 Header 上略顯單薄，換成官方 logo 圖片更接近
  * 真實品牌識別。
+ *
+ * 2026-08-17：「購物車（即將推出）」換成真的入口，同一天改了兩次：
+ * 1. 先從直接連到 /cart 的 CartLink，改成點擊後彈出小型下拉預覽視窗的 CartMenu。
+ * 2. 使用者看了參考截圖後，改成右側滿版高度、附遮罩的抽屜——
+ *    src/components/CartDrawer.tsx（目前這個）。三版都是獨立 Client Component，
+ *    理由不變：Header 是 async Server Component，沒辦法直接用
+ *    localStorage／useSyncExternalStore。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -57,7 +65,15 @@ export async function Header() {
           href="/"
           className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
         >
-          <Image src="/yens-logo.png" alt="元家" width={116} height={40} priority className="h-9 w-auto sm:h-10" />
+          <Image
+            src="/yens-logo.png"
+            alt="元家"
+            width={116}
+            height={40}
+            priority
+            style={{ width: "auto" }}
+            className="h-9 sm:h-10"
+          />
         </Link>
 
         <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
@@ -104,7 +120,7 @@ export async function Header() {
             </Link>
           )}
 
-          <span className="text-xs text-ink-600/60">購物車（即將推出）</span>
+          <CartDrawer />
         </div>
       </div>
     </header>
