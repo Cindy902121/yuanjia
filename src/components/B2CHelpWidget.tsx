@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/analytics/track";
 import { FINDER_STEPS } from "@/lib/product-finder/config";
-import { findProductsByAnswers } from "@/lib/product-finder/match";
+import { findProductsByAnswers, type FinderResultProduct } from "@/lib/product-finder/match";
 import { AI_DEMO_ENTRIES } from "@/lib/product-finder/ai-demo";
 
 const LINE_URL = "https://page.line.me/cdd6667c?openQrModal=true";
@@ -22,10 +22,10 @@ type View = "menu" | "finder" | "ai";
  * B2CHelpWidget）。全站 B2C 頁面右下角固定顯示，展開後三個入口：Line@、
  * 固定四步篩選小工具、固定 AI 示範問答。
  *
- * 篩選小工具的資料來源與導向邏輯見 src/lib/product-finder/config.ts、match.ts
- * 檔頭註解——刻意用本機 fixture 資料比對，不是打 C 已經寫好的
- * GET /api/b2c/product-finder（那支查的是另一組真實 Supabase 種子資料，跟本站
- * 其他地方看到的商品對不上）。
+ * 篩選小工具的資料來源見 src/lib/product-finder/config.ts、match.ts 檔頭註解——
+ * 2026-08-17 改回打 C 已經寫好的 GET /api/b2c/product-finder（原本因為
+ * /products 系列頁面還是 fixture、跟真實 Supabase 對不上而暫時繞開，現在雙邊
+ * 已經統一接同一個正式資料庫，改回來）。查詢是非同步的，多一個 loading 狀態。
  *
  * 「單一結果導向商品詳情」這裡採用「面板內顯示連結，使用者自己點」而不是
  * 「答完最後一步自動跳轉頁面」——自動導頁對鍵盤／螢幕閱讀器使用者來說是不可
@@ -40,6 +40,9 @@ export function B2CHelpWidget() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [finderStarted, setFinderStarted] = useState(false);
 
+  const [results, setResults] = useState<FinderResultProduct[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(false);
+
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const firstFocusRef = useRef<HTMLButtonElement>(null);
@@ -47,6 +50,27 @@ export function B2CHelpWidget() {
   const isExcludedRoute = EXCLUDED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+
+  useEffect(() => {
+    if (step < FINDER_STEPS.length) {
+      return;
+    }
+    const selectedKeys = FINDER_STEPS.map((s) => answers[s.key]).filter(
+      (key): key is string => Boolean(key) && key !== "any",
+    );
+
+    let cancelled = false;
+    setResultsLoading(true);
+    findProductsByAnswers(selectedKeys).then((products) => {
+      if (!cancelled) {
+        setResults(products);
+        setResultsLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, answers]);
 
   useEffect(() => {
     if (!open) {
@@ -93,6 +117,7 @@ export function B2CHelpWidget() {
     setStep(0);
     setAnswers({});
     setFinderStarted(false);
+    setResults([]);
   }
 
   function enterFinder() {
@@ -129,8 +154,6 @@ export function B2CHelpWidget() {
     }
     setStep(step - 1);
   }
-
-  const results = step >= FINDER_STEPS.length ? findProductsByAnswers(answers) : [];
 
   return (
     <div className="fixed bottom-5 right-5 z-40 sm:bottom-6 sm:right-6">
@@ -256,7 +279,9 @@ export function B2CHelpWidget() {
                   </>
                 ) : (
                   <>
-                    {results.length === 0 ? (
+                    {resultsLoading ? (
+                      <p className="text-center text-sm text-ink-600">搜尋中…</p>
+                    ) : results.length === 0 ? (
                       <p className="rounded-lg border border-dashed border-border-subtle p-4 text-center text-sm text-ink-600">
                         無符合商品
                       </p>
@@ -267,7 +292,10 @@ export function B2CHelpWidget() {
                             <Link
                               href={`/products/${product.slug}`}
                               onClick={() => {
-                                trackEvent({ event_name: "b2c_product_finder_result_click" });
+                                trackEvent({
+                                  event_name: "b2c_product_finder_result_click",
+                                  product_id: product.id,
+                                });
                                 closePanel();
                               }}
                               className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm hover:border-brand-ocean-700"

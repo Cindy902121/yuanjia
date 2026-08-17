@@ -1,6 +1,13 @@
 /**
  * B2C 展示商品的本機開發用假資料（fixture）。
  *
+ * 2026-08-17：/products 系列頁面已經改接正式 Supabase（見
+ * src/lib/supabase/products.ts），這個檔案**不再被任何頁面/元件引用**——C 本週
+ * 排程明講「先以目前 Supabase 的 5 筆 seed 作 MVP 驗收資料，12（現在 14）筆
+ * 展示資料留作後續擴充」，所以沒有刪掉，留著給之後真的要擴充正式 seed 資料時
+ * 參考用（分類/標籤組合、邊界案例設計都還算完整）。如果之後確定不會再用到，
+ * 可以整批刪除，屆時記得一併刪 categories.ts。
+ *
  * 狀態：draft，僅供前端開發／UI 串接使用，**不是**正式 seed 或正式商品資料。
  *
  * 內容改寫自 docs/B2C商品展示資料.md 的 12 筆展示商品，但欄位形狀已改用
@@ -42,6 +49,9 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "鮭魚菲力去刺去鱗切塊，肉質細緻、油脂均勻，乾煎、氣炸皆可快速上桌。",
     inventoryStatus: "in_stock",
+    // 2026-08-17：/products 頁面「當季主打商品」banner 用，見 src/lib/types/product.ts
+    // 的 isFeatured 說明；挑 4 筆跨分類（魚/蝦蟹/貝/軟體）示範，不是隨機選。
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "salmon", name: "鮭魚", groupName: "食材" },
@@ -159,6 +169,7 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "紅海海域養殖藍鑽蝦，純手工剝殼挑腸泥，肉質Q彈鮮甜，小包裝衛生方便。",
     inventoryStatus: "in_stock",
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "shrimp", name: "蝦", groupName: "食材" },
@@ -216,6 +227,7 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "元家與北光聯名推出，生食等級規格，鮮甜多汁，適合生食或簡單炙燒。",
     inventoryStatus: "in_stock",
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "scallop", name: "干貝", groupName: "食材" },
@@ -386,6 +398,7 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "活凍鎖鮮處理，肉質細嫩鮮甜有嚼勁，適合快炒、氣炸或簡單汆燙。",
     inventoryStatus: "in_stock",
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "cuttlefish", name: "軟絲", groupName: "食材" },

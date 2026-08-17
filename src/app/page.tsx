@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { categories } from "@/lib/fixtures/categories";
+import { createClient } from "@/lib/supabase/server";
+import { getDistinctCategories } from "@/lib/supabase/products";
 
 export const metadata: Metadata = {
   title: "元家｜新鮮海鮮與調理食品",
@@ -66,7 +67,12 @@ export const metadata: Metadata = {
  * 會員登入、企業合作、購物車這三個 PRD 要求的入口放在全站 Header（見
  * src/components/Header.tsx），不在首頁重複顯示一次。
  */
-export default function HomePage() {
+export default async function HomePage() {
+  // 2026-08-17：快速分類改查正式 Supabase 目前實際有的分類值（見
+  // src/lib/supabase/products.ts），不是固定的 fixture 清單，C 本週排程要求。
+  const supabase = await createClient();
+  const categories = await getDistinctCategories(supabase);
+
   return (
     <main className="flex flex-1 flex-col">
       {/* Hero：左邊深色品牌色塊放文字/CTA，右邊是元家官網真實照片（裁過，不含燒進圖片
@@ -139,7 +145,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 快速分類：design.md §6.3「今天想吃什麼？」，用真實分類資料連到篩選後的商品列表。 */}
+      {/* 快速分類：design.md §6.3「今天想吃什麼？」。2026-08-17 改連到
+          /products/categories/[slug]（這次新增的分類頁），不是 /products?category=；
+          分類清單本身也改成查正式 Supabase 目前實際有的分類值，不是固定 fixture。 */}
       <section className="border-b border-border-subtle bg-surface-white">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-5 py-14 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-2">
@@ -153,7 +161,7 @@ export default function HomePage() {
             {categories.map((category) => (
               <li key={category.slug}>
                 <Link
-                  href={`/products?category=${category.slug}`}
+                  href={`/products/categories/${encodeURIComponent(category.slug)}`}
                   className="group flex flex-col items-center gap-3 rounded-2xl border border-border-subtle bg-surface-warm p-4 text-center transition hover:border-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
                 >
                   <div

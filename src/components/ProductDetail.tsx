@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ProductDetailState } from "@/lib/types/product";
-import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 import { AddToCartWithQuantity } from "@/components/AddToCartWithQuantity";
+import { ProductDetailTabs } from "@/components/ProductDetailTabs";
 
 interface ProductDetailProps {
   state: ProductDetailState;
@@ -33,6 +33,10 @@ interface ProductDetailProps {
  *
  * 2026-08-17（同日）：加上數量選擇器＋「加入購物車」（PRD B2C-04，見
  * src/components/AddToCartWithQuantity.tsx）。
+ *
+ * 2026-08-17（同日，第二次調整）：依使用者要求改成左右兩欄——左邊圖片、右邊
+ * 品名／價格／數量／加入購物車；下方商品詳情／規格／食品認證（見
+ * src/components/ProductDetailTabs.tsx）維持滿版寬度，不是兩欄的一部分。
  */
 export function ProductDetail({ state }: ProductDetailProps) {
   if (state.status === "loading") {
@@ -64,81 +68,35 @@ export function ProductDetail({ state }: ProductDetailProps) {
   const { product } = state;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div
-        aria-hidden="true"
-        className="flex aspect-square max-h-[28rem] items-center justify-center rounded-2xl border border-border-subtle bg-surface-warm text-sm text-ink-600"
-      >
-        無商品圖片
+    <div className="flex flex-col gap-10">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
+        <div
+          aria-hidden="true"
+          className="flex aspect-square items-center justify-center rounded-2xl border border-border-subtle bg-surface-warm text-sm text-ink-600"
+        >
+          無商品圖片
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold text-ink-900">{product.name}</h1>
+            {product.brand ? <p className="text-sm text-ink-600">品牌：{product.brand}</p> : null}
+            <p className="text-lg font-semibold text-ink-900">NT$ {product.price}</p>
+            {product.inventoryStatus === "out_of_stock" ? (
+              <span className="w-fit rounded bg-error-050 px-2 py-0.5 text-xs text-error-700">
+                缺貨
+              </span>
+            ) : null}
+            <p className="text-xs text-ink-600">
+              本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+            </p>
+          </div>
+
+          <AddToCartWithQuantity product={product} />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-ink-900">{product.name}</h1>
-        {product.brand ? <p className="text-sm text-ink-600">品牌：{product.brand}</p> : null}
-        <p className="text-lg font-semibold text-ink-900">NT$ {product.price}</p>
-        {product.inventoryStatus === "out_of_stock" ? (
-          <span className="w-fit rounded bg-error-050 px-2 py-0.5 text-xs text-error-700">
-            缺貨
-          </span>
-        ) : null}
-        <p className="text-xs text-ink-600">
-          本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
-        </p>
-      </div>
-
-      <AddToCartWithQuantity product={product} />
-
-      <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-ink-600">規格</dt>
-          <dd className="text-ink-900">{product.specification}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-600">產地</dt>
-          <dd className="text-ink-900">{product.origin}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-600">保存方式</dt>
-          <dd className="text-ink-900">{product.storageMethod}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-600">分類</dt>
-          <dd className="text-ink-900">
-            {product.categories.map((category) => category.name).join("、")}
-          </dd>
-        </div>
-      </dl>
-
-      <p className="text-sm leading-6 text-ink-600">{product.description}</p>
-
-      {product.foodSafetyInfo ? (
-        <section>
-          <h2 className="text-sm font-semibold text-ink-900">食品安全</h2>
-          <p className="mt-1 text-sm text-ink-600">{product.foodSafetyInfo}</p>
-        </section>
-      ) : null}
-
-      {product.qualityInfo ? (
-        <section>
-          <h2 className="text-sm font-semibold text-ink-900">認證／品質</h2>
-          <p className="mt-1 text-sm text-ink-600">{product.qualityInfo}</p>
-        </section>
-      ) : null}
-
-      {product.tags.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
-          {product.tags.map((tag) => (
-            <li key={tag.slug}>
-              <TrackedTagLink
-                href={`/products/tags/${tag.slug}`}
-                className="rounded-full bg-brand-ocean-050 px-3 py-1 text-xs text-brand-ocean-800 hover:bg-brand-ocean-700/15"
-              >
-                {tag.name}
-              </TrackedTagLink>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ProductDetailTabs product={product} />
     </div>
   );
 }
@@ -146,13 +104,13 @@ export function ProductDetail({ state }: ProductDetailProps) {
 /** 骨架屏；pulse 動畫只在使用者沒有要求減少動態效果時才播放（PRD 8.2 reduced motion）。 */
 function ProductDetailSkeleton() {
   return (
-    <div className="flex flex-col gap-6" aria-busy="true" aria-live="polite">
-      <div className="aspect-square max-h-[28rem] rounded-2xl bg-surface-warm motion-safe:animate-pulse" />
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2" aria-busy="true" aria-live="polite">
+      <div className="aspect-square rounded-2xl bg-surface-warm motion-safe:animate-pulse" />
       <div className="flex flex-col gap-2">
         <div className="h-7 w-2/3 rounded bg-surface-warm motion-safe:animate-pulse" />
         <div className="h-5 w-1/3 rounded bg-surface-warm motion-safe:animate-pulse" />
+        <div className="mt-4 h-20 rounded bg-surface-warm motion-safe:animate-pulse" />
       </div>
-      <div className="h-20 rounded bg-surface-warm motion-safe:animate-pulse" />
     </div>
   );
 }

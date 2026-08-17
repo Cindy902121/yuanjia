@@ -1,34 +1,42 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProductBySlug } from "@/lib/fixtures/products";
+import { createClient } from "@/lib/supabase/server";
+import { getAllActiveProducts, getProductBySlug } from "@/lib/supabase/products";
 import { ProductDetail } from "@/components/ProductDetail";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { RecommendedProducts } from "@/components/RecommendedProducts";
 
 /**
  * /products/[slug] 頁面。
  *
- * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §8）：
- * - 目前用同步的 fixture 查詢，找不到商品時直接呼叫 Next.js notFound()（保留正確
- *   的 HTTP 404／SEO 語意）；接上真正非同步查詢後，改成組出 ProductDetailState
- *   （loading／error／not_found／ready）傳給 <ProductDetail />——商品不存在或已
- *   下架時仍應呼叫 notFound()，不是把 not_found 狀態傳給元件（見元件內註解）。
+ * 2026-08-17：改接正式 Supabase（C 本週排程要求，見 src/lib/supabase/products.ts
+ * 檔頭說明）——取代原本的同步 fixture 查詢。找不到商品或已下架時，
+ * `getProductBySlug()` 回傳 null，這裡呼叫 Next.js notFound()（保留正確的
+ * HTTP 404／SEO 語意），跟 fixture 時期的行為一致，只是查詢來源換掉。
  *
- * 8/15：載入完成時觸發 b2c_product_view（見 src/lib/analytics）。
- * 2026-08-14：C 的 POST /api/analytics/events 已上線，會用 isUuid() 驗證
- * product_id，並且要求該 id 在 b2c_products 表裡真的存在且 is_active。我們的
- * fixture id（如 "fx-05"）不是 UUID，送了一定會被 API 拒絕（400「產品參照格式
- * 不正確」）——這不是 API 的 bug，是我們還沒接真資料。與其送一個保證失敗的假值，
- * 這裡先不帶 productId；等這個頁面改成查詢真正的 Supabase b2c_products 後，
- * 把 product.id 換成真的 UUID 再傳進去即可，TrackPageView／trackEvent 本身
- * 不需要改。
+ * `b2c_product_view` 現在會**帶上真的 product_id**——之前 fixture id（如
+ * "fx-05"）不是 UUID，C 的 POST /api/analytics/events 會用 isUuid() 拒絕，所以
+ * 先前刻意不帶；現在商品是正式 Supabase 資料、id 是真的 UUID 且存在於
+ * b2c_products，這個限制解除了，補回去。
+ *
+ * 2026-08-17（同日）：依使用者要求（附圖參考）：
+ * - 容器加寬到 max-w-5xl（跟 /products 的 1440px 不同，這裡是單一商品內容＋
+ *   推薦商品，不需要 /products 那麼寬，1024px 讓推薦商品的 4 欄網格跟主內容
+ *   都還算舒適）。
+ * - 原本「← 返回商品列表」換成路徑列（首頁 > 商品列表 > 分類 > 商品名稱，
+ *   見 src/components/Breadcrumb.tsx）；分類那一段現在連到新的
+ *   /products/categories/[slug]（同一批這次新增），不是 /products?category=。
+ * - 最下方加「推薦商品」（見 src/components/RecommendedProducts.tsx），資料來源
+ *   也改成查 Supabase 全部啟用商品，不是 fixture 陣列。
  */
 
 export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const supabase = await createClient();
+  const product = await getProductBySlug(supabase, slug);
 
   if (!product) {
     return { title: "找不到這項商品 | 元家" };
@@ -44,20 +52,38 @@ export default async function ProductDetailPage({
   params,
 }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const supabase = await createClient();
+  const product = await getProductBySlug(supabase, slug);
 
   if (!product) {
     notFound();
   }
 
-  return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-10 sm:px-8">
-      <Link href="/products" className="text-sm text-ink-600 hover:text-brand-ocean-700 hover:underline">
-        ← 返回商品列表
-      </Link>
+  const allProducts = await getAllActiveProducts(supabase);
+  const primaryCategory = product.categories.find((c) => c.isPrimary);
 
-      <TrackPageView eventName="b2c_product_view" />
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-5 py-10 sm:px-8 lg:px-10">
+      <Breadcrumb
+        segments={[
+          { label: "首頁", href: "/" },
+          { label: "商品列表", href: "/products" },
+          ...(primaryCategory
+            ? [
+                {
+                  label: primaryCategory.name,
+                  href: `/products/categories/${encodeURIComponent(primaryCategory.slug)}`,
+                },
+              ]
+            : []),
+          { label: product.name },
+        ]}
+      />
+
+      <TrackPageView eventName="b2c_product_view" productId={product.id} />
       <ProductDetail state={{ status: "ready", product }} />
+
+      <RecommendedProducts currentProduct={product} allProducts={allProducts} />
     </main>
   );
 }

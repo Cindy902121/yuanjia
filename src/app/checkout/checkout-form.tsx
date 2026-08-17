@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
-import { getProductBySlug } from "@/lib/fixtures/products";
+import type { CartItem } from "@/lib/cart/store";
+import { createClient } from "@/lib/supabase/client";
+import { getProductBySlug } from "@/lib/supabase/products";
+import type { ProductDetailData } from "@/lib/types/product";
 import { DEMO_MEMBER_PROFILE } from "@/lib/cart/demo-profile";
 import { trackEvent } from "@/lib/analytics/track";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
@@ -13,6 +16,14 @@ type SubmitState =
   | { status: "submitting" }
   | { status: "success"; orderId: string }
   | { status: "error"; message: string };
+
+interface PriceCheck {
+  item: CartItem;
+  current: ProductDetailData | null;
+  priceChanged: boolean;
+  nowOutOfStock: boolean;
+  noLongerAvailable: boolean;
+}
 
 const PAYMENT_METHODS = [
   { value: "cod", label: "貨到付款" },
@@ -34,8 +45,15 @@ const DELIVERY_METHODS = [
  *   這裡不重新發明驗證規則，前端驗證只是提早擋掉明顯錯誤，真正的權威驗證在伺服器。
  *
  * 2026-08-17：使用者要求「購物車保存加入時資料，但結帳時重新確認即時價格與庫存」
- * ——載入時逐一用 getProductBySlug() 重新查目前的 fixture 資料，跟購物車裡的
- * 快照比對；價格不同或現在缺貨會清楚提示，不會悄悄用舊資料送出。
+ * ——載入時逐一用 getProductBySlug() 重新查目前資料，跟購物車裡的快照比對；
+ * 價格不同或現在缺貨會清楚提示，不會悄悄用舊資料送出。
+ *
+ * 2026-08-17（同日，第二次調整）：查詢來源從本機 fixture 改成正式 Supabase
+ * （C 本週排程要求，見 src/lib/supabase/products.ts）。這裡是 Client Component
+ * （要處理表單送出狀態），沒辦法用 src/lib/supabase/server.ts 那個伺服器端
+ * client，改用 src/lib/supabase/client.ts 的瀏覽器端 client——一樣是公開唯讀
+ * 查 active 商品，走同一套 RLS 政策，不需要任何權限升級。因為查詢變成非同步，
+ * 原本的 useMemo 換成 useEffect + useState。
  *
  * 2026-08-17（同日）：依使用者要求擴充版面，三件事跟 b2c_orders 資料表（FDD §4.7：
  * 只存 id/status/收件人姓名/電話/Email/地址/隱私同意時間）完全對不上，已經跟
@@ -53,11 +71,9 @@ const DELIVERY_METHODS = [
  * 版面依使用者要求分兩欄：左欄商品明細／優惠券／備註，右欄收件資訊／付款／
  * 寄送／費用小計／送出，送出按鈕在右欄最下方靠右。
  *
- * 已知限制（跟使用者確認過，這次不處理）：目前 /products 系列頁面用的還是本機
- * fixture（id 像 "fx-01"），不是 Supabase 裡真的 UUID；mock-orders API 會用
- * isUuid() 檢查並要求商品在 b2c_products 表裡真的存在且啟用，所以這裡送出一定
- * 會拿到伺服器的 400 錯誤（「訂單只能包含目前啟用的 B2C 商品」）。這不是這支
- * 表單寫錯，是整個網站目前都還沒接上真正的 Supabase 商品資料；錯誤狀態本身
+ * 2026-08-17（同日，第三次調整）：上面這段「已知限制」已經解除——/products
+ * 系列頁面改接正式 Supabase 後，購物車裡的 productId 是真的 UUID、真的存在於
+ * b2c_products，送出應該可以真的成功建立展示訂單，不會再固定拿到 400。錯誤狀態
  * 會正確顯示伺服器回傳的訊息，符合 FDD §11.5「API 錯誤有明確訊息」的驗收標準。
  */
 export function CheckoutForm() {
@@ -83,20 +99,35 @@ export function CheckoutForm() {
   const shippingFee = DELIVERY_METHODS.find((m) => m.value === deliveryMethod)?.fee ?? 0;
   const grandTotal = totalPrice + shippingFee;
 
-  const priceChecks = useMemo(
-    () =>
-      items.map((item) => {
-        const current = getProductBySlug(item.slug);
-        return {
-          item,
-          current,
-          priceChanged: current ? current.price !== item.price : false,
-          nowOutOfStock: current ? current.inventoryStatus === "out_of_stock" : false,
-          noLongerAvailable: !current,
-        };
-      }),
-    [items],
-  );
+  const [priceChecks, setPriceChecks] = useState<PriceCheck[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPriceChecks() {
+      const supabase = createClient();
+      const results = await Promise.all(
+        items.map(async (item) => {
+          const current = await getProductBySlug(supabase, item.slug);
+          return {
+            item,
+            current,
+            priceChanged: current ? current.price !== item.price : false,
+            nowOutOfStock: current ? current.inventoryStatus === "out_of_stock" : false,
+            noLongerAvailable: !current,
+          };
+        }),
+      );
+      if (!cancelled) {
+        setPriceChecks(results);
+      }
+    }
+
+    loadPriceChecks();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
 
   const hasBlockingIssue = priceChecks.some(
     (check) => check.nowOutOfStock || check.noLongerAvailable,

@@ -47,13 +47,19 @@ interface ProductCardProps {
  * 跟詳情頁都要放，見 src/components/AddToCartButton.tsx）。按鈕跟標籤一樣需要
  * relative z-10 疊在 stretched-link 之上，不然點擊會被卡片整體的連結吃掉、變成
  * 導向商品詳情頁而不是加入購物車。
+ *
+ * 2026-08-17（同日）：拿掉卡片的實線邊框（使用者要求「透明的畫」的觀感）。第一版
+ * 保留一層極淡的靜態陰影撐住邊界；使用者看過參考圖後要求更乾淨、完全沒有邊界感，
+ * 這裡把靜態陰影也拿掉，卡片在靜止狀態完全靠 grid 的間距（gap-4）跟頁面留白分隔，
+ * hover 時才出現陰影＋輕微上浮，當作「這是可以點的」的互動提示，不是恆常存在的
+ * 視覺邊界。
  */
 export function ProductCard({ product, maxVisibleTags = 3 }: ProductCardProps) {
   const visibleTags = product.tags.slice(0, maxVisibleTags);
   const hiddenTagCount = product.tags.length - visibleTags.length;
 
   return (
-    <li className="group relative rounded-2xl border border-border-subtle bg-surface-white p-4 transition duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_8px_20px_rgba(23,36,42,0.08)]">
+    <li className="group relative rounded-2xl bg-surface-white p-4 transition duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_8px_20px_rgba(23,36,42,0.1)]">
       <div
         aria-hidden="true"
         className="mb-3 flex aspect-[4/3] items-center justify-center rounded-xl bg-surface-warm text-xs text-ink-600"

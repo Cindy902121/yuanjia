@@ -72,6 +72,14 @@ export interface ProductCardData {
   inventoryStatus: InventoryStatus;
   coverImage: ProductImageRef | null;
   tags: ProductTagRef[];
+  /**
+   * 2026-08-17：新增，給 /products 頁面上方「當季主打商品」banner 用（使用者要求）。
+   * 對應正式 schema 已經規劃好的 b2c_products.is_featured（見
+   * docs/supabase-schema-alignment.md，該 migration 還沒套用到正式資料庫），這裡
+   * 先在 fixture／型別加上同名概念，之後接 Supabase 時欄位語意直接沿用，不用改
+   * 元件。可選（optional），沒特別標記的商品視為 false。
+   */
+  isFeatured?: boolean;
 }
 
 /** 商品詳情頁使用；擴充卡片欄位。 */
@@ -138,6 +146,18 @@ export function toCardData(product: ProductDetailData): ProductCardData {
     inventoryStatus,
     coverImage,
     tags,
+    isFeatured,
   } = product;
-  return { id, slug, name, price, currency, shortDescription, inventoryStatus, coverImage, tags };
+  return {
+    id,
+    slug,
+    name,
+    price,
+    currency,
+    shortDescription,
+    inventoryStatus,
+    coverImage,
+    tags,
+    isFeatured,
+  };
 }

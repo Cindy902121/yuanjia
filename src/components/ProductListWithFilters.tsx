@@ -4,11 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { sortByAvailability, toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
-import type { ProductCategoryOption } from "@/lib/fixtures/categories";
 import { trackEvent } from "@/lib/analytics/track";
 
 /** 篩選條件變動後，等使用者停手多久才送出 b2c_search_category，避免每個按鍵／點擊都送一次。 */
 const SEARCH_EVENT_DEBOUNCE_MS = 500;
+
+/**
+ * 2026-08-17：從 fixtures/categories.ts 的 ProductCategoryOption（有 sortOrder）
+ * 改成這個更簡單的形狀——分類現在改用 src/lib/supabase/products.ts 的
+ * getDistinctCategories() 動態查詢正式資料庫目前有哪些分類值，不是固定清單，
+ * 沒有穩定的人工排序可用，改用名稱字母排序（已經在查詢層排好）。
+ */
+interface ProductCategoryOption {
+  slug: string;
+  name: string;
+}
 
 interface ProductListWithFiltersProps {
   products: ProductDetailData[];
@@ -187,7 +197,7 @@ export function ProductListWithFilters({
             無符合商品
           </p>
         ) : (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((product) => (
               <ProductCard key={product.id} product={toCardData(product)} />
             ))}
