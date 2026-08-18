@@ -5,6 +5,9 @@ type CatalogTables = {
   relationTable: "b2c_product_tags" | "b2b_product_tags";
 };
 
+const B2B_SPEC_OPTION_FIELDS =
+  "id, product_id, option_code, specification_text, packaging_text, is_active, display_order";
+
 export async function findProductIdsByTags(
   client: SupabaseClient,
   tables: CatalogTables,
@@ -100,5 +103,39 @@ export async function attachProductTags(
   return products.map((product) => ({
     ...product,
     tags: tagsByProduct.get(product.id) ?? [],
+  }));
+}
+
+export async function attachB2bProductSpecOptions<T extends { id: string }>(
+  client: SupabaseClient,
+  products: T[],
+) {
+  if (products.length === 0) {
+    return [];
+  }
+
+  const productIds = products.map((product) => product.id);
+  const { data: options, error } = await client
+    .from("b2b_product_spec_options")
+    .select(B2B_SPEC_OPTION_FIELDS)
+    .in("product_id", productIds)
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+    .order("option_code", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const optionsByProduct = new Map<string, unknown[]>();
+  for (const option of options ?? []) {
+    const current = optionsByProduct.get(option.product_id) ?? [];
+    current.push(option);
+    optionsByProduct.set(option.product_id, current);
+  }
+
+  return products.map((product) => ({
+    ...product,
+    specification_options: optionsByProduct.get(product.id) ?? [],
   }));
 }
