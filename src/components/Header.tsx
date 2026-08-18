@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
+import { CartDrawer } from "@/components/CartDrawer";
 
 /**
  * 全站導覽列，掛在 root layout，所有頁面都會顯示（見 8/11–8/12 任務「首頁基本區塊與導覽」）。
@@ -23,12 +25,33 @@ import { logout } from "@/lib/actions/auth";
  * - 註冊功能不需要：PRD 3.2 明確排除「正式會員註冊」，AUTH-02 也明確排除 B2B 自助註冊，
  *   兩邊都是固定展示帳號／管理者建立帳號，不是使用者自己註冊。
  *
- * 提醒：/login 目前是 teal／slate 配色，跟這裡以及其他 B2C 頁面維持的中性灰階不同——
- * 這是預期中的暫時不一致（兩邊分屬不同工作分工，尚未統一視覺設計），不是這次要處理
- * 的範圍，先留意，之後統一套用設計時一起處理。
+ * 2026-08-14：套用 design.md §5.2／§5.3 品牌色彩與字體，跟 B 的 /login 對齊。
+ * 2026-08-14（同日）：依 design.md §6.1／§8 Phase 1 再調整版面——72px 黏附式
+ * （sticky）Header、導覽項目改用錨點連結首頁的 ABOUT／QUALITY 區塊（見
+ * src/app/page.tsx 的 #about、#quality），「企業合作」改成 design.md §7.1 的
+ * Secondary 樣式（白底藍框）、「會員登入／登出」改成小按鈕而不是純文字連結，
+ * 視覺上更接近 §6.1 的規格。
  *
- * 響應式細節（手機版漢堡選單等）排在 8/16 任務再處理，現在先用 flex-wrap 讓小螢幕
- * 自動換行，不至於無法使用。
+ * 範圍說明：
+ * - design.md §6.1 的完整規格還包含 mega menu（商品分類）、搜尋框、購物車圖示；
+ *   這裡沒有做——mega menu 需要分類頁面（目前只有 /products 一頁＋前端篩選，
+ *   沒有 /products/categories/[slug]），搜尋已經在 /products 頁面內可用，
+ *   Header 再放一個不會動作的搜尋框會變成假的互動元素，所以不加。這兩項留待
+ *   之後真的有對應功能／頁面時再補。
+ * - 手機版漢堡選單排在 8/16 任務再處理，現在仍用 flex-wrap 讓小螢幕自動換行，
+ *   不是 design.md §6.1 講的「保留 Logo、搜尋、購物車、選單」那種收合選單。
+ *
+ * 2026-08-14（同日）：Logo 換成元家官方圖檔（public/yens-logo.png，2026-08-14
+ * 抓自 yens.com.tw 官網 header 用的同一個檔案，389×135px；經使用者確認同意才下載
+ * ／套用）。原本純文字「元家」在白底 Header 上略顯單薄，換成官方 logo 圖片更接近
+ * 真實品牌識別。
+ *
+ * 2026-08-17：「購物車（即將推出）」換成真的入口，同一天改了兩次：
+ * 1. 先從直接連到 /cart 的 CartLink，改成點擊後彈出小型下拉預覽視窗的 CartMenu。
+ * 2. 使用者看了參考截圖後，改成右側滿版高度、附遮罩的抽屜——
+ *    src/components/CartDrawer.tsx（目前這個）。三版都是獨立 Client Component，
+ *    理由不變：Header 是 async Server Component，沒辦法直接用
+ *    localStorage／useSyncExternalStore。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -36,28 +59,54 @@ export async function Header() {
   const isLoggedIn = Boolean(data?.claims);
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+    <header className="sticky top-0 z-40 border-b border-border-subtle bg-surface-white">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4 sm:px-8 lg:h-[72px] lg:px-10 lg:py-0">
         <Link
           href="/"
-          className="text-base font-semibold text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-50"
+          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
         >
-          元家
+          <Image
+            src="/yens-logo.png"
+            alt="元家"
+            width={116}
+            height={40}
+            priority
+            style={{ width: "auto" }}
+            className="h-9 sm:h-10"
+          />
         </Link>
 
-        <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
           <Link
             href="/products"
-            className="text-zinc-600 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
+            className="text-ink-600 hover:text-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
           >
-            商品
+            商品分類
           </Link>
+          <a
+            href="/#quality"
+            className="text-ink-600 hover:text-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
+          >
+            食安與產地
+          </a>
+          <a
+            href="/#about"
+            className="text-ink-600 hover:text-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
+          >
+            關於元家
+          </a>
+        </nav>
+
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="rounded-lg border border-brand-ocean-700 px-3 py-1.5 text-xs font-semibold text-brand-ocean-700">
+            企業合作（即將推出）
+          </span>
 
           {isLoggedIn ? (
             <form action={logout}>
               <button
                 type="submit"
-                className="text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
+                className="rounded-lg border border-border-subtle px-3 py-1.5 text-xs font-semibold text-ink-900 hover:border-brand-ocean-700 hover:text-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
               >
                 登出
               </button>
@@ -65,15 +114,14 @@ export async function Header() {
           ) : (
             <Link
               href="/login"
-              className="text-zinc-600 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
+              className="rounded-lg border border-border-subtle px-3 py-1.5 text-xs font-semibold text-ink-900 hover:border-brand-ocean-700 hover:text-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
             >
               會員登入
             </Link>
           )}
 
-          <span className="text-zinc-400">企業合作（即將推出）</span>
-          <span className="text-zinc-400">購物車（即將推出）</span>
-        </nav>
+          <CartDrawer />
+        </div>
       </div>
     </header>
   );

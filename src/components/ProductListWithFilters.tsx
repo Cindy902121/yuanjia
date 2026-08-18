@@ -1,14 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
-import { toCardData } from "@/lib/types/product";
+import { sortByAvailability, toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
-import type { ProductCategoryOption } from "@/lib/fixtures/categories";
+import { trackEvent } from "@/lib/analytics/track";
+
+/** 篩選條件變動後，等使用者停手多久才送出 b2c_search_category，避免每個按鍵／點擊都送一次。 */
+const SEARCH_EVENT_DEBOUNCE_MS = 500;
+
+/**
+ * 2026-08-17：從 fixtures/categories.ts 的 ProductCategoryOption（有 sortOrder）
+ * 改成這個更簡單的形狀——分類現在改用 src/lib/supabase/products.ts 的
+ * getDistinctCategories() 動態查詢正式資料庫目前有哪些分類值，不是固定清單，
+ * 沒有穩定的人工排序可用，改用名稱字母排序（已經在查詢層排好）。
+ */
+interface ProductCategoryOption {
+  slug: string;
+  name: string;
+}
 
 interface ProductListWithFiltersProps {
   products: ProductDetailData[];
   categories: ProductCategoryOption[];
+  /** 從 /products?category=<slug> 帶進來的初始分類篩選（見 app/products/page.tsx）；可選。 */
+  initialCategorySlug?: string;
 }
 
 /** 標籤群組顯示順序；沒列到的群組（理論上不會發生）排在後面。 */
@@ -53,12 +69,30 @@ function collectTagGroups(products: ProductDetailData[]): [string, ProductTagRef
  * 每一個標籤，商品都要同時符合才會出現。目前純前端 Array.filter，接上 Supabase 後
  * 改成呼叫 /api/b2c/products?tags=... 這類查詢，UI 與這層 AND 邏輯不需要大改。
  *
- * TODO：之後接 b2c_search_category、b2c_search_no_result、b2c_filter_no_result
- * 事件（見 docs/B2C商品展示資料.md §9），目前這些事件都還沒有白名單／API 可送。
+ * 8/15：搜尋字串或篩選條件變動時，防抖動 500ms 後送出 b2c_search_category
+ * （見 src/lib/analytics）；只在有實際篩選條件時送，清空篩選不會另外觸發一次。
+ * b2c_search_no_result、b2c_filter_no_result 還沒加入 FDD 6.7 白名單，維持
+ * 待新增狀態（見 docs/B2C商品展示資料.md §9）。
+ *
+ * 2026-08-14：套用 design.md §5.2／§5.3 的品牌色彩與字體，跟 B 的 /login 對齊
+ * （token 見 src/app/globals.css）。已選取的篩選 chip 用海洋藍實心，呼應
+ * design.md §7.1 Primary 按鈕的用法。
+ *
+ * 2026-08-17：依使用者要求改版面——搜尋框跟篩選面板從商品網格上方移到左側欄，
+ * 桌面（lg 以上）用 sticky 固定在畫面上，上下捲動商品網格時篩選欄留在原地不
+ * 跟著跑；手機／平板螢幕太窄放不下側欄，維持原本堆疊在商品上方、不做 sticky
+ * （sticky 側欄在窄螢幕會佔掉太多可視高度，反而更難用）。sticky 的 top 值抓
+ * 96px，扣掉 Header 的 72px 高度後留一點呼吸空間，不會整個貼在 Header 下緣。
  */
-export function ProductListWithFilters({ products, categories }: ProductListWithFiltersProps) {
+export function ProductListWithFilters({
+  products,
+  categories,
+  initialCategorySlug,
+}: ProductListWithFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>([]);
+  const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>(
+    initialCategorySlug ? [initialCategorySlug] : [],
+  );
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
 
   const tagGroups = useMemo(() => collectTagGroups(products), [products]);
@@ -66,7 +100,7 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    return products.filter((product) => {
+    const matched = products.filter((product) => {
       const matchesSearch = term.length === 0 || product.name.toLowerCase().includes(term);
       const matchesCategories = selectedCategorySlugs.every((slug) =>
         product.categories.some((category) => category.slug === slug),
@@ -76,10 +110,23 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
       );
       return matchesSearch && matchesCategories && matchesTags;
     });
+    // 缺貨商品排到最後（2026-08-17 使用者要求），見 sortByAvailability 的說明。
+    return sortByAvailability(matched);
   }, [products, searchTerm, selectedCategorySlugs, selectedTagSlugs]);
 
   const hasActiveFilters =
     searchTerm.length > 0 || selectedCategorySlugs.length > 0 || selectedTagSlugs.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveFilters) {
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      trackEvent({ event_name: "b2c_search_category" });
+    }, SEARCH_EVENT_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedCategorySlugs, selectedTagSlugs, hasActiveFilters]);
 
   function clearFilters() {
     setSearchTerm("");
@@ -88,8 +135,9 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+      {/* 左側篩選欄：桌面 sticky 固定在畫面上，商品網格上下捲動時不會跟著跑。 */}
+      <aside className="flex w-full flex-col gap-4 rounded-2xl border border-border-subtle bg-surface-white p-4 sm:p-6 lg:sticky lg:top-24 lg:w-72 lg:shrink-0">
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"
@@ -97,13 +145,13 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="搜尋商品名稱"
             aria-label="搜尋商品名稱"
-            className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-zinc-700"
+            className="flex-1 rounded-md border border-border-subtle px-3 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-600 focus:border-brand-ocean-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
           />
           {hasActiveFilters ? (
             <button
               type="button"
               onClick={clearFilters}
-              className="text-xs font-medium text-zinc-500 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="text-xs font-medium text-ink-600 underline-offset-2 hover:text-brand-ocean-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
             >
               清除篩選
             </button>
@@ -135,33 +183,41 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
             ))}
           </FilterGroup>
         ))}
-      </div>
+      </aside>
 
-      <p className="text-xs text-zinc-500" aria-live="polite">
-        {hasActiveFilters ? `已套用篩選，符合 ${filtered.length} 筆商品` : `顯示全部 ${filtered.length} 筆商品`}
-      </p>
-
-      {filtered.length === 0 ? (
-        // 對應 PRD「無符合商品」規則——關鍵字搜尋、分類篩選、標籤篩選任何組合造成 0 筆，文案統一。
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
-          無符合商品
+      {/* 右側商品網格。 */}
+      <div className="flex flex-1 flex-col gap-4">
+        <p className="text-xs text-ink-600" aria-live="polite">
+          {hasActiveFilters ? `已套用篩選，符合 ${filtered.length} 筆商品` : `顯示全部 ${filtered.length} 筆商品`}
         </p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={toCardData(product)} />
-          ))}
-        </ul>
-      )}
+
+        {filtered.length === 0 ? (
+          // 對應 PRD「無符合商品」規則——關鍵字搜尋、分類篩選、標籤篩選任何組合造成 0 筆，文案統一。
+          <p className="rounded-lg border border-dashed border-border-subtle p-8 text-center text-sm text-ink-600">
+            無符合商品
+          </p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={toCardData(product)} />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
+/**
+ * 2026-08-17：標籤跟 chip 從左右並排改成上下堆疊——原本是設計給滿版寬度的篩選面板，
+ * 現在篩選欄縮到側欄只有 18rem 寬（見上面 <aside>），並排在窄欄位裡容易被擠壓
+ * 換行換得很亂，堆疊起來在窄欄位比較好讀。
+ */
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
-      <span className="mt-1 w-16 shrink-0 text-xs font-medium text-zinc-500">{label}</span>
-      <div className="flex flex-1 flex-wrap gap-2" role="group" aria-label={`依${label}篩選`}>
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium text-ink-600">{label}</span>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={`依${label}篩選`}>
         {children}
       </div>
     </div>
@@ -184,8 +240,8 @@ function FilterChip({
       aria-pressed={active}
       className={
         active
-          ? "rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-zinc-50 dark:text-zinc-900"
-          : "rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          ? "rounded-full bg-brand-ocean-700 px-3 py-1 text-xs font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
+          : "rounded-full bg-brand-ocean-050 px-3 py-1 text-xs text-brand-ocean-800 hover:bg-brand-ocean-700/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ocean-700"
       }
     >
       {children}
