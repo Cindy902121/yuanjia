@@ -1,6 +1,10 @@
 import { apiError, json } from "@/lib/api";
 import { getB2bContext } from "@/lib/auth-context";
-import { attachProductTags, findProductIdsByTags } from "@/lib/catalog";
+import {
+  attachB2bProductSpecOptions,
+  attachProductTags,
+  findProductIdsByTags,
+} from "@/lib/catalog";
 import {
   B2B_FINDER_CONDITIONS,
   parseFinderConditions,
@@ -73,10 +77,14 @@ export async function GET(request: Request) {
       { tagTable: "b2b_tags", relationTable: "b2b_product_tags" },
       products ?? [],
     );
+    const productsWithTagsAndOptions = await attachB2bProductSpecOptions(
+      context.supabase,
+      productsWithTags,
+    );
 
     return json({
       conditions: conditions.map(({ key }) => key),
-      products: productsWithTags,
+      products: productsWithTagsAndOptions,
     });
   } catch {
     return apiError("目前無法執行 B2B 需求篩選。", 503);
