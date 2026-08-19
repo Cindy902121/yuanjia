@@ -6,6 +6,8 @@ import { ProductDetail } from "@/components/ProductDetail";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { RecommendedProducts } from "@/components/RecommendedProducts";
+import { buildOpenGraph, canonicalFor, SITE_URL } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
 /**
  * /products/[slug] 頁面。
@@ -31,6 +33,12 @@ import { RecommendedProducts } from "@/components/RecommendedProducts";
  *   也改成查 Supabase 全部啟用商品，不是 fixture 陣列。
  */
 
+/**
+ * 2026-08-18：openGraph.images 優先用商品自己的照片（目前只有 5 筆真實商品有，見
+ * src/lib/product-photos.ts）——分享具體商品連結時應該看到那個商品本身的照片，
+ * 不是全站通用圖。沒有照片的商品（coverImage 為 null）才退回
+ * products-banner.jpg，不是完全不設定 og:image（分享出去總比什麼圖都沒有好）。
+ */
 export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
@@ -42,9 +50,21 @@ export async function generateMetadata({
     return { title: "找不到這項商品 | 元家" };
   }
 
+  const title = `${product.name} | 元家`;
+  const ogImage = product.coverImage
+    ? { url: product.coverImage.url, alt: product.coverImage.alt }
+    : { url: "/products-banner.jpg", width: 1920, height: 380, alt: product.name };
+
   return {
-    title: `${product.name} | 元家`,
+    title,
     description: product.shortDescription,
+    alternates: canonicalFor(`/products/${product.slug}`),
+    openGraph: buildOpenGraph({
+      title,
+      description: product.shortDescription,
+      url: `/products/${product.slug}`,
+      images: [ogImage],
+    }),
   };
 }
 
@@ -62,23 +82,67 @@ export default async function ProductDetailPage({
   const allProducts = await getAllActiveProducts(supabase);
   const primaryCategory = product.categories.find((c) => c.isPrimary);
 
+  const breadcrumbSegments = [
+    { label: "首頁", href: "/" },
+    { label: "商品列表", href: "/products" },
+    ...(primaryCategory
+      ? [
+          {
+            label: primaryCategory.name,
+            href: `/products/categories/${encodeURIComponent(primaryCategory.slug)}`,
+          },
+        ]
+      : []),
+    { label: product.name },
+  ];
+
+  /**
+   * 2026-08-18：Product／BreadcrumbList 結構化資料（使用者要求「SEO 技術基礎」）。
+   * Product 的 offers 直接用資料庫真實的 price／inventoryStatus——頁面上本來就
+   * 顯示「本網站商品資訊為 MVP 展示資料」的揭露文字（見 ProductDetail.tsx），
+   * 結構化資料標記的是資料庫當下真的存在的值，不是另外編造，跟頁面顯示的內容
+   * 一致。
+   *
+   * BreadcrumbList 直接沿用上面同一份 breadcrumbSegments（跟畫面上的路徑列
+   * 是同一份資料），避免結構化資料跟實際畫面顯示的路徑不一致。
+   */
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.shortDescription,
+    sku: product.id,
+    ...(product.coverImage ? { image: [`${SITE_URL}${product.coverImage.url}`] } : {}),
+    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/products/${product.slug}`,
+      priceCurrency: product.currency,
+      price: product.price,
+      availability:
+        product.inventoryStatus === "in_stock"
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbSegments.map((segment, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: segment.label,
+      ...(segment.href ? { item: `${SITE_URL}${segment.href}` } : {}),
+    })),
+  };
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-5 py-10 sm:px-8 lg:px-10">
-      <Breadcrumb
-        segments={[
-          { label: "首頁", href: "/" },
-          { label: "商品列表", href: "/products" },
-          ...(primaryCategory
-            ? [
-                {
-                  label: primaryCategory.name,
-                  href: `/products/categories/${encodeURIComponent(primaryCategory.slug)}`,
-                },
-              ]
-            : []),
-          { label: product.name },
-        ]}
-      />
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+
+      <Breadcrumb segments={breadcrumbSegments} />
 
       <TrackPageView eventName="b2c_product_view" productId={product.id} />
       <ProductDetail state={{ status: "ready", product }} />

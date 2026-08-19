@@ -3,10 +3,27 @@ import { createClient } from "@/lib/supabase/server";
 import { getAllActiveProducts, getDistinctCategories } from "@/lib/supabase/products";
 import { ProductListWithFilters } from "@/components/ProductListWithFilters";
 import { FeaturedProductsBanner } from "@/components/FeaturedProductsBanner";
+import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 
+const TITLE = "商品列表 | 元家";
+const DESCRIPTION = "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。";
+
+/**
+ * 2026-08-18：canonical 固定指回 "/products"（不管 ?category= 查詢字串是什麼）
+ * ——這裡的 metadata 是靜態匯出，本來就不會因為 query string 不同而變，等於
+ * 已經自動避開「/products?category=X」跟「/products/categories/[slug]」的重複
+ * 內容問題（兩者內容幾乎一樣），不需要額外判斷。
+ */
 export const metadata: Metadata = {
-  title: "商品列表 | 元家",
-  description: "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: canonicalFor("/products"),
+  openGraph: buildOpenGraph({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/products",
+    images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: "元家嚴選當季鮮味" }],
+  }),
 };
 
 /**

@@ -3,10 +3,57 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getDistinctCategories } from "@/lib/supabase/products";
+import { buildOpenGraph, canonicalFor, SITE_URL } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
+const TITLE = "元家｜新鮮海鮮與調理食品";
+const DESCRIPTION = "元家精選冷凍海鮮與調理食品，從商品列表開始探索。";
+
+/**
+ * 2026-08-18：Organization 結構化資料（使用者要求「SEO 技術基礎」），只放首頁
+ * 一份（慣例做法，不是每一頁都重複放）。公司全名／地址／電話／社群連結都直接
+ * 取自 Footer.tsx 已經在用的同一批真實資料（見 src/components/Footer.tsx，
+ * 來源 yens.com.tw 公開聯絡資訊），不是另外編一份。
+ */
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "元家企業股份有限公司",
+  alternateName: "YEN & Brothers Enterprise CO., LTD.",
+  url: SITE_URL,
+  logo: `${SITE_URL}/yens-logo.png`,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "新北大道二段 217 號 14 樓",
+    addressLocality: "新莊區",
+    addressRegion: "新北市",
+    postalCode: "242",
+    addressCountry: "TW",
+  },
+  telephone: "+886-2-8521-1230",
+  sameAs: [
+    "https://www.youtube.com/@yensseafood",
+    "https://www.facebook.com/yensseafood",
+    "https://www.instagram.com/yensseafood",
+    "https://www.tiktok.com/@yensseafood",
+  ],
+};
+
+/**
+ * 2026-08-18：openGraph.url 用絕對路徑 "/"——跟 root layout 的預設值幾乎一樣
+ * （首頁本來就是全站分享時最常見的入口），仍然明講一次是為了讓這裡自己是
+ * 一份完整、不用回頭看 layout.tsx 才看得懂的設定，跟其他頁面的寫法一致。
+ */
 export const metadata: Metadata = {
-  title: "元家｜新鮮海鮮與調理食品",
-  description: "元家精選冷凍海鮮與調理食品，從商品列表開始探索。",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: canonicalFor("/"),
+  openGraph: buildOpenGraph({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/",
+    images: [{ url: "/hero-seafood.jpg", width: 970, height: 980, alt: "元家精選海鮮" }],
+  }),
 };
 
 /**
@@ -75,6 +122,8 @@ export default async function HomePage() {
 
   return (
     <main className="flex flex-1 flex-col">
+      <JsonLd data={organizationJsonLd} />
+
       {/* Hero：左邊深色品牌色塊放文字/CTA，右邊是元家官網真實照片（裁過，不含燒進圖片
           裡的文字，見上方檔案註解）。固定寬度分欄，不是滿版圖片配 object-position，
           原因同上。 */}

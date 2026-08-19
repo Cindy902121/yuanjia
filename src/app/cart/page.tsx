@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import { CartPageClient } from "./cart-page-client";
+import { buildOpenGraph, canonicalFor } from "@/lib/seo";
+
+const TITLE = "購物車 | 元家";
+const DESCRIPTION = "查看購物車內容，調整數量後前往結帳。";
 
 export const metadata: Metadata = {
-  title: "購物車 | 元家",
-  description: "查看購物車內容，調整數量後前往結帳。",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: canonicalFor("/cart"),
+  openGraph: buildOpenGraph({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/cart",
+    images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: "元家購物車" }],
+  }),
 };
 
 /**

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProductsByCategory } from "@/lib/supabase/products";
 import { sortByAvailability, toCardData } from "@/lib/types/product";
 import { ProductCard } from "@/components/ProductCard";
+import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 
 /**
  * /products/categories/[slug] 頁面（2026-08-17 新增，C 本週排程要求）。
@@ -24,10 +25,19 @@ export async function generateMetadata({
 }: PageProps<"/products/categories/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const categoryName = decodeURIComponent(slug);
+  const title = `${categoryName} 商品 | 元家`;
+  const description = `瀏覽所有分類為「${categoryName}」的元家商品。`;
 
   return {
-    title: `${categoryName} 商品 | 元家`,
-    description: `瀏覽所有分類為「${categoryName}」的元家商品。`,
+    title,
+    description,
+    alternates: canonicalFor(`/products/categories/${slug}`),
+    openGraph: buildOpenGraph({
+      title,
+      description,
+      url: `/products/categories/${slug}`,
+      images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: title }],
+    }),
   };
 }
 

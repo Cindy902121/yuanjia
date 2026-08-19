@@ -2,11 +2,49 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { B2CHelpWidget } from "@/components/B2CHelpWidget";
+import { buildOpenGraph, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
+const DEFAULT_TITLE = "元家｜新鮮海鮮與調理食品";
+const DEFAULT_DESCRIPTION =
+  "元家精選冷凍海鮮與調理食品，嚴選全球優質產地、通過品質把關，從商品列表開始探索。";
+
+/**
+ * 2026-08-18：補上 Open Graph／Twitter Card 預設值（使用者要求「SEO：頁面
+ * title／meta description／Open Graph」）。title／description 各頁原本就有
+ * （見各 page.tsx），這裡新增的是分享到 LINE／FB／X 等平台時會用到的
+ * og:title／og:description／og:image／twitter:card 這組資料，目前每一頁都沒有。
+ *
+ * 這裡只放「全站預設值」，各頁在自己的 metadata／generateMetadata 裡用
+ * src/lib/seo.ts 的 buildOpenGraph() 覆寫 openGraph 的 title／description／
+ * images，讓分享出去的卡片跟該頁實際內容一致（不是每一頁分享出去都顯示同一張圖、
+ * 同一段文字）。openGraph 這個 key 本身在 Next.js 是整份取代、不是逐欄位合併，
+ * 所以 type／locale／siteName 這三個全站固定值也內建進 buildOpenGraph()，
+ * 不會因為頁面自己覆寫 openGraph 就消失（見 buildOpenGraph() 檔頭說明）。
+ *
+ * 沒有另外做一張專門的 1200×630 OG 圖——目前只有 hero-seafood.jpg（真實首頁
+ * Banner 裁切版）能用，比例不是社群平台建議的 1.91:1，分享卡片會被平台置中
+ * 裁切，但內容是乾淨的海鮮擺拍照，裁切後不會出現破圖或缺文字的問題，先用這張，
+ * 之後有專門設計的 OG 圖再換掉即可。
+ *
+ * twitter.card 選 "summary_large_image"——X／Twitter 的爬蟲在沒有另外設定
+ * twitter:title／twitter:description／twitter:image 時，會自動退回讀
+ * og:title／og:description／og:image（Twitter 自己文件記載的行為），所以這裡
+ * 不用在每一頁重複填一次 twitter 欄位，只要 openGraph 有正確覆寫就夠了。
+ */
 export const metadata: Metadata = {
-  title: "元家",
-  description: "元家精選冷凍海鮮與調理食品。",
+  metadataBase: new URL(SITE_URL),
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
+  openGraph: buildOpenGraph({
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: "/",
+    images: [{ url: "/hero-seafood.jpg", width: 970, height: 980, alt: "元家精選海鮮" }],
+  }),
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 /**

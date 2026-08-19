@@ -5,6 +5,7 @@ import { getProductsByTagSlug, getTagBySlug } from "@/lib/supabase/products";
 import { sortByAvailability, toCardData } from "@/lib/types/product";
 import { ProductCard } from "@/components/ProductCard";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
+import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 
 /**
  * /products/tags/[slug] 頁面。
@@ -25,10 +26,19 @@ export async function generateMetadata({
   const supabase = await createClient();
   const tag = await getTagBySlug(supabase, slug);
   const tagName = tag?.name ?? slug;
+  const title = `${tagName} 商品 | 元家`;
+  const description = `瀏覽所有標籤為「${tagName}」的元家商品。`;
 
   return {
-    title: `${tagName} 商品 | 元家`,
-    description: `瀏覽所有標籤為「${tagName}」的元家商品。`,
+    title,
+    description,
+    alternates: canonicalFor(`/products/tags/${slug}`),
+    openGraph: buildOpenGraph({
+      title,
+      description,
+      url: `/products/tags/${slug}`,
+      images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: title }],
+    }),
   };
 }
 
