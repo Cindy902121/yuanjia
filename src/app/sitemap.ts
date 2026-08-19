@@ -21,6 +21,10 @@ import { SITE_URL } from "@/lib/seo";
  * 各自的 page.tsx），不應該出現在 sitemap 裡（sitemap 的用途是「這些頁面希望被
  * 索引」，放進本來就不給索引的頁面互相矛盾）。
  *
+ * 2026-08-18：補上 `/faq`、`/media`（新增的兩個 SEO 內容頁，見
+ * src/app/faq/page.tsx、src/app/media/page.tsx），這兩頁是靜態內容、不用另外
+ * 查 Supabase，直接寫進 staticEntries。
+ *
  * 沒有帶 `lastModified`——`b2c_products` 雖然有 `updated_at` 欄位，但目前查詢層
  * （B2C_PRODUCT_FIELDS）沒有選取它，為了這個次要欄位去擴充核心商品查詢的回傳
  * 型別（ProductDetailData）不划算，`lastModified` 本來就是可選欄位，先省略。
@@ -37,6 +41,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/products`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/media`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },
   ];
 

@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { B2CHelpWidget } from "@/components/B2CHelpWidget";
 import { buildOpenGraph, SITE_URL } from "@/lib/seo";
+import { editorialFontClassName } from "@/lib/editorial/fonts";
 import "./globals.css";
 
 const DEFAULT_TITLE = "元家｜新鮮海鮮與調理食品";
@@ -74,11 +75,30 @@ export const metadata: Metadata = {
  * 標記——globals.css 有設定 `scroll-behavior: smooth`（給 Header 錨點連結用），
  * Next 偵測到這個 CSS 設定但沒看到這個屬性時會印警告，怕它跟路由切換的捲動
  * 還原互相干擾；加上這個屬性等於明確告訴 Next「這是刻意的」。
+ *
+ * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風（原本只在 /design-preview/*
+ * 底下的提案），正式取代 design.md 舊有的「海洋藍＋鮮活綠」系統，套用到全站，
+ * 包含 Header／Footer。`editorialFontClassName`（見 src/lib/editorial/fonts.ts）
+ * 掛在 `<html>` 上，讓 `var(--ep-font-serif)`／`var(--ep-font-sans)`／
+ * `var(--ep-font-en)` 這三個 CSS 變數全站都能用，不用每個頁面自己重新載入一次
+ * 字體。`<body>` 的背景／文字色改用編輯風的暖白／墨色（跟舊的
+ * `bg-surface-warm`／`text-ink-900` 很接近，視覺上不會突兀），字體改成編輯風
+ * 內文字體。
+ *
+ * `src/app/globals.css` 裡 design.md 時期定義的 `@theme` token（`ink-900`、
+ * `surface-warm`、`brand-ocean-*` 等）**刻意沒有刪除**——`/products/tags/[slug]`、
+ * `/products/categories/[slug]`、`/cart`、`/checkout`、`/login`、
+ * `B2CHelpWidget` 這幾個還沒重新設計，繼續依賴這些 token，見各自檔案；等這些
+ * 頁面之後也改版了，才是真的可以清掉舊 token 的時候。
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="zh-Hant" data-scroll-behavior="smooth" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-surface-warm font-sans text-ink-900">
+    <html
+      lang="zh-Hant"
+      data-scroll-behavior="smooth"
+      className={`h-full antialiased ${editorialFontClassName}`}
+    >
+      <body className="flex min-h-full flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
         <Header />
         {children}
         <Footer />

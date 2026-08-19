@@ -18,10 +18,13 @@ export const metadata: Metadata = {
  * 這個檔案只負責 metadata（noindex 必須從 Server Component 設定）；實際表單
  * 邏輯在 checkout-form.tsx（要讀購物車 localStorage、處理送出狀態，一定要是
  * Client Component）。
+ *
+ * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
+ * 底色／字體，實際版面在 checkout-form.tsx。
  */
 export default function CheckoutPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-6 px-5 py-10 sm:px-8">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 bg-[#FAF9F6] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8 lg:py-20">
       <CheckoutForm />
     </main>
   );
