@@ -45,7 +45,14 @@ export function B2CHelpWidget() {
 
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const firstFocusRef = useRef<HTMLButtonElement>(null);
+  /**
+   * 型別修正（2026-08-19）：這個 ref 只有一處在用（下面「加 LINE 官方帳號詢問」
+   * 那個 <a> 標籤），原本誤標成 HTMLButtonElement，導致 tsc／production build
+   * 一直失敗（"RefObject<HTMLButtonElement | null>" 不能指派給 <a> 需要的
+   * "Ref<HTMLAnchorElement>"）。改成 HTMLAnchorElement 對應實際掛載的元素，
+   * `.focus()` 呼叫（第 79 行左右）兩種元素都有，不受影響。
+   */
+  const firstFocusRef = useRef<HTMLAnchorElement>(null);
 
   const isExcludedRoute = EXCLUDED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

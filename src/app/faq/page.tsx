@@ -62,11 +62,9 @@ function renderBlock(block: FaqAnswerBlock, key: number) {
         </thead>
         <tbody>
           {block.rows.map((row, rowIndex) => (
-            // eslint-disable-next-line react/no-array-index-key
             <tr key={rowIndex}>
               {row.map((cell, cellIndex) => (
                 <td
-                  // eslint-disable-next-line react/no-array-index-key
                   key={cellIndex}
                   className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#4a4a4a]"
                 >

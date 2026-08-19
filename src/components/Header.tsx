@@ -85,21 +85,21 @@ export async function Header() {
           <Link href="/products" className={navLinkClass}>
             商品分類
           </Link>
-          <a href="/#quality" className={navLinkClass}>
+          <Link href="/#quality" className={navLinkClass}>
             食安與產地
-          </a>
+          </Link>
           <div className="group relative">
-            <a href="/#about" className={navLinkClass}>
+            <Link href="/#about" className={navLinkClass}>
               關於元家
-            </a>
+            </Link>
             <div className="invisible absolute left-1/2 top-full z-10 w-40 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
               <div className="flex flex-col gap-1 border border-[#2b2b2b]/15 bg-[#FAF9F6] p-2 shadow-[0_8px_24px_rgba(43,43,43,0.1)]">
-                <a href="/#brand-story" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                <Link href="/#brand-story" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
                   品牌故事
-                </a>
-                <a href="/#advantages" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                </Link>
+                <Link href="/#advantages" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
                   企業優勢
-                </a>
+                </Link>
                 <Link href="/media" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
                   媒體報導
                 </Link>
