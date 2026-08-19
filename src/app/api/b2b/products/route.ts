@@ -1,6 +1,10 @@
 import { apiError, json, parseCsv } from "@/lib/api";
 import { getB2bContext } from "@/lib/auth-context";
-import { attachProductTags, findProductIdsByTags } from "@/lib/catalog";
+import {
+  attachB2bProductSpecOptions,
+  attachProductTags,
+  findProductIdsByTags,
+} from "@/lib/catalog";
 
 const B2B_PRODUCT_FIELDS =
   "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path";
@@ -69,8 +73,12 @@ export async function GET(request: Request) {
       { tagTable: "b2b_tags", relationTable: "b2b_product_tags" },
       products ?? [],
     );
+    const productsWithTagsAndOptions = await attachB2bProductSpecOptions(
+      context.supabase,
+      productsWithTags,
+    );
 
-    return json({ products: productsWithTags });
+    return json({ products: productsWithTagsAndOptions });
   } catch {
     return apiError("目前無法讀取 B2B 型錄。", 503);
   }

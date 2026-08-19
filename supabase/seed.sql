@@ -6,7 +6,9 @@
 -- 這份 seed 採非破壞性重跑策略：不刪除資料庫中額外存在的 row 或舊關聯；
 -- 每次執行只會補齊／更新下方展示鍵，並維持同一組展示資料可重複套用。
 --
--- 目前展示集包含 5 筆 B2C、8 筆 B2B、10／15 個標籤，
+-- B2B 展示客戶代碼範例：Z232113（20 萬以下）。
+-- 另外兩組測試代碼 E853699／W483038 由 optional fixture 提供。
+-- 目前展示集包含 5 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、10／15 個標籤，
 -- 以及 15／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
 -- 軟體類、肉類與調理食品。
 
@@ -15,16 +17,16 @@ begin;
 -- Auth identity 必須透過 Supabase Auth／Dashboard／管理 API 建立；這裡只保留
 -- 一個可供本地測試的公司資料列。若已有 auth_user_id，upsert 不會改動它。
 insert into public.companies (client_code, name, is_active)
-values ('B2B-TEST-001', '王品餐飲測試企業', true)
+values ('Z232113', '王品餐飲測試企業', true)
 on conflict (client_code) do update
 set name = excluded.name,
     is_active = true;
 
 insert into public.customer_prefix_rules (prefix, tier_label, channel_label, is_active)
 values
-  ('REST', 'A級', '餐飲', true),
-  ('RETL', 'B級', '零售', true),
-  ('CATE', 'C級', '團膳', true)
+  ('Z', '月營業額 20 萬以下', 'B2B', true),
+  ('E', '月營業額 50 萬以下', 'B2B', true),
+  ('W', '其他', 'B2B', true)
 on conflict (prefix) do update
 set tier_label = excluded.tier_label,
     channel_label = excluded.channel_label,
@@ -116,6 +118,35 @@ set name = excluded.name,
     storage_method = excluded.storage_method,
     description = excluded.description,
     is_active = excluded.is_active;
+
+-- B2B 規格選項以 option_code 作為穩定業務鍵，避免寫死 UUID。
+-- 「其他規格／其他包裝」是詢價時的客戶輸入，不建立固定 seed row。
+insert into public.b2b_product_spec_options (
+  product_id, option_code, specification_text, packaging_text, is_active, display_order
+)
+select product.id, option.option_code, option.specification_text, option.packaging_text,
+  option.is_active, option.display_order
+from (
+  values
+    ('B2B-FISH-001', 'B2B-FISH-001-200G', '200g／片', '20片／箱', true, 10),
+    ('B2B-FISH-001', 'B2B-FISH-001-300G', '300g／片', '16片／箱', true, 20),
+    ('B2B-FISH-001', 'B2B-FISH-001-500G', '500g／片', '8片／箱', true, 30),
+    ('B2B-FISH-002', 'B2B-FISH-002-DEFAULT', '450-550g／尾', '10尾／箱', true, 10),
+    ('B2B-SHRIMP-001', 'B2B-SHRIMP-001-DEFAULT', '31/40 規格', '10kg／箱', true, 10),
+    ('B2B-SHELL-001', 'B2B-SHELL-001-DEFAULT', '20/30 規格', '5kg／箱', true, 10),
+    ('B2B-FISH-003', 'B2B-FISH-003-DEFAULT', '120-150g／片', '10kg／箱', true, 10),
+    ('B2B-SOFT-001', 'B2B-SOFT-001-DEFAULT', '3-5cm／圈', '5kg／箱', true, 10),
+    ('B2B-MEAT-001', 'B2B-MEAT-001-DEFAULT', '2kg／包', '10kg／箱', true, 10),
+    ('B2B-PREP-001', 'B2B-PREP-001-DEFAULT', '30g／顆', '5kg／箱', true, 10)
+) as option(product_code, option_code, specification_text, packaging_text, is_active, display_order)
+join public.b2b_products product on product.product_code = option.product_code
+on conflict (option_code) do update
+set product_id = excluded.product_id,
+    specification_text = excluded.specification_text,
+    packaging_text = excluded.packaging_text,
+    is_active = excluded.is_active,
+    display_order = excluded.display_order,
+    updated_at = now();
 
 -- 以 product slug／product code + tag slug 查詢 UUID，不把不穩定 UUID 寫死。
 -- 關聯使用複合主鍵，重跑時只會保留一份。
