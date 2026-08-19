@@ -54,6 +54,11 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 包著 CartDrawer 的祖先元素都不能加這幾個屬性**，這裡已經拿掉
  * `backdrop-blur`，改用純色半透明背景（`bg-[#FAF9F6]`，這裡目前是不透明），
  * 視覺差異很小，換掉風險最低。
+ *
+ * 2026-08-19（同日，補上 /user 入口）：新增 src/app/user/page.tsx（會員中心，
+ * PRD 伸展項目）之後，發現全站沒有任何地方連得過去——原本登入後只有「登出」
+ * 按鈕，沒有連結。這裡在登入狀態的「登出」旁邊加一個「會員中心」文字連結
+ * （同樣用 navLinkClass，跟其他導覽字級一致），未登入狀態不受影響。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -115,14 +120,19 @@ export async function Header() {
           <span className="text-xs tracking-[0.1em] text-[#8a8a8a]">企業合作（即將推出）</span>
 
           {isLoggedIn ? (
-            <form action={logout}>
-              <button
-                type="submit"
-                className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
-              >
-                登出
-              </button>
-            </form>
+            <>
+              <Link href="/user" className={navLinkClass}>
+                會員中心
+              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
+                >
+                  登出
+                </button>
+              </form>
+            </>
           ) : (
             <Link
               href="/login"
