@@ -9,6 +9,7 @@ import {
   B2B_FINDER_CONDITIONS,
   parseFinderConditions,
 } from "@/lib/product-finder";
+import { attachProductImages } from "@/lib/product-images";
 
 const B2B_PRODUCT_FIELDS =
   "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path";
@@ -81,10 +82,15 @@ export async function GET(request: Request) {
       context.supabase,
       productsWithTags,
     );
+    const productsWithImages = await attachProductImages(
+      context.supabase,
+      "b2b",
+      productsWithTagsAndOptions,
+    );
 
     return json({
       conditions: conditions.map(({ key }) => key),
-      products: productsWithTagsAndOptions,
+      products: productsWithImages,
     });
   } catch {
     return apiError("目前無法執行 B2B 需求篩選。", 503);
