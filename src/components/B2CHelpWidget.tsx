@@ -15,6 +15,16 @@ const LINE_URL = "https://page.line.me/cdd6667c?openQrModal=true";
  * 這裡也一併排除，避免 B2B 使用者在登入頁看到消費者導購小工具。 */
 const EXCLUDED_PREFIXES = ["/login", "/business", "/admin"];
 
+/**
+ * 2026-08-19（建立 /business/lead 時發現）：`/business/lead`（企業合作展示
+ * 表單）雖然路徑開頭是 `/business`，但 FDD §7.2 明確把它列在「B2C 頁面」清單
+ * 裡，不是 B2B 私有型錄的一部分（見 src/app/business/lead/page.tsx 檔頭
+ * 說明）——上面的 `EXCLUDED_PREFIXES` 用「開頭是 /business 就排除」的寫法，
+ * 會連這個其實該顯示小工具的頁面也一起擋掉，這裡另外白名單排除，蓋過上面的
+ * 前綴規則。
+ */
+const B2C_EXCEPTION_PATHS = ["/business/lead"];
+
 type View = "menu" | "finder" | "ai";
 
 /**
@@ -51,9 +61,12 @@ export function B2CHelpWidget() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const firstFocusRef = useRef<HTMLAnchorElement>(null);
 
-  const isExcludedRoute = EXCLUDED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  const isB2cException = B2C_EXCEPTION_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+  const isExcludedRoute =
+    !isB2cException &&
+    EXCLUDED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   useEffect(() => {
     if (step < FINDER_STEPS.length) {

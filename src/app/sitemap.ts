@@ -30,6 +30,10 @@ import { SITE_URL } from "@/lib/seo";
  * `/login` 同一個理由，`/user` 的 metadata 設定 `robots: { index: false }`，
  * 是帳號相關頁面，不該出現在 sitemap 裡。
  *
+ * 2026-08-19（同日）：補上 `/business/lead`（企業合作展示表單，PRD 5.4／6.7
+ * 正式規格頁面，見 src/app/business/lead/page.tsx）——PRD 6.7 明確把它列在
+ * 可索引頁面清單裡，靜態內容，不用查 Supabase。
+ *
  * 沒有帶 `lastModified`——`b2c_products` 雖然有 `updated_at` 欄位，但目前查詢層
  * （B2C_PRODUCT_FIELDS）沒有選取它，為了這個次要欄位去擴充核心商品查詢的回傳
  * 型別（ProductDetailData）不划算，`lastModified` 本來就是可選欄位，先省略。
@@ -47,6 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/products`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/business/lead`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/media`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },

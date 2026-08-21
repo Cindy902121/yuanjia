@@ -7,8 +7,14 @@ import Link from "next/link";
  * 版面結構延續 design.md §6.5 的「四欄」規格（品牌／公司資料、商品探索、服務
  * 政策、企業合作與社群）；連結規則不變：
  * - 連到我們真的有的頁面用真連結；
- * - 我們還沒做的頁面（客戶服務、隱私權政策、企業合作）用不可點擊的「即將推出」
- *   文字，不連到不存在或外部網址，避免死連結／誤導。
+ * - 我們還沒做的頁面（客戶服務、隱私權政策）用不可點擊的「即將推出」文字，
+ *   不連到不存在或外部網址，避免死連結／誤導。「客戶服務」「隱私權政策」這
+ *   兩個查過 PRD／FDD／路由權限規格，確認都不是正式規格要求的頁面（唯一跟
+ *   隱私相關的規格是結帳頁的「隱私權同意」勾選欄位，不是獨立政策頁），繼續
+ *   維持佔位文字即可，不用排進開發進度。
+ *
+ * 2026-08-19：「企業合作」原本也是佔位文字，PRD 5.4／6.7 其實有明確規格
+ * （src/app/business/lead/page.tsx），頁面做好後這裡改成真連結。
  * - 社群連結（YouTube／Facebook／Instagram／TikTok）是元家官方帳號的真實外部
  *   網址（來源：yens.com.tw footer）。
  *
@@ -60,7 +66,7 @@ export function Footer() {
 
         <FooterColumn title="企業合作與社群">
           <FooterLink href="/media">媒體報導</FooterLink>
-          <FooterPlaceholder>企業合作（即將推出）</FooterPlaceholder>
+          <FooterLink href="/business/lead">企業合作</FooterLink>
           <div className="flex flex-wrap gap-4 pt-1 font-[family-name:var(--ep-font-en)] text-xs tracking-widest">
             <a
               href="https://www.youtube.com/@yensseafood"
