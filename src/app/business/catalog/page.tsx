@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import CatalogInquiryWorkspace from "./catalog-inquiry-workspace";
+import BusinessHeader from "./business-header";
 import CatalogJourneyPrototype from "./catalog-journey-prototype";
 import CatalogProcurementPrototype from "./catalog-procurement-prototype";
 import CatalogProcurementCompactPrototype from "./catalog-procurement-compact-prototype";
@@ -35,6 +36,18 @@ function groupTags(tags: B2BTag[]) {
     groups.set(tag.groupName, [...(groups.get(tag.groupName) ?? []), tag]);
     return groups;
   }, new Map());
+}
+
+const FDD_TAG_GROUP_ORDER = ["食材", "加工／規格", "用途", "保存／包裝"];
+
+function orderedTagGroups(tags: B2BTag[]) {
+  return [...groupTags(tags)].sort(([left], [right]) => {
+    const leftIndex = FDD_TAG_GROUP_ORDER.indexOf(left);
+    const rightIndex = FDD_TAG_GROUP_ORDER.indexOf(right);
+
+    return (leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex) - (rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex)
+      || left.localeCompare(right, "zh-Hant");
+  });
 }
 
 export default async function BusinessCatalogPage({ searchParams }: CatalogPageProps) {
@@ -77,12 +90,24 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
   const category = params.category ?? "";
   const brand = params.brand ?? "";
   const selectedTags = asSelectedTags(params.tag);
-  const tagGroups = groupTags(catalog.tags);
+  // A one-choice group cannot meaningfully narrow the catalog. Keep it
+  // accessible when already selected from a saved URL, but otherwise show
+  // only groups with a real choice. Product cards/detail still show storage
+  // and packaging as product attributes.
+  const tagGroups = orderedTagGroups(catalog.tags).filter(([groupName, tags]) => groupName !== "食材" && (tags.length > 1 || tags.some((tag) => selectedTags.includes(tag.slug))));
 
   const products = catalog.products.filter((product) => {
-    const searchable = [product.productCode, product.name, product.brand, product.category].join(" ").toLocaleLowerCase(
-      "zh-Hant",
-    );
+    const searchable = [
+      product.productCode,
+      product.name,
+      product.brand,
+      product.category,
+      product.specification,
+      product.packaging ?? "",
+      product.origin,
+      product.storageMethod,
+      ...product.tags.map((tag) => tag.name),
+    ].join(" ").toLocaleLowerCase("zh-Hant");
     const matchesKeyword = !keyword || searchable.includes(keyword);
     const matchesCategory = !category || product.category === category;
     const matchesBrand = !brand || product.brand === brand;
@@ -94,23 +119,25 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
 
   return (
     <main
-      className="min-h-screen bg-[#F7F6F2] text-[#17242A]"
+      className="min-h-screen bg-[#F7F4EE] text-[#17242A]"
       style={{ fontFamily: '"Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif' }}
     >
-      <header className="border-b border-[#D9E1E5] bg-white">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-5 py-5 sm:px-8">
-          <div>
-            <p className="text-xs font-bold tracking-[0.18em] text-[#005DAA]">YUANJIA BUSINESS</p>
-            <h1 className="mt-1 text-xl font-bold tracking-tight text-[#17242A]">企業型錄</h1>
-          </div>
-          <p className="hidden rounded-full border border-[#CFE3F0] bg-[#EAF5FB] px-3 py-1.5 text-sm font-medium text-[#00457F] sm:block">
-            {access.companyName}・企業帳戶
-          </p>
-        </div>
-      </header>
+      <BusinessHeader companyName={access.companyName} />
+
+      <section aria-labelledby="business-banner-title" className="border-b border-[#193C49] bg-[#102C37]">
+        <h1 className="sr-only" id="business-banner-title">企業型錄｜全球冷凍水產食材供應服務</h1>
+        <picture>
+          <source media="(max-width: 767px)" srcSet="/brand/yuanjia-banner-mobile.jpg" />
+          <img
+            alt="元家全球冷凍水產食材供應服務 Banner"
+            className="h-[300px] w-full object-cover object-center sm:h-[350px]"
+            src="/brand/yuanjia-banner.jpg"
+          />
+        </picture>
+      </section>
 
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-8 lg:grid-cols-[17rem_1fr] lg:px-8 lg:py-10">
-        <aside className="rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)] lg:sticky lg:top-6 lg:h-fit">
+        <aside className="self-start rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)]">
           <form
             className="space-y-6"
             key={[params.q ?? "", category, brand, ...selectedTags].join("|")}
@@ -130,7 +157,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
                 defaultValue={params.q ?? ""}
                 id="q"
                 name="q"
-                placeholder="名稱、品牌或產品編號"
+                placeholder="產品編號、品名、品牌、規格或包裝"
                 type="search"
               />
             </div>
@@ -173,9 +200,12 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
               <legend className="text-sm font-semibold text-[#17242A]">商品標籤</legend>
               <p className="mt-1 text-xs leading-5 text-[#536168]">同時勾選多個標籤時，僅顯示全部符合的商品。</p>
               <div className="mt-4 space-y-5">
-                {[...tagGroups].map(([groupName, tags]) => (
-                  <div key={groupName}>
-                    <p className="text-xs font-bold tracking-[0.08em] text-[#536168]">{groupName}</p>
+                {[...tagGroups].map(([groupName, tags], index) => (
+                  <details className="group border-b border-[#EEF2F3] pb-4 last:border-b-0 last:pb-0" key={groupName} open={index < 2 || tags.some((tag) => selectedTags.includes(tag.slug))}>
+                    <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold tracking-[0.08em] text-[#536168] marker:content-none">
+                      {groupName}
+                      <span aria-hidden="true" className="text-base font-normal text-[#005DAA] transition group-open:rotate-45">＋</span>
+                    </summary>
                     <div className="mt-2 space-y-2">
                       {tags.map((tag) => (
                         <label className="flex min-h-6 cursor-pointer items-center gap-2 text-sm text-[#536168]" key={tag.slug}>
@@ -190,7 +220,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
                         </label>
                       ))}
                     </div>
-                  </div>
+                  </details>
                 ))}
               </div>
             </fieldset>
@@ -213,13 +243,30 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         </aside>
 
         <section>
-          <div className="mb-6 rounded-2xl border border-[#CFE3F0] bg-[#EAF5FB] p-6 sm:flex sm:items-end sm:justify-between sm:gap-6">
+          <div className="mb-5 rounded-2xl border border-[#CFE3F0] bg-[#EAF5FB] p-6 sm:flex sm:items-end sm:justify-between sm:gap-6">
             <div>
               <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">BUSINESS CATALOG</p>
-              <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#17242A]">商品型錄</h2>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#17242A]">企業產品型錄</h2>
               <p className="mt-2 text-sm leading-6 text-[#00457F]">提供企業採購瀏覽規格、包裝、產地與保存資訊。</p>
             </div>
-            <p className="mt-4 shrink-0 text-sm font-semibold text-[#00457F] sm:mt-0">共 {products.length} 項商品</p>
+            <p className="mt-4 shrink-0 text-sm font-semibold text-[#00457F] sm:mt-0">符合條件 {products.length} 項商品</p>
+          </div>
+
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#D9E1E5] pb-4">
+            <div>
+              <p className="text-xs font-bold tracking-[0.14em] text-[#005DAA]">RESULTS</p>
+              <h3 className="mt-1 text-lg font-bold">符合條件的商品</h3>
+            </div>
+            {keyword || category || brand || selectedTags.length ? (
+              <div className="flex flex-wrap items-center justify-end gap-2 text-xs font-semibold text-[#536168]">
+                <span>已套用條件</span>
+                {keyword ? <span className="rounded-full bg-[#F1F5F7] px-2.5 py-1.5">「{params.q}」</span> : null}
+                {category ? <span className="rounded-full bg-[#EAF5FB] px-2.5 py-1.5 text-[#005DAA]">{category}</span> : null}
+                {brand ? <span className="rounded-full bg-[#EAF5FB] px-2.5 py-1.5 text-[#005DAA]">{brand}</span> : null}
+                {selectedTags.map((slug) => <span className="rounded-full bg-[#EAF5FB] px-2.5 py-1.5 text-[#005DAA]" key={slug}>{catalog.tags.find((tag) => tag.slug === slug)?.name ?? slug}</span>)}
+                <Link className="px-1 py-1.5 text-[#005DAA] underline underline-offset-2" href="/business/catalog">清除</Link>
+              </div>
+            ) : <p className="text-sm text-[#536168]">可用左側條件縮小結果。</p>}
           </div>
 
           {products.length ? <CatalogInquiryWorkspace products={products} /> : (

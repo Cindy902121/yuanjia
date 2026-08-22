@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { attachB2bProductSpecOptions, type B2BProductSpecOptionRow } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/server";
 
 export type B2BTag = {
@@ -6,6 +7,16 @@ export type B2BTag = {
   id: string;
   name: string;
   slug: string;
+};
+
+export type B2BSpecOption = {
+  displayOrder: number;
+  id: string;
+  isActive: boolean;
+  optionCode: string;
+  packagingText: string;
+  productId: string;
+  specificationText: string;
 };
 
 export type B2BProduct = {
@@ -19,6 +30,7 @@ export type B2BProduct = {
   packaging: string | null;
   productCode: string;
   specification: string;
+  specificationOptions: B2BSpecOption[];
   storageMethod: string;
   tags: B2BTag[];
 };
@@ -65,6 +77,7 @@ function toProduct(row: ProductRow): B2BProduct {
     packaging: row.packaging,
     productCode: row.product_code,
     specification: row.specification,
+    specificationOptions: [],
     storageMethod: row.storage_method,
     tags: row.b2b_product_tags
       .flatMap((relation) => relation.b2b_tags)
@@ -75,6 +88,18 @@ function toProduct(row: ProductRow): B2BProduct {
         name: tag.name,
         slug: tag.slug,
       })),
+  };
+}
+
+function toSpecOption(row: B2BProductSpecOptionRow): B2BSpecOption {
+  return {
+    displayOrder: row.display_order,
+    id: row.id,
+    isActive: row.is_active,
+    optionCode: row.option_code,
+    packagingText: row.packaging_text,
+    productId: row.product_id,
+    specificationText: row.specification_text,
   };
 }
 
@@ -100,7 +125,12 @@ export async function getB2BCatalogData(): Promise<B2BCatalogData> {
     throw new Error("Unable to load B2B catalog.");
   }
 
-  const products = (data as unknown as ProductRow[]).map(toProduct);
+  const baseProducts = (data as unknown as ProductRow[]).map(toProduct);
+  const productsWithOptions = await attachB2bProductSpecOptions(adminClient, baseProducts);
+  const products = productsWithOptions.map(({ specification_options, ...product }) => ({
+    ...product,
+    specificationOptions: specification_options.map(toSpecOption),
+  }));
   const tags = [...new Map(products.flatMap((product) => product.tags).map((tag) => [tag.slug, tag])).values()]
     .sort((a, b) => a.groupName.localeCompare(b.groupName) || a.name.localeCompare(b.name));
 
