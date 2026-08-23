@@ -59,6 +59,11 @@ import { CartDrawer } from "@/components/CartDrawer";
  * PRD 伸展項目）之後，發現全站沒有任何地方連得過去——原本登入後只有「登出」
  * 按鈕，沒有連結。這裡在登入狀態的「登出」旁邊加一個「會員中心」文字連結
  * （同樣用 navLinkClass，跟其他導覽字級一致），未登入狀態不受影響。
+ *
+ * 2026-08-19（同日，/business/lead 上線）：原本「企業合作（即將推出）」是純
+ * 文字、不可點擊——現在頁面做好了（見 src/app/business/lead/page.tsx，PRD
+ * 5.4／6.7 正式規格頁面，不是伸展項目），改成真的 `<Link>`，拿掉「即將推出」
+ * 字樣。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -117,7 +122,9 @@ export async function Header() {
         </nav>
 
         <div className="flex flex-wrap items-center gap-5 text-sm">
-          <span className="text-xs tracking-[0.1em] text-[#8a8a8a]">企業合作（即將推出）</span>
+          <Link href="/business/lead" className={`${navLinkClass} text-xs`}>
+            企業合作
+          </Link>
 
           {isLoggedIn ? (
             <>
