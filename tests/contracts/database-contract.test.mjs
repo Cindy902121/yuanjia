@@ -12,7 +12,7 @@ function read(relativePath) {
 }
 
 const seed = read("supabase/seed.sql");
-const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814020209_align_b2b_demo_catalog.sql");
+const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814032613_align_b2b_demo_catalog.sql");
 const databasePlan = read("docs/database-plan.md");
 const migrationFiles = readdirSync(migrationDir).filter((file) => file.endsWith(".sql"));
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));

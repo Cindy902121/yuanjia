@@ -1,43 +1,104 @@
+import Image from "next/image";
 import type { Metadata } from "next";
-import { ProductListWithFilters } from "@/components/ProductListWithFilters";
-import { getB2CCatalog } from "@/lib/b2c/catalog";
+import { createClient } from "@/lib/supabase/server";
+import { getAllActiveProducts, getDistinctCategories } from "@/lib/supabase/products";
+import { buildOpenGraph, canonicalFor } from "@/lib/seo";
+import { FadeInSection } from "@/components/editorial/FadeInSection";
+import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { EditorialProductList } from "@/components/editorial/ProductList";
+import { collectTagGroups } from "@/lib/editorial/tag-groups";
 
+const TITLE = "商品列表 | 元家";
+const DESCRIPTION = "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。";
+
+/**
+ * canonical 固定指回 "/products"（不管 ?category=／?tag= 查詢字串是什麼）——
+ * 這裡的 metadata 是靜態匯出，本來就不會因為 query string 不同而變，等於已經
+ * 自動避開「/products?category=X」跟「/products/categories/[slug]」的重複內容
+ * 問題，不需要額外判斷。
+ */
 export const metadata: Metadata = {
-  title: "商品列表 | 元家",
-  description: "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: canonicalFor("/products"),
+  openGraph: buildOpenGraph({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/products",
+    images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: "元家嚴選當季鮮味" }],
+  }),
 };
 
 /**
- * B2C /products 骨架頁。
+ * /products 頁面。
  *
- * TODO（接上 Supabase 後替換，見 docs/B2C商品展示資料.md §6～§9 與
- * docs/b2c-product-field-spec-v1.md）：
- * - 搜尋／分類篩選目前是純前端邏輯（見 ProductListWithFilters），還沒打 API；
- *   改依 ProductListState 處理 loading／error／empty／ready。
+ * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，正式取代舊版
+ * ProductListWithFilters＋FeaturedProductsBanner＋ProductCard 的組合，換成
+ * EditorialProductList（見 src/components/editorial/ProductList.tsx）。
+ *
+ * 篩選邏輯不變（搜尋、分類／標籤多選 AND），資料一樣查正式 Supabase；
+ * `?category=`／`?tag=` 查詢字串也接住（商品詳情頁的篩選連結會用這個導過來）。
+ *
+ * 舊版元件（ProductListWithFilters、ProductCard、FeaturedProductsBanner）
+ * **沒有刪除**——`/products/categories/[slug]`、`/products/tags/[slug]` 這兩個
+ * 還沒重新設計的頁面繼續沿用，等之後也改版了才會是真的可以清掉舊元件的時候。
  */
-export default async function ProductsPage() {
-  let catalog;
-  try {
-    catalog = await getB2CCatalog();
-  } catch {
-    return (
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">商品列表</h1>
-        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">目前無法讀取商品，請稍後再試。</p>
-      </main>
-    );
-  }
+export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
+  const params = await searchParams;
+  const supabase = await createClient();
+  const [products, categories] = await Promise.all([
+    getAllActiveProducts(supabase),
+    getDistinctCategories(supabase),
+  ]);
+
+  const categoryParam = typeof params.category === "string" ? params.category : undefined;
+  const initialCategorySlug = categories.some((category) => category.slug === categoryParam)
+    ? categoryParam
+    : undefined;
+
+  const tagParam = typeof params.tag === "string" ? params.tag : undefined;
+  const allTagSlugs = collectTagGroups(products).flatMap(([, tags]) => tags.map((tag) => tag.slug));
+  const initialTagSlug = allTagSlugs.includes(tagParam ?? "") ? tagParam : undefined;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">商品列表</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          目前顯示 Supabase MVP 商品資料（{catalog.products.length} 筆）。
-        </p>
-      </div>
+    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+      <EditorialStyles />
 
-      <ProductListWithFilters products={catalog.products} categories={catalog.categories} />
+      {/* Banner：跟首頁 hero 同樣的「滿版圖片＋白字疊層」手法。 */}
+      <section className="relative flex min-h-[280px] items-end overflow-hidden border-b border-[#e5e2da] lg:min-h-[360px]">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image src="/products-banner.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+        </div>
+        <FadeInSection className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 pb-12 pt-20 sm:px-8 lg:px-10">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-white/85">
+            SEASONAL
+          </span>
+          <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-white sm:text-4xl">
+            嚴選當季鮮味
+          </h1>
+        </FadeInSection>
+      </section>
+
+      <section>
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
+          <FadeInSection className="mb-14 flex flex-col gap-2">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+              MENU · 商品一覽
+            </span>
+            <p className="text-xs font-light text-[#8a8a8a]">
+              本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+            </p>
+          </FadeInSection>
+
+          <EditorialProductList
+            products={products}
+            categories={categories}
+            initialCategorySlug={initialCategorySlug}
+            initialTagSlug={initialTagSlug}
+          />
+        </div>
+      </section>
     </main>
   );
 }

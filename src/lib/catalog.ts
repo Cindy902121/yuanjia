@@ -8,16 +8,6 @@ type CatalogTables = {
 const B2B_SPEC_OPTION_FIELDS =
   "id, product_id, option_code, specification_text, packaging_text, is_active, display_order";
 
-export type B2BProductSpecOptionRow = {
-  display_order: number;
-  id: string;
-  is_active: boolean;
-  option_code: string;
-  packaging_text: string;
-  product_id: string;
-  specification_text: string;
-};
-
 export async function findProductIdsByTags(
   client: SupabaseClient,
   tables: CatalogTables,
@@ -137,10 +127,10 @@ export async function attachB2bProductSpecOptions<T extends { id: string }>(
     throw new Error(error.message);
   }
 
-  const optionsByProduct = new Map<string, B2BProductSpecOptionRow[]>();
+  const optionsByProduct = new Map<string, unknown[]>();
   for (const option of options ?? []) {
     const current = optionsByProduct.get(option.product_id) ?? [];
-    current.push(option as B2BProductSpecOptionRow);
+    current.push(option);
     optionsByProduct.set(option.product_id, current);
   }
 
