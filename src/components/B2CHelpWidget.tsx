@@ -76,8 +76,10 @@ export function B2CHelpWidget() {
       (key): key is string => Boolean(key) && key !== "any",
     );
 
+    // resultsLoading 已經在 selectAnswer()（使用者點擊送出最後一題答案的那個
+    // handler）裡設成 true，這裡不用也不應該再呼叫一次 setResultsLoading(true)
+    // ——effect 本身只負責非同步查詢與 cancelled 的競態保護。
     let cancelled = false;
-    setResultsLoading(true);
     findProductsByAnswers(selectedKeys).then((products) => {
       if (!cancelled) {
         setResults(products);
@@ -156,6 +158,13 @@ export function B2CHelpWidget() {
       setStep(step + 1);
     } else {
       trackEvent({ event_name: "b2c_product_finder_complete" });
+      // 在這裡（使用者點擊的 event handler）就先切成 loading，而不是放在下面
+      // 監看 step 變化的 useEffect 裡同步呼叫 setState——後者會被
+      // react-hooks/set-state-in-effect 判定為「effect 內同步 setState 可能
+      // 引發連鎖重render」，這裡本來就是使用者點擊觸發的操作，搬到 handler
+      // 裡設定，效果完全一樣（送出最後一題答案的當下就顯示 loading），但不再
+      // 踩這條 lint 規則。
+      setResultsLoading(true);
       setStep(step + 1); // 超出 FINDER_STEPS 長度＝顯示結果畫面
     }
   }

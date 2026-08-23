@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { sortByAvailability, toCardData } from "@/lib/types/product";
@@ -9,6 +9,10 @@ import { AddToCartButton } from "@/components/AddToCartButton";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { editorialButtonLight } from "@/lib/editorial/styles";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
+import { trackEvent } from "@/lib/analytics/track";
+
+/** 篩選條件變動後，等使用者停手多久才送出 b2c_search_category，避免每個按鍵／點擊都送一次。 */
+const SEARCH_EVENT_DEBOUNCE_MS = 500;
 
 /**
  * 商品列表的篩選／搜尋／清單，日系雜誌編排風（原
@@ -33,6 +37,12 @@ import { collectTagGroups } from "@/lib/editorial/tag-groups";
  * 字串（跟 ProductListWithFilters 的 `initialCategorySlug` 同一個模式，見
  * src/app/products/page.tsx）——商品詳情頁左側的篩選連結會用這個查詢字串導
  * 過來。
+ *
+ * 2026-08-21（補回退版時遺漏的事件）：8/15 就做好的「搜尋字串或篩選條件變動
+ * 後，防抖動 500ms 送出 b2c_search_category」邏輯，改版搬到這個檔案時漏掉
+ * 沒有一起搬——查 FDD 6.7 事件白名單時才發現這個事件從沒被觸發過。這裡照搬
+ * 原本 ProductListWithFilters.tsx 的做法（見下方 useEffect），行為完全不變：
+ * 只在有實際篩選條件時送、清空篩選不會另外觸發一次。
  */
 interface ProductCategoryOption {
   slug: string;
@@ -78,6 +88,16 @@ export function EditorialProductList({
   }, [products, searchTerm, selectedCategorySlugs, selectedTagSlugs]);
 
   const hasActiveFilters = searchTerm.length > 0 || selectedCategorySlugs.length > 0 || selectedTagSlugs.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveFilters) {
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      trackEvent({ event_name: "b2c_search_category" });
+    }, SEARCH_EVENT_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedCategorySlugs, selectedTagSlugs, hasActiveFilters]);
 
   return (
     <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16">
