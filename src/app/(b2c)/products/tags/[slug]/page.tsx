@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductsByTagSlug } from "@/lib/fixtures/products";
+import { getB2CCatalog } from "@/lib/b2c/catalog";
 import { toCardData } from "@/lib/types/product";
 import { ProductCard } from "@/components/ProductCard";
 
@@ -12,8 +12,8 @@ import { ProductCard } from "@/components/ProductCard";
  * - 觸發 b2c_tag_view 事件（已在 FDD 6.7 白名單內）。
  */
 
-function resolveTagName(slug: string): string {
-  const match = getProductsByTagSlug(slug)[0]?.tags.find((tag) => tag.slug === slug);
+async function resolveTagName(slug: string): Promise<string> {
+  const match = (await getB2CCatalog()).products.flatMap((product) => product.tags).find((tag) => tag.slug === slug);
   return match?.name ?? slug;
 }
 
@@ -21,7 +21,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/products/tags/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const tagName = resolveTagName(slug);
+  const tagName = await resolveTagName(slug);
 
   return {
     title: `${tagName} 商品 | 元家`,
@@ -33,8 +33,8 @@ export default async function ProductTagPage({
   params,
 }: PageProps<"/products/tags/[slug]">) {
   const { slug } = await params;
-  const matches = getProductsByTagSlug(slug).map(toCardData);
-  const tagName = resolveTagName(slug);
+  const matches = (await getB2CCatalog({ tagSlugs: [slug] })).products.map(toCardData);
+  const tagName = await resolveTagName(slug);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">

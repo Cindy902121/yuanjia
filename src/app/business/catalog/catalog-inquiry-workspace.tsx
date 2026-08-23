@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { B2BProduct, B2BSpecOption } from "@/lib/b2b/catalog";
@@ -274,7 +275,11 @@ function ProductGallery({ product }: { product: B2BProduct }) {
   );
 }
 
-function InquiryPanel({ items, onClose, onRemove, onUpdateQuantity }: { items: InquiryItem[]; onClose: () => void; onRemove: (key: string) => void; onUpdateQuantity: (key: string, quantity: number) => void }) {
+function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: { items: InquiryItem[]; onClose: () => void; onRemove: (key: string) => void; onSubmit: (note: string) => Promise<{ ok: boolean; message: string }>; onUpdateQuantity: (key: string, quantity: number) => void }) {
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const submissionSucceeded = feedback.startsWith("詢價已送出");
   return (
     <aside aria-label="詢價單" className="h-full overflow-y-auto bg-white p-5 shadow-[-16px_0_32px_rgba(23,36,42,0.12)] sm:p-6" id="inquiry-list" tabIndex={-1}>
       <div className="flex items-start justify-between gap-3 border-b border-[#D9E1E5] pb-5">
@@ -307,6 +312,14 @@ function InquiryPanel({ items, onClose, onRemove, onUpdateQuantity }: { items: I
             </li>
           ))}
         </ul>
+      ) : feedback && feedback.startsWith("詢價已送出") ? (
+        <div className="flex min-h-[calc(100dvh-9rem)] flex-col items-center justify-center px-4 text-center sm:min-h-[24rem]">
+          <div className="mx-auto grid size-11 place-items-center rounded-full bg-[#E8F6EE] text-lg text-[#18794E]">✓</div>
+          <p className="mt-4 text-base font-bold text-[#18794E]">詢價已成功送出</p>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-[#536168]">{feedback}</p>
+          <Link className="mt-6 inline-flex min-h-11 min-w-56 items-center justify-center rounded-lg bg-[#005DAA] px-5 text-sm font-bold text-white hover:bg-[#00457F]" href="/business/rfq" onClick={onClose}>查看詢價紀錄</Link>
+          <p className="mt-4 text-xs text-[#809099]">您可以關閉此視窗繼續瀏覽商品</p>
+        </div>
       ) : (
         <div className="py-8 text-center">
           <div className="mx-auto grid size-12 place-items-center rounded-full bg-[#EAF5FB] text-xl text-[#005DAA]">＋</div>
@@ -314,12 +327,13 @@ function InquiryPanel({ items, onClose, onRemove, onUpdateQuantity }: { items: I
           <p className="mt-2 text-xs leading-5 text-[#536168]">從型錄選擇規格後，會集中在這裡一次送出。</p>
         </div>
       )}
-      <div className="mt-2 border-t border-[#D9E1E5] pt-5">
+      {!submissionSucceeded ? <div className="mt-2 border-t border-[#D9E1E5] pt-5">
         <label className="block text-sm font-semibold" htmlFor="inquiry-note">補充需求</label>
-        <textarea className="mt-2 min-h-24 w-full resize-y rounded-lg border border-[#B9CCD5] p-3 text-sm outline-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]" id="inquiry-note" placeholder="例如：希望交期、配送地區、使用通路" />
-        <button className="mt-4 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length} type="button">確認詢價內容</button>
-        <p className="mt-3 text-xs leading-5 text-[#536168]">確認後將由業務確認規格與報價。此版本尚未連接正式送單服務。</p>
-      </div>
+        <textarea className="mt-2 min-h-24 w-full resize-y rounded-lg border border-[#B9CCD5] p-3 text-sm outline-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]" id="inquiry-note" onChange={(event) => setNote(event.target.value)} placeholder="例如：希望交期、配送地區、使用通路" value={note} />
+        <button className="mt-4 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length || submitting} onClick={async () => { setSubmitting(true); setFeedback(""); const response = await onSubmit(note); setFeedback(response.message); setSubmitting(false); }} type="button">{submitting ? "送出中…" : "確認詢價內容"}</button>
+        {feedback && !feedback.startsWith("詢價已送出") ? <p aria-live="polite" className="mt-3 rounded-lg bg-[#FFF1F0] p-3 text-xs leading-5 text-[#B42318]">{feedback}</p> : null}
+        <p className="mt-3 text-xs leading-5 text-[#536168]">送出後由業務確認規格與報價；本頁不顯示價格或庫存。</p>
+      </div> : null}
     </aside>
   );
 }
@@ -355,6 +369,29 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
     setInquiryOpen(true);
   }
 
+  async function submitInquiry(note: string) {
+    const response = await fetch("/api/b2b/rfqs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        total_note: note,
+        items: items.map((item) => ({
+          product_id: item.product.id,
+          specification_option_id: item.selection.kind === "option" ? item.selection.option.id : undefined,
+          other_specification: item.selection.kind === "other" ? item.selection.otherSpecification : undefined,
+          other_packaging: item.selection.kind === "other" ? item.selection.otherPackaging : undefined,
+          quantity: item.quantity,
+          unit: "箱",
+        })),
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) return { ok: false, message: body.error ?? "詢價送出失敗，請稍後再試。" };
+    window.dispatchEvent(new CustomEvent("yuanjia:analytics", { detail: "b2b_rfq_submit" }));
+    setItems([]);
+    return { ok: true, message: `詢價已送出（編號 ${String(body.rfqId ?? "").slice(0, 8)}），業務將與您聯繫。` };
+  }
+
   return (
     <div>
       <section>
@@ -365,7 +402,7 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
           {products.map((product) => <ProductCard key={product.id} onChoose={setChosenProduct} onDetail={setDetailProduct} product={product} />)}
         </div>
       </section>
-      {inquiryOpen ? <div className="fixed inset-0 z-40 bg-[#17242A]/30 backdrop-blur-[1px]" role="presentation"><button aria-label="收起詢價單" className="absolute inset-0 cursor-default" onClick={() => setInquiryOpen(false)} type="button" /><div className="absolute inset-y-0 right-0 w-full max-w-[26rem] translate-x-0 transition-transform duration-300"><InquiryPanel items={items} onClose={() => setInquiryOpen(false)} onRemove={(key) => setItems((current) => current.filter((item) => item.key !== key))} onUpdateQuantity={(key, quantity) => setItems((current) => current.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item))} /></div></div> : null}
+      {inquiryOpen ? <div className="fixed inset-0 z-40 bg-[#17242A]/30 backdrop-blur-[1px]" role="presentation"><button aria-label="收起詢價單" className="absolute inset-0 cursor-default" onClick={() => setInquiryOpen(false)} type="button" /><div className="absolute inset-y-0 right-0 w-full max-w-[26rem] translate-x-0 transition-transform duration-300"><InquiryPanel items={items} onClose={() => setInquiryOpen(false)} onRemove={(key) => setItems((current) => current.filter((item) => item.key !== key))} onSubmit={submitInquiry} onUpdateQuantity={(key, quantity) => setItems((current) => current.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item))} /></div></div> : null}
       {detailProduct ? <ProductDetail onChoose={() => { setDetailProduct(null); setChosenProduct(detailProduct); }} onClose={() => setDetailProduct(null)} product={detailProduct} /> : null}
       {chosenProduct ? <SpecPicker onClose={() => setChosenProduct(null)} onConfirm={(quantity, selection) => addItem(quantity, selection)} product={chosenProduct} /> : null}
     </div>

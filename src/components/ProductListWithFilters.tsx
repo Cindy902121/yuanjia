@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
@@ -62,6 +62,16 @@ export function ProductListWithFilters({ products, categories }: ProductListWith
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
 
   const tagGroups = useMemo(() => collectTagGroups(products), [products]);
+
+  useEffect(() => {
+    if (!selectedCategorySlugs.length) return;
+    void fetch("/api/analytics/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event_name: "b2c_search_category" }) });
+  }, [selectedCategorySlugs]);
+
+  useEffect(() => {
+    if (!selectedTagSlugs.length) return;
+    void fetch("/api/analytics/events", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event_name: "b2c_tag_click" }) });
+  }, [selectedTagSlugs]);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

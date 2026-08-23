@@ -1,0 +1,12 @@
+"use client";
+import { useEffect, useState } from "react";
+
+type Rfq = { id: string; status: string; total_note: string | null; created_at: string; items: Array<{ id: string; product: { product_code: string; name: string; brand: string } | null; specification_text_snapshot: string | null; packaging_text_snapshot: string | null; quantity: number; unit: string }> };
+const statusNames: Record<string, string> = { submitted: "已送出", reviewing: "業務確認中", quoted: "已報價", closed: "已完成" };
+function statusLabel(status: string, createdAt: string) {
+  if (status === "new") {
+    return Date.now() - new Date(createdAt).getTime() < 60 * 60 * 1000 ? "NEW" : "已送出";
+  }
+  return statusNames[status] ?? status;
+}
+export default function RfqHistoryClient() { const [rfqs, setRfqs] = useState<Rfq[] | null>(null); const [error, setError] = useState(""); useEffect(() => { fetch("/api/b2b/rfqs").then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "讀取失敗"); setRfqs(body.rfqs ?? []); }).catch((reason: Error) => setError(reason.message)); }, []); if (error) return <p className="mt-8 rounded-lg bg-[#FFF1F0] p-4 text-sm text-[#B42318]">{error}</p>; if (!rfqs) return <p className="mt-8 text-sm text-[#536168]">載入詢價紀錄中…</p>; if (!rfqs.length) return <p className="mt-8 rounded-2xl border border-dashed border-[#C9D8DE] bg-white p-10 text-center text-sm text-[#536168]">目前尚無詢價紀錄。</p>; return <ul className="mt-8 space-y-4">{rfqs.map((rfq) => <li className="rounded-2xl border border-[#C9D8DE] bg-white p-5" key={rfq.id}><div className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-[#536168]">{new Date(rfq.created_at).toLocaleString("zh-TW")}</p><p className="mt-1 font-bold">詢價單 {rfq.id.slice(0, 8)}</p><p className="mt-1 text-xs text-[#536168]">共 {rfq.items.length} 項商品</p></div><span className="rounded-full bg-[#EAF5FB] px-3 py-1 text-sm font-bold text-[#005DAA]">{statusLabel(rfq.status, rfq.created_at)}</span></div><ul className="mt-4 divide-y divide-[#E2E8EB]">{rfq.items.map((item) => <li className="py-3" key={item.id}><p className="font-semibold">{item.product?.name ?? "商品資料待確認"}</p><p className="mt-1 text-xs font-medium text-[#005DAA]">{item.product?.product_code ?? ""}</p><p className="mt-1 text-sm text-[#536168]">{item.specification_text_snapshot ?? "規格待確認"} · {item.packaging_text_snapshot ?? "包裝待確認"} · {item.quantity} {item.unit}</p></li>)}</ul>{rfq.total_note ? <p className="mt-3 text-sm text-[#536168]">備註：{rfq.total_note}</p> : null}</li>)}</ul>; }

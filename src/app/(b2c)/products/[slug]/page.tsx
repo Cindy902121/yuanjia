@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProductBySlug } from "@/lib/fixtures/products";
+import { getB2CProductBySlug } from "@/lib/b2c/catalog";
 import { ProductDetail } from "@/components/ProductDetail";
 
 /**
@@ -18,7 +18,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getB2CProductBySlug(slug);
 
   if (!product) {
     return { title: "找不到這項商品 | 元家" };
@@ -34,7 +34,7 @@ export default async function ProductDetailPage({
   params,
 }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getB2CProductBySlug(slug);
 
   if (!product) {
     notFound();

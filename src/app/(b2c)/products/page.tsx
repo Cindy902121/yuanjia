@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { products } from "@/lib/fixtures/products";
-import { categories } from "@/lib/fixtures/categories";
 import { ProductListWithFilters } from "@/components/ProductListWithFilters";
+import { getB2CCatalog } from "@/lib/b2c/catalog";
 
 export const metadata: Metadata = {
   title: "商品列表 | 元家",
@@ -17,16 +16,28 @@ export const metadata: Metadata = {
  *   改依 ProductListState 處理 loading／error／empty／ready。
  */
 export default async function ProductsPage() {
+  let catalog;
+  try {
+    catalog = await getB2CCatalog();
+  } catch {
+    return (
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">商品列表</h1>
+        <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">目前無法讀取商品，請稍後再試。</p>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">商品列表</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          目前顯示本機展示資料（{products.length} 筆），尚未接上 Supabase。
+          目前顯示 Supabase MVP 商品資料（{catalog.products.length} 筆）。
         </p>
       </div>
 
-      <ProductListWithFilters products={products} categories={categories} />
+      <ProductListWithFilters products={catalog.products} categories={catalog.categories} />
     </main>
   );
 }
