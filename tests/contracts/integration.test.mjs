@@ -60,6 +60,7 @@ const createdRows = {
   orderIds: new Set(),
   rfqIds: new Set(),
   companyIds: new Set(),
+  productIds: new Set(),
 };
 
 async function request(path, options = {}) {
@@ -174,6 +175,27 @@ async function cleanupCreatedRows() {
       const { error } = await admin.auth.admin.deleteUser(authUserId);
       assert.ifError(error);
     }
+  }
+
+  const productIds = [...createdRows.productIds];
+  if (productIds.length > 0) {
+    const { error: imageError } = await admin
+      .from("b2b_product_images")
+      .delete()
+      .in("product_id", productIds);
+    assert.ifError(imageError);
+    const { error: optionError } = await admin
+      .from("b2b_product_spec_options")
+      .delete()
+      .in("product_id", productIds);
+    assert.ifError(optionError);
+    const { error: tagError } = await admin
+      .from("b2b_product_tags")
+      .delete()
+      .in("product_id", productIds);
+    assert.ifError(tagError);
+    const { error } = await admin.from("b2b_products").delete().in("id", productIds);
+    assert.ifError(error);
   }
 }
 
@@ -377,6 +399,102 @@ test(
       }
     }
 
+    assert.equal(
+      (await request("/admin/business/products/new", { headers: { cookie: adminCookies } })).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/admin/business/products/${b2bProduct.id}`, { headers: { cookie: adminCookies } })).status,
+      200,
+    );
+    const anonymousEditorPage = await request(`/admin/business/products/${b2bProduct.id}`);
+    assert.ok([307, 308].includes(anonymousEditorPage.status));
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${b2bProduct.id}`)).status,
+      401,
+    );
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${b2bProduct.id}`, { headers: { cookie: b2cAdminCookies } })).status,
+      403,
+    );
+
+    const invalidProduct = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ name: "" }),
+    });
+    assert.equal(invalidProduct.status, 400);
+    assert.match((await json(invalidProduct)).error, /商品名稱/);
+
+    const immutableCode = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ product_code: b2bProduct.product_code }),
+    });
+    assert.equal(immutableCode.status, 400);
+
+    const duplicateProduct = await request("/api/admin/products/b2b", {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        product_code: b2bProduct.product_code,
+        name: b2bProduct.name,
+        brand: b2bProduct.brand,
+        category: b2bProduct.category,
+        specification: b2bProduct.specification,
+        packaging: b2bProduct.packaging ?? "",
+        origin: b2bProduct.origin,
+        storage_method: b2bProduct.storage_method,
+        description: b2bProduct.description,
+      }),
+    });
+    assert.equal(duplicateProduct.status, 409);
+
+    const newProduct = await request("/api/admin/products/b2b", {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        product_code: `CT-${Date.now()}`,
+        name: "契約測試商品",
+        brand: "契約測試品牌",
+        category: "契約測試分類",
+        specification: "契約測試規格",
+        packaging: "契約測試包裝",
+        origin: "台灣",
+        storage_method: "冷藏",
+        description: "契約測試商品描述",
+      }),
+    });
+    assert.equal(newProduct.status, 201);
+    const newProductPayload = await json(newProduct);
+    assert.ok(newProductPayload.product?.id, "the create response needs a product id");
+    createdRows.productIds.add(newProductPayload.product.id);
+    assert.equal(newProductPayload.product.status, "draft");
+    assert.equal("price" in newProductPayload.product, false);
+
+    const originalB2bName = b2bProduct.name;
+    try {
+      const editProduct = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+        method: "PATCH",
+        headers: { cookie: adminCookies },
+        body: JSON.stringify({ name: `${originalB2bName} 合約測試` }),
+      });
+      assert.equal(editProduct.status, 200);
+      assert.equal((await json(editProduct)).product.name, `${originalB2bName} 合約測試`);
+      const reloadedProduct = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+        headers: { cookie: adminCookies },
+      });
+      assert.equal(reloadedProduct.status, 200);
+      assert.equal((await json(reloadedProduct)).product.name, `${originalB2bName} 合約測試`);
+    } finally {
+      const restoreProduct = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+        method: "PATCH",
+        headers: { cookie: adminCookies },
+        body: JSON.stringify({ name: originalB2bName }),
+      });
+      assert.equal(restoreProduct.status, 200);
+    }
+
     const anonymousProductsResponse = await request("/api/b2c/products");
     const anonymousProducts = await json(anonymousProductsResponse);
     const orderProductId = anonymousProducts.products?.[0]?.id;
@@ -500,6 +618,37 @@ test(
     assert.equal(new URL(adminPage.headers.get("location"), baseUrl).pathname, "/admin/business");
     assert.equal((await request("/admin/business", { headers: { cookie: cookies } })).status, 200);
     assert.equal((await request("/api/admin/products/b2b?include_inactive=true", { headers: { cookie: cookies } })).status, 200);
+    const productsResponse = await request("/api/admin/products/b2b?include_inactive=true", {
+      headers: { cookie: cookies },
+    });
+    const productsPayload = await json(productsResponse);
+    const product = productsPayload.products?.[0];
+    assert.ok(product?.id, "business_staff editor coverage needs a B2B product");
+    assert.equal((await request("/admin/business/products/new", { headers: { cookie: cookies } })).status, 200);
+    assert.equal(
+      (await request(`/admin/business/products/${product.id}`, { headers: { cookie: cookies } })).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${product.id}`, { headers: { cookie: cookies } })).status,
+      200,
+    );
+    const originalName = product.name;
+    try {
+      const staffEdit = await request(`/api/admin/products/b2b/${product.id}`, {
+        method: "PATCH",
+        headers: { cookie: cookies },
+        body: JSON.stringify({ name: `${originalName} STAFF 合約測試` }),
+      });
+      assert.equal(staffEdit.status, 200);
+    } finally {
+      const staffRestore = await request(`/api/admin/products/b2b/${product.id}`, {
+        method: "PATCH",
+        headers: { cookie: cookies },
+        body: JSON.stringify({ name: originalName }),
+      });
+      assert.equal(staffRestore.status, 200);
+    }
     assert.equal((await request("/api/admin/products/b2c?include_inactive=true", { headers: { cookie: cookies } })).status, 403);
     assert.equal((await request("/api/admin/companies", { headers: { cookie: cookies } })).status, 403);
   },

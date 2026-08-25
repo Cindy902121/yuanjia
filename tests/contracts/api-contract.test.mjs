@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -28,6 +28,7 @@ const routes = {
   adminRfqs: read("src/app/api/admin/rfqs/route.ts"),
   adminAuth: read("src/lib/auth-context.ts"),
   adminPageAuth: read("src/lib/admin-page-auth.ts"),
+  adminCatalog: read("src/lib/admin-catalog.ts"),
   adminDashboard: read("src/app/admin/admin-dashboard.tsx"),
 };
 
@@ -218,6 +219,34 @@ test("B2B admin catalog exposes status, media counts, and batch status boundarie
   assert.match(routes.b2bProducts, /\.eq\("status", "published"\)/);
   assert.match(routes.b2bFinder, /\.eq\("status", "published"\)/);
   assert.match(routes.b2bRfqs, /\.eq\("status", "published"\)/);
+});
+
+test("B2B product editor has shared new/edit routes and guarded form behavior", () => {
+  const editorPaths = [
+    "src/app/admin/business/products/new/page.tsx",
+    "src/app/admin/business/products/[productId]/page.tsx",
+    "src/app/admin/business/products/product-editor.tsx",
+  ];
+  for (const path of editorPaths) {
+    assert.ok(existsSync(join(ROOT, path)), `${path} should exist`);
+  }
+
+  const newPage = read(editorPaths[0]);
+  const editPage = read(editorPaths[1]);
+  const editor = read(editorPaths[2]);
+  assert.match(newPage, /requireAdminPage\("\/admin\/business\/products\/new"\)/);
+  assert.match(editPage, /requireAdminPage\(.*productId/);
+  assert.match(newPage, /ProductEditor/);
+  assert.match(editPage, /ProductEditor/);
+  assert.match(editor, /B2B_PRODUCT_FIELD_RULES/);
+  assert.match(editor, /beforeunload/);
+  assert.match(editor, /popstate/);
+  assert.match(editor, /儲存變更/);
+  assert.match(editor, /fieldForError/);
+  assert.match(editor, /message.includes\("product_code"\)/);
+  assert.doesNotMatch(editor, /price/);
+  assert.match(routes.adminPageAuth, /business.*products/);
+  assert.match(routes.adminCatalog, /B2B_PRODUCT_CODE_PATTERN/);
 });
 
 test("admin product, company and RFQ management routes stay server-authorized", () => {

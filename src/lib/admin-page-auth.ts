@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 
 import { getAdminContext, getB2bContext } from "./auth-context";
 
+function isBusinessStaffPage(pathname: string) {
+  return /^\/admin\/business(?:\/products(?:\/[^/]+)?)?$/.test(pathname);
+}
+
 export async function requireAdminPage(pathname: string) {
   const context = await getAdminContext();
   const loginPath = `/login?next=${encodeURIComponent(pathname)}`;
@@ -10,7 +14,7 @@ export async function requireAdminPage(pathname: string) {
     redirect(loginPath);
   }
   if (context.isBusinessStaff) {
-    if (pathname !== "/admin/business") {
+    if (!isBusinessStaffPage(pathname)) {
       redirect("/admin/business");
     }
     return;

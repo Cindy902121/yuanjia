@@ -14,6 +14,33 @@ export const B2B_STATUS_LABELS: Record<B2bProductStatus, string> = {
   offline: "已下架",
 };
 
+export const B2B_PRODUCT_CODE_PATTERN = "^[A-Z0-9][A-Z0-9._-]{0,79}$";
+
+export const B2B_PRODUCT_FIELD_RULES = [
+  {
+    key: "product_code",
+    label: "商品編號",
+    maxLength: 80,
+    required: true,
+    pattern: B2B_PRODUCT_CODE_PATTERN,
+    hint: "限大寫英數、句點、底線或連字號，最多 80 字元；建立後不可修改。",
+  },
+  { key: "name", label: "商品名稱", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "brand", label: "品牌", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "category", label: "分類", maxLength: 120, required: true, hint: "最多 120 字元。" },
+  { key: "specification", label: "規格", maxLength: 500, required: true, hint: "最多 500 字元。" },
+  { key: "packaging", label: "包裝", maxLength: 500, required: false, hint: "選填，最多 500 字元。" },
+  { key: "origin", label: "產地", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  {
+    key: "storage_method",
+    label: "保存方式",
+    maxLength: 240,
+    required: true,
+    hint: "最多 240 字元。",
+  },
+  { key: "description", label: "商品描述", maxLength: 5000, required: true, hint: "最多 5,000 字元。" },
+] as const;
+
 const B2B_STATUS_TRANSITIONS: Record<B2bProductStatus, readonly B2bProductStatus[]> = {
   draft: ["review"],
   review: ["draft", "published"],
@@ -87,7 +114,7 @@ function parseMoney(value: unknown) {
 }
 
 function parseProductCode(value: unknown) {
-  if (!isNonEmptyString(value) || !/^[A-Z0-9][A-Z0-9._-]{0,79}$/.test(value.trim())) {
+  if (!isNonEmptyString(value) || !new RegExp(B2B_PRODUCT_CODE_PATTERN).test(value.trim())) {
     return null;
   }
   return value.trim();
@@ -135,25 +162,22 @@ export function parseProductInput(
     }
   }
 
-  const requiredFields = [
-    ["name", "商品名稱", 160],
-    ["brand", "品牌", 160],
-    ["category", "分類", 120],
-    ["specification", "規格", 500],
-    ["origin", "產地", 160],
-    ["storage_method", "保存方式", 240],
-    ["description", "商品描述", 5000],
-  ] as const;
-
-  for (const [field, label, maxLength] of requiredFields) {
-    if (mode === "update" && input[field] === undefined) {
+  for (const fieldRule of B2B_PRODUCT_FIELD_RULES.filter(
+    (field) => field.key !== "product_code" && field.required,
+  )) {
+    if (mode === "update" && input[fieldRule.key] === undefined) {
       continue;
     }
-    const result = parseText(input[field], label, maxLength, true);
+    const result = parseText(
+      input[fieldRule.key],
+      fieldRule.label,
+      fieldRule.maxLength,
+      fieldRule.required,
+    );
     if (result.error) {
       return { error: result.error };
     }
-    payload[field] = result.value;
+    payload[fieldRule.key] = result.value;
   }
 
   if (channel === "b2c" && (mode === "create" || input.short_description !== undefined)) {
@@ -164,8 +188,14 @@ export function parseProductInput(
     payload.short_description = result.value;
   }
 
-  if (channel === "b2b" && (mode === "create" || input.packaging !== undefined)) {
-    const result = parseText(input.packaging, "包裝", 500, false);
+  const packagingRule = B2B_PRODUCT_FIELD_RULES.find((field) => field.key === "packaging");
+  if (channel === "b2b" && packagingRule && (mode === "create" || input.packaging !== undefined)) {
+    const result = parseText(
+      input.packaging,
+      packagingRule.label,
+      packagingRule.maxLength,
+      packagingRule.required,
+    );
     if (result.error) {
       return { error: result.error };
     }

@@ -61,7 +61,7 @@ export async function PATCH(
     if (error.code === "23505") {
       return apiError("商品識別碼已存在。", 409);
     }
-    return apiError("目前無法更新商品上架狀態。", 503);
+    return apiError("目前無法更新商品。", 503);
   }
   if (!product) {
     return apiError("找不到指定商品。", 404);
