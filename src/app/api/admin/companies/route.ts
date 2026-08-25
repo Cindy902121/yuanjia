@@ -1,11 +1,6 @@
 import { apiError, isNonEmptyString, json, readJson } from "@/lib/api";
 import { requireAdmin } from "@/lib/admin-auth";
-import {
-  generateClientCode,
-  internalB2bAuthEmail,
-  isClientCodePrefix,
-  type ClientCodePrefix,
-} from "@/lib/client-code";
+import { internalB2bAuthEmail, isClientCode } from "@/lib/client-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -67,17 +62,17 @@ export async function POST(request: Request) {
 
   const body = (await readJson(request)) as {
     name?: unknown;
-    prefix?: unknown;
+    client_code?: unknown;
     password?: unknown;
   } | null;
 
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const prefix = typeof body?.prefix === "string" ? body.prefix.toUpperCase() : "";
+  const clientCode = typeof body?.client_code === "string" ? body.client_code.trim().toUpperCase() : "";
   if (!isNonEmptyString(name) || name.length > 160) {
     return apiError("請輸入 160 字以內的企業名稱。", 400);
   }
-  if (!isClientCodePrefix(prefix)) {
-    return apiError("客戶代碼前綴只能是 Z、E 或 W。", 400);
+  if (!isClientCode(clientCode)) {
+    return apiError("客戶代碼須為 Z、E 或 W 加上 6 碼數字。", 400);
   }
   if (!isPassword(body?.password)) {
     return apiError(
@@ -93,7 +88,18 @@ export async function POST(request: Request) {
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
 
-  const clientCode = generateClientCode(prefix as ClientCodePrefix);
+  const { data: existingCompany, error: existingCompanyError } = await admin
+    .from("companies")
+    .select("id")
+    .eq("client_code", clientCode)
+    .maybeSingle();
+  if (existingCompanyError) {
+    return apiError("目前無法確認客戶代碼。", 503);
+  }
+  if (existingCompany) {
+    return apiError("此客戶代碼已存在。", 409);
+  }
+
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email: internalB2bAuthEmail(clientCode),
     password: body.password,
@@ -101,6 +107,9 @@ export async function POST(request: Request) {
   });
 
   if (authError || !authUser.user) {
+    if (authError?.code === "email_exists") {
+      return apiError("此客戶代碼已存在。", 409);
+    }
     return apiError("目前無法建立企業登入帳號，請稍後再試。", 503);
   }
 
@@ -118,7 +127,7 @@ export async function POST(request: Request) {
   if (companyError || !company) {
     await admin.auth.admin.deleteUser(authUser.user.id);
     if (companyError?.code === "23505") {
-      return apiError("客戶代碼產生衝突，請重新送出。", 409);
+      return apiError("此客戶代碼已存在。", 409);
     }
     return apiError("目前無法保存企業會員資料。", 503);
   }
@@ -127,7 +136,7 @@ export async function POST(request: Request) {
     {
       company: {
         ...company,
-        prefix,
+        prefix: clientCode.slice(0, 1),
         tier_label: "unclassified",
         channel_label: "unclassified",
       },

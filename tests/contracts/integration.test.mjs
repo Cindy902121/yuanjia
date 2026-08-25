@@ -433,12 +433,13 @@ test(
     );
 
     const generatedPassword = `AdminApi${Date.now()}!`;
+    const suppliedClientCode = `Z${String(Date.now() % 1_000_000).padStart(6, "0")}`;
     const companyResponse = await request("/api/admin/companies", {
       method: "POST",
       headers: { cookie: adminCookies },
       body: JSON.stringify({
         name: `管理 API 驗收 ${Date.now()}`,
-        prefix: "Z",
+        client_code: suppliedClientCode,
         password: generatedPassword,
       }),
     });
@@ -446,8 +447,19 @@ test(
     const companyPayload = await json(companyResponse);
     assert.ok(companyPayload.company?.id);
     createdRows.companyIds.add(companyPayload.company.id);
-    assert.match(companyPayload.credential?.client_code ?? "", /^[ZEW][0-9]{6}$/);
+    assert.equal(companyPayload.credential?.client_code, suppliedClientCode);
     assert.equal(companyPayload.credential?.password, undefined);
+
+    const duplicateCompany = await request("/api/admin/companies", {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        name: "重複客戶代碼",
+        client_code: suppliedClientCode,
+        password: generatedPassword,
+      }),
+    });
+    assert.equal(duplicateCompany.status, 409);
 
     const createdCompanyCode = companyPayload.credential.client_code;
     const createdCompanyCookies = await login({
@@ -455,6 +467,13 @@ test(
       password: generatedPassword,
     });
     assert.ok(createdCompanyCookies);
+
+    const immutableClientCode = await request(`/api/admin/companies/${companyPayload.company.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ client_code: "E123456" }),
+    });
+    assert.equal(immutableClientCode.status, 400);
 
     const disableCompany = await request(`/api/admin/companies/${companyPayload.company.id}`, {
       method: "PATCH",
@@ -482,6 +501,43 @@ test(
       })).status,
       200,
     );
+
+    const changedPassword = `Changed${Date.now()}!`;
+    const incorrectPassword = await request("/api/b2b/password", {
+      method: "POST",
+      headers: { cookie: createdCompanyCookies },
+      body: JSON.stringify({
+        current_password: "not-the-current-password",
+        new_password: changedPassword,
+        new_password_confirmation: changedPassword,
+      }),
+    });
+    assert.equal(incorrectPassword.status, 400);
+
+    const changePassword = await request("/api/b2b/password", {
+      method: "POST",
+      headers: { cookie: createdCompanyCookies },
+      body: JSON.stringify({
+        current_password: generatedPassword,
+        new_password: changedPassword,
+        new_password_confirmation: changedPassword,
+      }),
+    });
+    assert.equal(changePassword.status, 200);
+    assert.ok(
+      [401, 403].includes(
+        (await request("/api/b2b/products", { headers: { cookie: createdCompanyCookies } })).status,
+      ),
+      "the prior B2B session must no longer access the catalog",
+    );
+    assert.equal(
+      (await request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ identifier: createdCompanyCode, password: generatedPassword }),
+      })).status,
+      401,
+    );
+    assert.ok(await login({ identifier: createdCompanyCode, password: changedPassword }));
 
     const b2bCookies = await login(credentials.b2b);
     const b2bCatalogResponse = await request("/api/b2b/products", { headers: { cookie: b2bCookies } });

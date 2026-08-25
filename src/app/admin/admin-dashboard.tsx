@@ -89,7 +89,7 @@ type Staff = {
 
 type CompanyForm = {
   name: string;
-  prefix: "Z" | "E" | "W";
+  clientCode: string;
   password: string;
   passwordAgain: string;
 };
@@ -109,12 +109,6 @@ const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
 const tabsByScope: Record<AdminScope, AdminTab[]> = {
   admin: ["overview", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff"],
   business: ["b2b-products", "b2b-rfqs"],
-};
-
-const tierDescriptions = {
-  Z: "月營業額 20 萬以下",
-  E: "月營業額 50 萬以下",
-  W: "其他",
 };
 
 const statusLabels = {
@@ -194,7 +188,7 @@ export function AdminDashboard({
   const [staffRole, setStaffRole] = useState<Staff["role"]>("business_staff");
   const [companyForm, setCompanyForm] = useState<CompanyForm>({
     name: "",
-    prefix: "Z",
+    clientCode: "",
     password: "",
     passwordAgain: "",
   });
@@ -429,14 +423,14 @@ export function AdminDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: companyForm.name,
-          prefix: companyForm.prefix,
+          client_code: companyForm.clientCode,
           password: companyForm.password,
         }),
       });
       await loadCompanies();
       setCompanyForm({
         name: "",
-        prefix: "Z",
+        clientCode: "",
         password: "",
         passwordAgain: "",
       });
@@ -1139,17 +1133,18 @@ function CompanyPanel({
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-prefix">客戶代碼級距</label>
-            <select
+            <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-client-code">客戶代碼</label>
+            <input
               className={inputClass}
-              id="company-prefix"
-              onChange={(event) => onFormChange({ ...form, prefix: event.target.value as CompanyForm["prefix"] })}
-              value={form.prefix}
-            >
-              {Object.entries(tierDescriptions).map(([prefix, label]) => (
-                <option key={prefix} value={prefix}>{prefix}｜{label}</option>
-              ))}
-            </select>
+              id="company-client-code"
+              maxLength={7}
+              onChange={(event) => onFormChange({ ...form, clientCode: event.target.value.toUpperCase() })}
+              pattern="[ZEW][0-9]{6}"
+              placeholder="例如：Z232113"
+              required
+              value={form.clientCode}
+            />
+            <p className="mt-1 text-xs text-[#809099]">由外部公司系統提供；格式為 Z、E 或 W 加上 6 碼數字，建立後不可修改。</p>
           </div>
           <div>
             <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-password">初始密碼</label>
@@ -1179,7 +1174,7 @@ function CompanyPanel({
             />
           </div>
           <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#E7EDF0] pt-4">
-            <p className="text-sm leading-6 text-[#536168]">送出後後端會自動產生 1 碼前綴＋6 碼亂數客戶代碼，請將代碼與初始密碼交付給企業窗口。</p>
+            <p className="text-sm leading-6 text-[#536168]">請確認外部系統提供的客戶代碼與初始密碼；系統不會保存或再次顯示明文密碼。</p>
             <button
               className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
               disabled={busyKey === "create-company"}

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasCurrentB2bPasswordVersion } from "@/lib/auth-context";
 import { attachB2bProductSpecOptions, type B2BProductSpecOptionRow } from "@/lib/catalog";
 import { createClient } from "@/lib/supabase/server";
 
@@ -144,10 +145,13 @@ export async function getB2BCatalogData(): Promise<B2BCatalogData> {
 
 export async function getB2BAccess() {
   const sessionClient = await createClient();
-  const { data: claimsResult } = await sessionClient.auth.getClaims();
+  const [{ data: claimsResult }, { data: userResult }] = await Promise.all([
+    sessionClient.auth.getClaims(),
+    sessionClient.auth.getUser(),
+  ]);
   const userId = claimsResult?.claims?.sub;
 
-  if (!userId) {
+  if (!userId || !userResult.user) {
     return { role: "anonymous" as const };
   }
 
@@ -171,6 +175,9 @@ export async function getB2BAccess() {
 
   if (!company?.is_active) {
     return { role: "b2c" as const };
+  }
+  if (!hasCurrentB2bPasswordVersion(userResult.user.app_metadata, claimsResult.claims.app_metadata)) {
+    return { role: "anonymous" as const };
   }
 
   return { companyName: company.name, role: "b2b" as const };

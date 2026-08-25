@@ -12,20 +12,39 @@ export type CompanyContext = {
 export const ADMIN_ROLES = ["admin", "business_staff"] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
+function b2bPasswordVersion(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const version = (value as Record<string, unknown>).b2b_password_version;
+  return typeof version === "string" && version.length > 0 ? version : null;
+}
+
+export function hasCurrentB2bPasswordVersion(userMetadata: unknown, tokenMetadata: unknown) {
+  const currentVersion = b2bPasswordVersion(userMetadata);
+  return !currentVersion || currentVersion === b2bPasswordVersion(tokenMetadata);
+}
+
 export async function getSessionContext() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+      error,
+    },
+    { data: claims },
+  ] = await Promise.all([supabase.auth.getUser(), supabase.auth.getClaims()]);
 
-  return { supabase, user, authError: error };
+  return { supabase, user, authError: error, tokenAppMetadata: claims?.claims?.app_metadata };
 }
 
 export async function getB2bContext() {
   const session = await getSessionContext();
 
   if (!session.user) {
+    return { ...session, company: null, databaseError: null };
+  }
+  if (!hasCurrentB2bPasswordVersion(session.user.app_metadata, session.tokenAppMetadata)) {
     return { ...session, company: null, databaseError: null };
   }
 

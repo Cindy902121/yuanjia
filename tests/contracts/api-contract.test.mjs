@@ -16,6 +16,7 @@ const routes = {
   b2cOrders: read("src/app/api/b2c/mock-orders/route.ts"),
   b2bProducts: read("src/app/api/b2b/products/route.ts"),
   b2bFinder: read("src/app/api/b2b/product-finder/route.ts"),
+  b2bPassword: read("src/app/api/b2b/password/route.ts"),
   b2bRfqs: read("src/app/api/b2b/rfqs/route.ts"),
   analytics: read("src/app/api/analytics/events/route.ts"),
   adminAnalytics: read("src/app/api/admin/analytics/summary/route.ts"),
@@ -137,6 +138,9 @@ test("B2C and B2B guards are not interchangeable", () => {
   assert.match(routes.b2bFinder, /!context\.company/);
   assert.match(routes.b2bRfqs, /!context\.user/);
   assert.match(routes.b2bRfqs, /!context\.company/);
+  assert.match(routes.b2bPassword, /getB2bContext/);
+  assert.match(routes.b2bPassword, /current_password/);
+  assert.match(routes.b2bPassword, /signOut\(\{ scope: "global" \}\)/);
   assert.match(routes.analytics, /isB2bEvent/);
   assert.match(routes.analytics, /isB2bEvent && \(!context\.user \|\| !context\.company\)/);
   assert.match(routes.analytics, /!isB2bEvent && context\.company/);
@@ -265,12 +269,15 @@ test("analytics filters use Taipei inclusive dates and only filter event behavio
   assert.doesNotMatch(routes.adminAnalytics, /item\.product_id !== productId/);
 });
 
-test("B2B customer codes are generated and validated with the approved format", () => {
+test("B2B customer codes are supplied by Admin and validated with the approved format", () => {
   const codeSource = read("src/lib/client-code.ts");
   const loginRoute = read("src/app/api/auth/login/route.ts");
+  const companyRoute = read("src/app/api/admin/companies/route.ts");
   const migration = read("supabase/migrations/20260817033059_enforce_b2b_client_code_format.sql");
   assert.match(codeSource, /CLIENT_CODE_PATTERN = \/\^\[ZEW\]\[0-9\]\{6\}\$\//);
-  assert.match(codeSource, /randomInt\(0, 1_000_000\)/);
+  assert.match(companyRoute, /client_code/);
+  assert.match(companyRoute, /isClientCode\(clientCode\)/);
+  assert.doesNotMatch(companyRoute, /generateClientCode/);
   assert.match(loginRoute, /isClientCode\(clientCode\)/);
   assert.match(migration, /\^\[ZEW\]\[0-9\]\{6\}\$/);
 });

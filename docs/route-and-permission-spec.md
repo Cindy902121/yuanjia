@@ -30,7 +30,7 @@
 - 分析儀表板。
 - 管理帳號新增、角色調整、停用與 Admin 密碼重設。
 
-目前待補實作：企業建立 API 仍需改為接受 Admin 輸入的完整客戶代碼；B2B 會員修改密碼 API／介面尚未建立。
+P1 已實作：企業建立 API 接受 Admin 輸入的完整客戶代碼；B2B 會員可於獨立頁面修改密碼。
 
 ## 1. 角色定義
 
@@ -63,6 +63,7 @@
 | `/business/catalog` | B2B 私有型錄 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin/business` 商品頁籤 | `noindex`／不加入 |
 | `/business/product-finder` | B2B 固定需求篩選器 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin/business` 篩選器頁籤 | `noindex`／不加入 |
 | `/business/rfq` | 詢價籃與過往詢價紀錄 | 導向 `/login` | 提示後導向 `/` | 僅同公司資料 | 導向 `/admin/business` 詢價頁籤 | `noindex`／不加入 |
+| `/business/password` | B2B 企業會員修改密碼 | 導向 `/login` | 導向 `/` | 允許 | 導向 `/admin` | `noindex`／不加入 |
 | `/admin` | 管理後台 | 導向 `/login` | 導向 `/` | 導向 `/business` | 允許 | `noindex`／不加入 |
 | `/admin/business` | B2B 管理功能 | 導向 `/login` | 導向 `/` | 導向 `/business` | 允許 | `noindex`／不加入 |
 | `/admin/business/products/new` | 新增 B2B 商品 | 導向 `/login` | 導向 `/` | 導向 `/business` | admin／business_staff | `noindex`／不加入 |
@@ -88,7 +89,7 @@
 
 ### B2B 企業會員資料
 
-- 密碼修改沿用既有受保護的 B2B 頁面，不新增獨立路由。
+- 密碼修改使用獨立受保護路由 `/business/password`；驗證目前密碼後，成功即要求所有 B2B session 重新登入。
 - 企業會員只能查看自己的公司資料與詢價紀錄；不可修改或刪除企業資料。
 - 客戶代碼由外部公司系統產生，建立時由 Admin 輸入；伺服器驗證格式與唯一性，建立後不可修改。
 
