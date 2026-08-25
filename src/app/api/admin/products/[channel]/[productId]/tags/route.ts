@@ -1,5 +1,5 @@
 import { apiError, isUuid, json, readJson } from "@/lib/api";
-import { getAdminContext } from "@/lib/auth-context";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Channel = "b2c" | "b2b";
@@ -8,30 +8,68 @@ function isChannel(value: string): value is Channel {
   return value === "b2c" || value === "b2b";
 }
 
-async function requireAdmin() {
-  const context = await getAdminContext();
-  if (!context.user) {
-    return { response: apiError("請先登入管理者帳號。", 401) };
+function requireTagAdmin(channel: string) {
+  return channel === "b2b" ? requireBusinessAdmin() : requireAdmin();
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ channel: string; productId: string }> },
+) {
+  const { channel, productId } = await params;
+  const guard = await requireTagAdmin(channel);
+  if (guard.response) {
+    return guard.response;
   }
-  if (context.configurationError || context.databaseError) {
-    return { response: apiError("目前無法確認管理者權限。", 503) };
+  if (!isChannel(channel) || !isUuid(productId)) {
+    return apiError("產品路徑不正確。", 400);
   }
-  if (!context.isAdmin) {
-    return { response: apiError("你沒有管理者權限。", 403) };
+
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
-  return {};
+
+  const productTable = channel === "b2c" ? "b2c_products" : "b2b_products";
+  const tagTable = channel === "b2c" ? "b2c_tags" : "b2b_tags";
+  const relationTable = channel === "b2c" ? "b2c_product_tags" : "b2b_product_tags";
+  const [{ data: product, error: productError }, { data: tags, error: tagError }, { data: relations, error: relationError }] =
+    await Promise.all([
+      admin.from(productTable).select("id").eq("id", productId).maybeSingle(),
+      admin
+        .from(tagTable)
+        .select("id, group_name, slug, name")
+        .eq("is_active", true)
+        .order("group_name")
+        .order("name"),
+      admin.from(relationTable).select("tag_id").eq("product_id", productId),
+    ]);
+  if (productError || tagError || relationError) {
+    return apiError("目前無法讀取產品標籤。", 503);
+  }
+  if (!product) {
+    return apiError("找不到指定產品。", 404);
+  }
+
+  return json({
+    channel,
+    product_id: productId,
+    tags: tags ?? [],
+    tag_ids: (relations ?? []).map((relation) => relation.tag_id),
+  });
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireTagAdmin(channel);
   if (guard.response) {
     return guard.response;
   }
-
-  const { channel, productId } = await params;
   if (!isChannel(channel) || !isUuid(productId)) {
     return apiError("產品路徑不正確。", 400);
   }
@@ -49,7 +87,12 @@ export async function PATCH(
     return apiError("標籤資料不正確。", 400);
   }
 
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return apiError("Supabase 伺服器連線尚未設定完成。", 503);
+  }
   const productTable = channel === "b2c" ? "b2c_products" : "b2b_products";
   const tagTable = channel === "b2c" ? "b2c_tags" : "b2b_tags";
   const relationTable =
@@ -67,19 +110,30 @@ export async function PATCH(
     return apiError("找不到指定產品。", 404);
   }
 
+  const { data: currentRelations, error: relationError } = await admin
+    .from(relationTable)
+    .select("tag_id")
+    .eq("product_id", productId);
+  if (relationError) {
+    return apiError("目前無法確認產品標籤。", 503);
+  }
+
+  const existingTagIds = new Set((currentRelations ?? []).map((relation) => relation.tag_id));
   const { data: tags, error: tagError } =
     tagIds.length > 0
       ? await admin
           .from(tagTable)
-          .select("id")
+          .select("id, is_active")
           .in("id", tagIds)
-          .eq("is_active", true)
       : { data: [], error: null };
 
   if (tagError) {
     return apiError("目前無法確認產品標籤。", 503);
   }
-  if ((tags ?? []).length !== tagIds.length) {
+  if (
+    (tags ?? []).length !== tagIds.length ||
+    (tags ?? []).some((tag) => !tag.is_active && !existingTagIds.has(tag.id))
+  ) {
     return apiError("只能套用同一產品線中已啟用的既有標籤。", 400);
   }
 

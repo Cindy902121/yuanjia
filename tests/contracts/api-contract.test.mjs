@@ -20,6 +20,8 @@ const routes = {
   analytics: read("src/app/api/analytics/events/route.ts"),
   adminAnalytics: read("src/app/api/admin/analytics/summary/route.ts"),
   adminTags: read("src/app/api/admin/products/[channel]/[productId]/tags/route.ts"),
+  adminSpecOptions: read("src/app/api/admin/products/b2b/[productId]/spec-options/route.ts"),
+  adminSpecOption: read("src/app/api/admin/products/b2b/[productId]/spec-options/[optionId]/route.ts"),
   adminProducts: read("src/app/api/admin/products/[channel]/route.ts"),
   adminProductStatus: read("src/app/api/admin/products/[channel]/[productId]/route.ts"),
   adminBulkStatus: read("src/app/api/admin/products/b2b/bulk-status/route.ts"),
@@ -196,11 +198,12 @@ test("all 24 analytics event names and server-derived payload fields are preserv
 });
 
 test("admin routes re-check admin authorization at the API boundary", () => {
-  for (const route of [routes.adminAnalytics, routes.adminTags]) {
+  for (const route of [routes.adminAnalytics]) {
     assert.match(route, /getAdminContext/);
     assert.match(route, /!context\.isAdmin/);
     assert.match(route, /context\.configurationError \|\| context\.databaseError/);
   }
+  assert.match(routes.adminTags, /requireAdmin\(\)/);
 });
 
 test("B2B admin catalog exposes status, media counts, and batch status boundaries", () => {
@@ -247,6 +250,29 @@ test("B2B product editor has shared new/edit routes and guarded form behavior", 
   assert.doesNotMatch(editor, /price/);
   assert.match(routes.adminPageAuth, /business.*products/);
   assert.match(routes.adminCatalog, /B2B_PRODUCT_CODE_PATTERN/);
+});
+
+test("B2B product tags and specification options stay isolated and staff-manageable", () => {
+  assert.match(routes.adminTags, /export async function GET/);
+  assert.match(routes.adminTags, /requireBusinessAdmin/);
+  assert.match(routes.adminTags, /b2b_tags/);
+  assert.match(routes.adminTags, /\.eq\("is_active", true\)/);
+  assert.match(routes.adminTags, /tag_ids/);
+  assert.match(routes.adminSpecOptions, /requireBusinessAdmin/);
+  assert.match(routes.adminSpecOptions, /option_code/);
+  assert.match(routes.adminSpecOptions, /23505/);
+  assert.match(routes.adminSpecOption, /requireBusinessAdmin/);
+  assert.match(routes.adminSpecOption, /規格選項代碼建立後不可修改/);
+  assert.match(routes.adminSpecOption, /is_active: false/);
+
+  const editor = read("src/app/admin/business/products/product-editor.tsx");
+  assert.match(editor, /tag_ids/);
+  assert.match(editor, /管理標籤/);
+  assert.match(editor, /新增規格選項/);
+  assert.match(editor, /option_code/);
+  assert.match(editor, /上移|下移/);
+  assert.match(editor, /停用|啟用/);
+  assert.doesNotMatch(editor, /拖曳|drag/i);
 });
 
 test("admin product, company and RFQ management routes stay server-authorized", () => {

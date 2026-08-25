@@ -60,6 +60,7 @@ const createdRows = {
   orderIds: new Set(),
   rfqIds: new Set(),
   companyIds: new Set(),
+  optionIds: new Set(),
   productIds: new Set(),
 };
 
@@ -175,6 +176,15 @@ async function cleanupCreatedRows() {
       const { error } = await admin.auth.admin.deleteUser(authUserId);
       assert.ifError(error);
     }
+  }
+
+  const optionIds = [...createdRows.optionIds];
+  if (optionIds.length > 0) {
+    const { error } = await admin
+      .from("b2b_product_spec_options")
+      .delete()
+      .in("id", optionIds);
+    assert.ifError(error);
   }
 
   const productIds = [...createdRows.productIds];
@@ -605,6 +615,205 @@ test(
 );
 
 test(
+  "B2B admin tags and spec options preserve channel boundaries and RFQ snapshots",
+  { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
+  async () => {
+    const adminCookies = await login(credentials.admin);
+    const b2bCookies = await login(credentials.b2b);
+
+    const b2bProductsResponse = await request("/api/admin/products/b2b?include_inactive=true", {
+      headers: { cookie: adminCookies },
+    });
+    const b2bProducts = await json(b2bProductsResponse);
+    const b2bProduct = (b2bProducts.products ?? []).find((product) => product.status === "published");
+    assert.ok(b2bProduct?.id, "the B2B fixture needs a published product");
+    const b2cCookies = await login(credentials.b2c);
+    assert.equal((await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`)).status, 401);
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${b2bProduct.id}/spec-options`, { headers: { cookie: b2cCookies } })).status,
+      403,
+    );
+
+    const b2cProductsResponse = await request("/api/admin/products/b2c?include_inactive=true", {
+      headers: { cookie: adminCookies },
+    });
+    const b2cProducts = await json(b2cProductsResponse);
+    const b2cProduct = b2cProducts.products?.[0];
+    assert.ok(b2cProduct?.id, "the B2C fixture needs a product for channel isolation");
+
+    const b2bTagsResponse = await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`, {
+      headers: { cookie: adminCookies },
+    });
+    assert.equal(b2bTagsResponse.status, 200);
+    const b2bTags = await json(b2bTagsResponse);
+    assert.equal(b2bTags.channel, "b2b");
+    assert.ok(Array.isArray(b2bTags.tags));
+    const originalTagIds = [...(b2bTags.tag_ids ?? [])];
+
+    const b2cTagsResponse = await request(`/api/admin/products/b2c/${b2cProduct.id}/tags`, {
+      headers: { cookie: adminCookies },
+    });
+    assert.equal(b2cTagsResponse.status, 200);
+    const b2cTags = await json(b2cTagsResponse);
+    assert.equal(b2cTags.channel, "b2c");
+    assert.ok(Array.isArray(b2cTags.tags));
+
+    try {
+      const clearTags = await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`, {
+        method: "PATCH",
+        headers: { cookie: adminCookies },
+        body: JSON.stringify({ tag_ids: [] }),
+      });
+      assert.equal(clearTags.status, 200);
+      const clearedTags = await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`, {
+        headers: { cookie: adminCookies },
+      });
+      assert.deepEqual((await json(clearedTags)).tag_ids, []);
+
+      const b2cTagId = b2cTags.tags?.[0]?.id;
+      if (b2cTagId) {
+        const crossChannelTag = await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`, {
+          method: "PATCH",
+          headers: { cookie: adminCookies },
+          body: JSON.stringify({ tag_ids: [b2cTagId] }),
+        });
+        assert.equal(crossChannelTag.status, 400);
+      }
+    } finally {
+      const restoreTags = await request(`/api/admin/products/b2b/${b2bProduct.id}/tags`, {
+        method: "PATCH",
+        headers: { cookie: adminCookies },
+        body: JSON.stringify({ tag_ids: originalTagIds }),
+      });
+      assert.equal(restoreTags.status, 200);
+    }
+
+    const optionsPath = `/api/admin/products/b2b/${b2bProduct.id}/spec-options`;
+    const codePrefix = `CT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    async function createOption(optionCode, displayOrder) {
+      const response = await request(optionsPath, {
+        method: "POST",
+        headers: { cookie: adminCookies },
+        body: JSON.stringify({
+          option_code: optionCode,
+          specification_text: `快照規格 ${optionCode}`,
+          packaging_text: `快照包裝 ${optionCode}`,
+          display_order: displayOrder,
+        }),
+      });
+      assert.equal(response.status, 201);
+      const payload = await json(response);
+      assert.ok(payload.option?.id);
+      createdRows.optionIds.add(payload.option.id);
+      return payload.option;
+    }
+
+    const invalidOption = await request(optionsPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        option_code: "invalid code",
+        specification_text: "格式錯誤",
+        packaging_text: "格式錯誤",
+      }),
+    });
+    assert.equal(invalidOption.status, 400);
+
+    const firstOption = await createOption(`${codePrefix}-A`, 9000);
+    const secondOption = await createOption(`${codePrefix}-B`, 9001);
+    const duplicateOption = await request(optionsPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        option_code: firstOption.option_code,
+        specification_text: "重複代碼",
+        packaging_text: "重複包裝",
+      }),
+    });
+    assert.equal(duplicateOption.status, 409);
+
+    const immutableOptionCode = await request(`${optionsPath}/${firstOption.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ option_code: "CHANGED-A" }),
+    });
+    assert.equal(immutableOptionCode.status, 400);
+    assert.match((await json(immutableOptionCode)).error, /不可修改/);
+
+    const updateFirst = await request(`${optionsPath}/${firstOption.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        specification_text: "快照規格 A",
+        packaging_text: "快照包裝 A",
+        display_order: 9001,
+      }),
+    });
+    assert.equal(updateFirst.status, 200);
+    const updateSecond = await request(`${optionsPath}/${secondOption.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ display_order: 9000 }),
+    });
+    assert.equal(updateSecond.status, 200);
+
+    const orderedOptionsResponse = await request(optionsPath, { headers: { cookie: adminCookies } });
+    assert.equal(orderedOptionsResponse.status, 200);
+    const orderedOptions = (await json(orderedOptionsResponse)).options.filter(
+      (option) => [firstOption.id, secondOption.id].includes(option.id),
+    );
+    assert.deepEqual(orderedOptions.map((option) => option.id), [secondOption.id, firstOption.id]);
+
+    const rfqResponse = await request("/api/b2b/rfqs", {
+      method: "POST",
+      headers: { cookie: b2bCookies },
+      body: JSON.stringify({
+        items: [{ product_id: b2bProduct.id, specification_option_id: firstOption.id, quantity: 1, unit: "箱" }],
+      }),
+    });
+    assert.equal(rfqResponse.status, 201);
+    const rfqPayload = await json(rfqResponse);
+    createdRows.rfqIds.add(rfqPayload.rfqId);
+
+    const historyResponse = await request("/api/b2b/rfqs", { headers: { cookie: b2bCookies } });
+    const history = await json(historyResponse);
+    const savedItem = history.rfqs
+      ?.find((rfq) => rfq.id === rfqPayload.rfqId)
+      ?.items?.find((item) => item.specification_option_id === firstOption.id);
+    assert.equal(savedItem?.specification_text_snapshot, "快照規格 A");
+    assert.equal(savedItem?.packaging_text_snapshot, "快照包裝 A");
+
+    const updateAfterRfq = await request(`${optionsPath}/${firstOption.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ specification_text: "更新後規格 A", packaging_text: "更新後包裝 A" }),
+    });
+    assert.equal(updateAfterRfq.status, 200);
+    const historyAfterUpdate = await request("/api/b2b/rfqs", { headers: { cookie: b2bCookies } });
+    const savedItemAfterUpdate = (await json(historyAfterUpdate)).rfqs
+      ?.find((rfq) => rfq.id === rfqPayload.rfqId)
+      ?.items?.find((item) => item.specification_option_id === firstOption.id);
+    assert.equal(savedItemAfterUpdate?.specification_text_snapshot, "快照規格 A");
+    assert.equal(savedItemAfterUpdate?.packaging_text_snapshot, "快照包裝 A");
+
+    const disableOption = await request(`${optionsPath}/${firstOption.id}`, {
+      method: "DELETE",
+      headers: { cookie: adminCookies },
+    });
+    assert.equal(disableOption.status, 200);
+    assert.equal((await json(disableOption)).option.is_active, false);
+    const disabledOptionRfq = await request("/api/b2b/rfqs", {
+      method: "POST",
+      headers: { cookie: b2bCookies },
+      body: JSON.stringify({
+        items: [{ product_id: b2bProduct.id, specification_option_id: firstOption.id, quantity: 1, unit: "箱" }],
+      }),
+    });
+    assert.equal(disabledOptionRfq.status, 400);
+  },
+);
+
+test(
   "business_staff is limited to the B2B admin workbench",
   {
     skip: integrationReady && credentials.businessStaff
@@ -631,6 +840,14 @@ test(
     );
     assert.equal(
       (await request(`/api/admin/products/b2b/${product.id}`, { headers: { cookie: cookies } })).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${product.id}/tags`, { headers: { cookie: cookies } })).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${product.id}/spec-options`, { headers: { cookie: cookies } })).status,
       200,
     );
     const originalName = product.name;
