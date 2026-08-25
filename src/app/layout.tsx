@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { B2CHelpWidget } from "@/components/B2CHelpWidget";
 import { buildOpenGraph, SITE_URL } from "@/lib/seo";
 import { editorialFontClassName } from "@/lib/editorial/fonts";
 import "./globals.css";
@@ -32,6 +29,10 @@ const DEFAULT_DESCRIPTION =
  * twitter:title／twitter:description／twitter:image 時，會自動退回讀
  * og:title／og:description／og:image（Twitter 自己文件記載的行為），所以這裡
  * 不用在每一頁重複填一次 twitter 欄位，只要 openGraph 有正確覆寫就夠了。
+ *
+ * 這組全站預設值套用到「全站」是刻意的（含 B2B／Admin／登入頁）——沒有
+ * 覆寫自己 metadata 的頁面，分享出去至少有一個合理的標題／描述，不是空白，
+ * 跟下面 2026-08-25 拿掉 Header／Footer 的調整是兩件事，不衝突。
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -49,47 +50,46 @@ export const metadata: Metadata = {
 };
 
 /**
- * 目前這個網站只有 B2C 頁面（/、/products/*），所以 Header 直接掛在 root layout。
- * 之後 B 開始做 /business/*（B2B）跟 /admin 時，這個 B2C 導覽列（會員登入、企業合作、
- * 購物車這些 B2C 專屬入口）不應該一起出現在那些頁面上——屆時建議改用 Next.js 的
- * route group（例如 (b2c)/layout.tsx）把這個 Header 收進去，跟 B2B／Admin 的版面分開，
- * 不是把 Header 元件本身複雜化去判斷「現在是不是 B2C 頁面」。這裡先不動，只留這個提醒。
- *
  * 2026-08-14：套用 design.md §5.2／§5.3 的品牌色彩與字體（token 定義見
  * src/app/globals.css），跟 B 的 /login 對齊。原本的 Geist 字體（create-next-app
  * 預設）拿掉，改用 design.md 指定的 "Noto Sans TC", "Microsoft JhengHei"（見
  * globals.css 的 --font-sans），這裡不用再另外掛字體 class。
  *
- * 2026-08-14（同日）：加上全站 Footer（src/components/Footer.tsx，design.md §6.5
- * 提早做）。各頁 <main> 都帶 flex-1，Footer 排在 children 後面，內容不夠長時
- * Footer 還是會貼齊視窗底部，不會浮在中間。
- *
- * 2026-08-17：加上 B2C 需求釐清浮動工具（src/components/B2CHelpWidget.tsx，
- * PRD B2C-05／FDD §6.6）。跟 Header 不一樣，這裡沒有用 route group 排除
- * /login、/business、/admin——B2CHelpWidget 本身是 Client Component，直接用
- * usePathname() 判斷要不要渲染（見該檔案），不需要像 Header 那樣為了在 Server
- * Component 裡 await Supabase 查詢而依賴版面結構排除，兩種元件的限制不同，
- * 不是同一套解法硬套。
- *
- * 2026-08-17（同日）：`data-scroll-behavior="smooth"` 是 Next.js 16 要求的明確
+ * 2026-08-17：`data-scroll-behavior="smooth"` 是 Next.js 16 要求的明確
  * 標記——globals.css 有設定 `scroll-behavior: smooth`（給 Header 錨點連結用），
  * Next 偵測到這個 CSS 設定但沒看到這個屬性時會印警告，怕它跟路由切換的捲動
  * 還原互相干擾；加上這個屬性等於明確告訴 Next「這是刻意的」。
  *
- * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風（原本只在 /design-preview/*
- * 底下的提案），正式取代 design.md 舊有的「海洋藍＋鮮活綠」系統，套用到全站，
- * 包含 Header／Footer。`editorialFontClassName`（見 src/lib/editorial/fonts.ts）
- * 掛在 `<html>` 上，讓 `var(--ep-font-serif)`／`var(--ep-font-sans)`／
- * `var(--ep-font-en)` 這三個 CSS 變數全站都能用，不用每個頁面自己重新載入一次
- * 字體。`<body>` 的背景／文字色改用編輯風的暖白／墨色（跟舊的
- * `bg-surface-warm`／`text-ink-900` 很接近，視覺上不會突兀），字體改成編輯風
- * 內文字體。
+ * 2026-08-19：`editorialFontClassName`（見 src/lib/editorial/fonts.ts）掛在
+ * `<html>` 上，讓 `var(--ep-font-serif)`／`var(--ep-font-sans)`／
+ * `var(--ep-font-en)` 這三個 CSS 變數全站都能用——這裡只是「註冊」這些
+ * CSS 變數，不代表全站文字都會被強制換成編輯風字體（實際套用字體的
+ * `font-[family-name:...]` class 在下面的 `<body>` 已經拿掉，改到
+ * src/app/(b2c)/layout.tsx，只有 B2C 頁面才會真的套用這個字體，B2B／Admin／
+ * 登入頁可以自己決定要不要用）。
+ *
+ * 2026-08-25（回應 B 回報 /business/catalog 同時顯示 B2C Header 與 B2B
+ * BusinessHeader）：Header／Footer／B2CHelpWidget 原本直接掛在這個 root
+ * layout，是從網站只有 B2C 頁面時期留下來的做法（見這裡先前版本的檔頭
+ * 註解），當時就已經寫了 TODO 提醒之後要處理。現在 B2B（/business/catalog
+ * 等）、Admin（/admin/*）頁面都是這個 root layout 的子路由，全站套用就會讓
+ * 這些頁面也顯示 B2C 導覽列，跟 B2B 自己的版面疊在一起。
+ *
+ * 處理方式：Header／Footer／B2CHelpWidget，連同原本掛在 `<body>` 的 B2C
+ * 專屬底色／字體／文字色，都搬到新的 src/app/(b2c)/layout.tsx，只套用在
+ * `(b2c)` route group 底下的頁面（見該檔案的完整清單與理由）。這個 root
+ * layout 現在只保留全站都需要的基礎 shell：`<html>`／`<body>` 標籤本身、
+ * 字體 CSS 變數註冊、`globals.css`、全站 SEO 預設值——不含任何 B2C 專屬的
+ * 元件或視覺樣式，B2B／Admin／登入頁不會再被迫繼承這些。
+ *
+ * `<body>` 只留 `flex min-h-full flex-col`（純排版骨架，不含顏色／字體），
+ * 讓「內容不夠長時 Footer 貼齊視窗底部」這個效果在 B2C 頁面上（透過
+ * `(b2c)/layout.tsx` 的內層 div）繼續成立，非 B2C 頁面也可以視需要用同一套
+ * flex 骨架排版，不強迫套用 B2C 的顏色。
  *
  * `src/app/globals.css` 裡 design.md 時期定義的 `@theme` token（`ink-900`、
- * `surface-warm`、`brand-ocean-*` 等）**刻意沒有刪除**——`/products/tags/[slug]`、
- * `/products/categories/[slug]`、`/cart`、`/checkout`、`/login`、
- * `B2CHelpWidget` 這幾個還沒重新設計，繼續依賴這些 token，見各自檔案；等這些
- * 頁面之後也改版了，才是真的可以清掉舊 token 的時候。
+ * `surface-warm`、`brand-ocean-*` 等）**刻意沒有刪除**——`/login` 還沒重新
+ * 設計，繼續依賴這些 token，見該檔案。
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -98,12 +98,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-scroll-behavior="smooth"
       className={`h-full antialiased ${editorialFontClassName}`}
     >
-      <body className="flex min-h-full flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
-        <Header />
-        {children}
-        <Footer />
-        <B2CHelpWidget />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
