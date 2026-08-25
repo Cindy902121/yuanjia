@@ -1,5 +1,6 @@
 import { apiError, json, parseCsv } from "@/lib/api";
 import { attachProductTags, findProductIdsByTags } from "@/lib/catalog";
+import { attachProductImages } from "@/lib/product-images";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 const B2C_PRODUCT_FIELDS =
@@ -54,8 +55,13 @@ export async function GET(request: Request) {
       { tagTable: "b2c_tags", relationTable: "b2c_product_tags" },
       products ?? [],
     );
+    const productsWithImages = await attachProductImages(
+      supabase,
+      "b2c",
+      productsWithTags,
+    );
 
-    return json({ products: productsWithTags });
+    return json({ products: productsWithImages });
   } catch {
     return apiError("目前無法讀取 B2C 商品。", 503);
   }

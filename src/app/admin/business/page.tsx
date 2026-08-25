@@ -1,5 +1,16 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { getAdminContext } from "@/lib/auth-context";
+import type { Metadata } from "next";
 
-export default async function AdminBusinessPage() { const context = await getAdminContext(); if (!context.user) redirect("/login"); if (!context.isAdmin) redirect("/"); return <main className="min-h-screen bg-[#F7F6F2] px-5 py-10 text-[#17242A]"><div className="mx-auto max-w-5xl"><Link className="text-sm font-semibold text-[#005DAA] hover:underline" href="/admin">← 管理工作台</Link><h1 className="mt-6 text-3xl font-bold">B2B／企業管理</h1><p className="mt-2 text-sm text-[#536168]">管理 API 已受 Admin 權限保護；本頁提供驗收入口。</p><div className="mt-8 grid gap-4 sm:grid-cols-2"><Link className="rounded-2xl border border-[#C9D8DE] bg-white p-5 hover:border-[#005DAA]" href="/api/admin/analytics/summary"><p className="font-bold">分析摘要 API</p><p className="mt-2 text-sm text-[#536168]">檢視事件與詢價摘要。</p></Link><Link className="rounded-2xl border border-[#C9D8DE] bg-white p-5 hover:border-[#005DAA]" href="/api/admin/products/b2b/00000000-0000-0000-0000-000000000000/tags"><p className="font-bold">B2B 商品標籤 API</p><p className="mt-2 text-sm text-[#536168]">透過商品 ID 進行標籤管理。</p></Link></div></div></main>; }
+import { requireAdminPage } from "@/lib/admin-page-auth";
+
+import { AdminDashboard } from "../admin-dashboard";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "B2B 管理 | 元家",
+};
+
+export default async function AdminBusinessPage() {
+  await requireAdminPage("/admin/business");
+
+  return <AdminDashboard initialTab="b2b-products" scope="business" />;
+}

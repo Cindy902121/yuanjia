@@ -20,6 +20,11 @@ const routes = {
   analytics: read("src/app/api/analytics/events/route.ts"),
   adminAnalytics: read("src/app/api/admin/analytics/summary/route.ts"),
   adminTags: read("src/app/api/admin/products/[channel]/[productId]/tags/route.ts"),
+  adminProducts: read("src/app/api/admin/products/[channel]/route.ts"),
+  adminProductStatus: read("src/app/api/admin/products/[channel]/[productId]/route.ts"),
+  adminCompanies: read("src/app/api/admin/companies/route.ts"),
+  adminCompany: read("src/app/api/admin/companies/[companyId]/route.ts"),
+  adminRfqs: read("src/app/api/admin/rfqs/route.ts"),
 };
 
 const EVENT_NAMES = [
@@ -146,6 +151,23 @@ test("RFQ reads and writes are scoped to the authenticated company", () => {
   assert.match(routes.b2bRfqs, /resolveCustomerSnapshot\(context\.company\.client_code\)/);
 });
 
+test("B2B catalog and RFQ contracts preserve multi-spec selections", () => {
+  for (const route of [routes.b2bProducts, routes.b2bFinder]) {
+    assert.match(route, /attachB2bProductSpecOptions/);
+  }
+  for (const field of [
+    "specification_option_id",
+    "other_specification",
+    "other_packaging",
+    "specification_text_snapshot",
+    "packaging_text_snapshot",
+  ]) {
+    assert.match(routes.b2bRfqs, new RegExp(field));
+  }
+  assert.doesNotMatch(routes.b2bRfqs, /seenProductIds/);
+  assert.match(routes.b2bRfqs, /same product.*same specification|相同規格/);
+});
+
 test("all 24 analytics event names and server-derived payload fields are preserved", () => {
   const source = read("src/lib/analytics-events.ts");
   const match = source.match(/ANALYTICS_EVENT_NAMES = \[([\s\S]*?)\] as const/);
@@ -174,6 +196,35 @@ test("admin routes re-check admin authorization at the API boundary", () => {
     assert.match(route, /!context\.isAdmin/);
     assert.match(route, /context\.configurationError \|\| context\.databaseError/);
   }
+});
+
+test("admin product, company and RFQ management routes stay server-authorized", () => {
+  for (const route of [
+    routes.adminProducts,
+    routes.adminProductStatus,
+    routes.adminCompanies,
+    routes.adminCompany,
+    routes.adminRfqs,
+  ]) {
+    assert.match(route, /requireAdmin\(\)/);
+  }
+  assert.match(routes.adminProducts, /include_inactive/);
+  assert.match(routes.adminProductStatus, /is_active/);
+  assert.match(routes.adminCompanies, /auth\.admin\.createUser/);
+  assert.match(routes.adminCompanies, /internalB2bAuthEmail/);
+  assert.match(routes.adminCompany, /is_active/);
+  assert.match(routes.adminRfqs, /b2b_rfq_items/);
+  assert.match(routes.adminRfqs, /company_id/);
+});
+
+test("B2B customer codes are generated and validated with the approved format", () => {
+  const codeSource = read("src/lib/client-code.ts");
+  const loginRoute = read("src/app/api/auth/login/route.ts");
+  const migration = read("supabase/migrations/20260817033059_enforce_b2b_client_code_format.sql");
+  assert.match(codeSource, /CLIENT_CODE_PATTERN = \/\^\[ZEW\]\[0-9\]\{6\}\$\//);
+  assert.match(codeSource, /randomInt\(0, 1_000_000\)/);
+  assert.match(loginRoute, /isClientCode\(clientCode\)/);
+  assert.match(migration, /\^\[ZEW\]\[0-9\]\{6\}\$/);
 });
 
 test("customer prefix matching keeps the longest rule and falls back safely", () => {
