@@ -4,7 +4,7 @@ import { isClientCode } from "@/lib/client-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-type LoginRole = "admin" | "b2b" | "b2c";
+type LoginRole = "admin" | "business_staff" | "b2b" | "b2c";
 
 type LoginSuccess = {
   redirectTo: string;
@@ -22,6 +22,7 @@ function isEmailIdentifier(identifier: string) {
 function success(role: LoginRole) {
   const redirects: Record<LoginRole, string> = {
     admin: "/admin",
+    business_staff: "/admin/business",
     b2b: "/business/catalog",
     b2c: "/",
   };
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
 
     const { data: admin, error: adminError } = await adminClient
       .from("app_admins")
-      .select("is_active")
+      .select("is_active, role")
       .eq("user_id", data.user.id)
       .maybeSingle();
 
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
       return failure("管理者帳號目前未啟用。", 403);
     }
 
-    return success(admin ? "admin" : "b2c");
+    return success(admin?.role === "business_staff" ? "business_staff" : admin ? "admin" : "b2c");
   }
 
   const clientCode = identifier.toUpperCase();

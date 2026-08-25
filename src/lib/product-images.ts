@@ -78,7 +78,7 @@ export function imageUrl(
   return null;
 }
 
-async function resolveImageUrl(
+export async function resolveProductImageUrl(
   client: SupabaseClient,
   channel: ProductImageChannel,
   storagePath: string,
@@ -126,7 +126,7 @@ export async function attachProductImages<T extends { id: string }>(
       image_role: image.image_role,
       alt_text: image.alt_text,
       sort_order: image.sort_order,
-      url: await resolveImageUrl(client, channel, image.storage_path),
+      url: await resolveProductImageUrl(client, channel, image.storage_path),
     });
     imagesByProduct.set(image.product_id, current);
   }

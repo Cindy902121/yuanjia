@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     let query = context.supabase
       .from("b2b_products")
       .select(B2B_PRODUCT_FIELDS)
-      .eq("is_active", true)
+      .eq("status", "published")
       .order("name");
 
     if (productIds) {

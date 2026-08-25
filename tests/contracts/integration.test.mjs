@@ -44,6 +44,9 @@ const credentials = {
   admin: process.env.CONTRACT_TEST_ADMIN_EMAIL && process.env.CONTRACT_TEST_ADMIN_PASSWORD
     ? { identifier: process.env.CONTRACT_TEST_ADMIN_EMAIL, password: process.env.CONTRACT_TEST_ADMIN_PASSWORD }
     : null,
+  businessStaff: process.env.CONTRACT_TEST_BUSINESS_STAFF_EMAIL && process.env.CONTRACT_TEST_BUSINESS_STAFF_PASSWORD
+    ? { identifier: process.env.CONTRACT_TEST_BUSINESS_STAFF_EMAIL, password: process.env.CONTRACT_TEST_BUSINESS_STAFF_PASSWORD }
+    : null,
   otherB2b: process.env.CONTRACT_TEST_B2B_OTHER_IDENTIFIER && process.env.CONTRACT_TEST_B2B_OTHER_PASSWORD
     ? { identifier: process.env.CONTRACT_TEST_B2B_OTHER_IDENTIFIER, password: process.env.CONTRACT_TEST_B2B_OTHER_PASSWORD }
     : null,
@@ -258,6 +261,12 @@ test(
     assert.equal(adminPage.status, 200);
     const businessPage = await request("/admin/business", { headers: { cookie: adminCookies } });
     assert.equal(businessPage.status, 200);
+    assert.equal((await request("/api/admin/products/b2b?include_inactive=true")).status, 401);
+    const b2cAdminCookies = await login(credentials.b2c);
+    assert.equal(
+      (await request("/api/admin/products/b2b?include_inactive=true", { headers: { cookie: b2cAdminCookies } })).status,
+      403,
+    );
 
     const anonymousPage = await request("/admin");
     assert.ok([307, 308].includes(anonymousPage.status));
@@ -283,6 +292,10 @@ test(
       assert.ok(Array.isArray(payload.products));
       assert.ok(payload.products.length > 0, `${channel} admin catalog needs at least one product`);
     }
+    assert.equal(
+      (await request("/api/admin/products/b2b?include_inactive=true&status=invalid", { headers: { cookie: adminCookies } })).status,
+      400,
+    );
 
     const b2cProductsResponse = await request("/api/admin/products/b2c?include_inactive=true", {
       headers: { cookie: adminCookies },
@@ -316,28 +329,52 @@ test(
       headers: { cookie: adminCookies },
     });
     const b2bProductsPayload = await json(b2bProductsResponse);
-    const b2bProduct = b2bProductsPayload.products?.[0];
+    const b2bProduct = b2bProductsPayload.products?.find((product) => ["published", "offline"].includes(product.status));
     assert.ok(b2bProduct?.id, "the B2B admin catalog needs a product id");
-    const originalB2bStatus = b2bProduct.is_active;
+    assert.ok(b2bProduct.status, "the B2B admin catalog needs a workflow status");
+    const originalB2bStatus = b2bProduct.status;
+    const nextB2bStatus = originalB2bStatus === "published" ? "offline" : "published";
+    const statusFiltered = await request(`/api/admin/products/b2b?include_inactive=true&status=${originalB2bStatus}`, {
+      headers: { cookie: adminCookies },
+    });
+    assert.equal(statusFiltered.status, 200);
+    assert.ok((await json(statusFiltered)).products.every((product) => product.status === originalB2bStatus));
+    const illegalTransition = await request("/api/admin/products/b2b/bulk-status", {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ product_ids: [b2bProduct.id], status: originalB2bStatus }),
+    });
+    assert.equal(illegalTransition.status, 409);
     try {
-      const disableB2b = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+      const disableB2b = await request("/api/admin/products/b2b/bulk-status", {
         method: "PATCH",
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: false }),
+        body: JSON.stringify({ product_ids: [b2bProduct.id], status: nextB2bStatus }),
       });
       assert.equal(disableB2b.status, 200);
       const disabledB2bList = await request("/api/admin/products/b2b?include_inactive=false", {
         headers: { cookie: adminCookies },
       });
       const disabledB2bPayload = await json(disabledB2bList);
-      assert.ok(!(disabledB2bPayload.products ?? []).some((product) => product.id === b2bProduct.id));
+      if (nextB2bStatus === "offline") {
+        assert.ok(!(disabledB2bPayload.products ?? []).some((product) => product.id === b2bProduct.id));
+      }
     } finally {
-      const restoreB2b = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
-        method: "PATCH",
+      const currentB2bList = await request("/api/admin/products/b2b?include_inactive=true", {
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: originalB2bStatus }),
       });
-      assert.equal(restoreB2b.status, 200);
+      assert.equal(currentB2bList.status, 200);
+      const currentB2bProduct = (await json(currentB2bList)).products?.find(
+        (product) => product.id === b2bProduct.id,
+      );
+      if (currentB2bProduct && currentB2bProduct.status !== originalB2bStatus) {
+        const restoreB2b = await request("/api/admin/products/b2b/bulk-status", {
+          method: "PATCH",
+          headers: { cookie: adminCookies },
+          body: JSON.stringify({ product_ids: [b2bProduct.id], status: originalB2bStatus }),
+        });
+        assert.equal(restoreB2b.status, 200);
+      }
     }
 
     const anonymousProductsResponse = await request("/api/b2c/products");
@@ -446,6 +483,25 @@ test(
     });
     assert.equal(rfqUpdate.status, 200);
     assert.equal((await json(rfqUpdate)).rfq.status, "processing");
+  },
+);
+
+test(
+  "business_staff is limited to the B2B admin workbench",
+  {
+    skip: integrationReady && credentials.businessStaff
+      ? false
+      : "set CONTRACT_TEST_BUSINESS_STAFF_EMAIL/PASSWORD to run the business_staff contract",
+  },
+  async () => {
+    const cookies = await login(credentials.businessStaff);
+    const adminPage = await request("/admin", { headers: { cookie: cookies } });
+    assert.ok([307, 308].includes(adminPage.status));
+    assert.equal(new URL(adminPage.headers.get("location"), baseUrl).pathname, "/admin/business");
+    assert.equal((await request("/admin/business", { headers: { cookie: cookies } })).status, 200);
+    assert.equal((await request("/api/admin/products/b2b?include_inactive=true", { headers: { cookie: cookies } })).status, 200);
+    assert.equal((await request("/api/admin/products/b2c?include_inactive=true", { headers: { cookie: cookies } })).status, 403);
+    assert.equal((await request("/api/admin/companies", { headers: { cookie: cookies } })).status, 403);
   },
 );
 

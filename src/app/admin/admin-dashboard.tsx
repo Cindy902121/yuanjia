@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+
+import {
+  B2B_PRODUCT_STATUSES,
+  B2B_STATUS_LABELS,
+  canTransitionB2bProductStatus,
+  type B2bProductStatus,
+} from "@/lib/admin-catalog";
 
 type AdminTab =
   | "overview"
@@ -23,6 +31,9 @@ type Product = {
   slug?: string;
   price?: number | string;
   mock_inventory?: number;
+  status?: B2bProductStatus;
+  image_count?: number;
+  thumbnail_url?: string | null;
   is_active: boolean;
   updated_at: string;
 };
@@ -150,6 +161,19 @@ function statusBadge(isActive: boolean) {
     : "border-[#E5D2D0] bg-[#FFF5F4] text-[#A43B34]";
 }
 
+function b2bStatusBadge(status: B2bProductStatus | undefined) {
+  switch (status) {
+    case "published":
+      return "border-[#B8E1CB] bg-[#F0FBF4] text-[#18794E]";
+    case "offline":
+      return "border-[#E5D2D0] bg-[#FFF5F4] text-[#A43B34]";
+    case "review":
+      return "border-[#F2D7A3] bg-[#FFF9E9] text-[#8A5A00]";
+    default:
+      return "border-[#D8E1E5] bg-[#F4F7F8] text-[#536168]";
+  }
+}
+
 export function AdminDashboard({
   initialTab,
   scope = "admin",
@@ -188,6 +212,8 @@ export function AdminDashboard({
       setB2bProducts(payload.products ?? []);
     }
   }, []);
+
+  const refreshB2bProducts = useCallback(() => loadProducts("b2b"), [loadProducts]);
 
   const loadOrders = useCallback(async () => {
     const payload = await requestJson<{ orders: Order[] }>("/api/b2c/mock-orders");
@@ -246,7 +272,7 @@ export function AdminDashboard({
     setNotice("");
   }
 
-  async function toggleProduct(channel: Channel, product: Product) {
+  async function toggleProduct(product: Product) {
     if (
       product.is_active &&
       !window.confirm(`確定要下架「${product.name}」嗎？下架後前台將不再顯示。`)
@@ -254,17 +280,17 @@ export function AdminDashboard({
       return;
     }
 
-    const key = `${channel}-product-${product.id}`;
+    const key = `b2c-product-${product.id}`;
     setBusyKey(key);
     setError("");
     setNotice("");
     try {
-      await requestJson(`/api/admin/products/${channel}/${product.id}`, {
+      await requestJson(`/api/admin/products/b2c/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !product.is_active }),
       });
-      await loadProducts(channel);
+      await loadProducts("b2c");
       setNotice(`${product.name} 已${product.is_active ? "下架" : "上架"}。`);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "商品狀態更新失敗。");
@@ -387,12 +413,14 @@ export function AdminDashboard({
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link
-              className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
-              href={scope === "business" ? "/admin" : "/admin/business"}
-            >
-              {scope === "business" ? "管理總覽" : "B2B 管理"}
-            </Link>
+            {scope !== "business" ? (
+              <Link
+                className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+                href="/admin/business"
+              >
+                B2B 管理
+              </Link>
+            ) : null}
             <Link
               className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
               href="/"
@@ -459,7 +487,7 @@ export function AdminDashboard({
               </div>
             ) : null}
 
-            {isLoading ? (
+            {isLoading && activeTab !== "b2b-products" ? (
               <div className="rounded-2xl border border-[#D8E1E5] bg-white p-8 text-center text-sm text-[#536168]">
                 正在讀取管理資料…
               </div>
@@ -475,17 +503,15 @@ export function AdminDashboard({
                 ) : null}
                 {activeTab === "b2c-products" ? (
                   <ProductPanel
-                    channel="b2c"
                     busyKey={busyKey}
                     onToggle={toggleProduct}
                     products={b2cProducts}
                   />
                 ) : null}
                 {activeTab === "b2b-products" ? (
-                  <ProductPanel
-                    channel="b2b"
-                    busyKey={busyKey}
-                    onToggle={toggleProduct}
+                  <B2bProductPanel
+                    loading={isLoading}
+                    onRefresh={refreshB2bProducts}
                     products={b2bProducts}
                   />
                 ) : null}
@@ -602,26 +628,340 @@ function QuickAction({
   );
 }
 
+function B2bProductPanel({
+  loading,
+  onRefresh,
+  products,
+}: {
+  loading: boolean;
+  onRefresh: () => Promise<void>;
+  products: Product[];
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | B2bProductStatus>("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<B2bProductStatus | "">("");
+  const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [message, setMessage] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const visibleProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return products.filter((product) => {
+      const matchesStatus = statusFilter === "all" || product.status === statusFilter;
+      const matchesSearch =
+        !query ||
+        [product.product_code, product.name, product.brand, product.category]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(query));
+      return matchesStatus && matchesSearch;
+    });
+  }, [products, search, statusFilter]);
+
+  const selectedProducts = useMemo(
+    () => products.filter((product) => selectedIds.includes(product.id)),
+    [products, selectedIds],
+  );
+  const availableBulkStatuses = useMemo(
+    () =>
+      B2B_PRODUCT_STATUSES.filter(
+        (nextStatus) =>
+          selectedProducts.length > 0 &&
+          selectedProducts.every((product) =>
+            canTransitionB2bProductStatus(product.status, nextStatus),
+          ),
+      ),
+    [selectedProducts],
+  );
+  const allVisibleSelected =
+    visibleProducts.length > 0 && visibleProducts.every((product) => selectedIds.includes(product.id));
+  const selectedBulkStatus =
+    bulkStatus !== "" && availableBulkStatuses.includes(bulkStatus) ? bulkStatus : "";
+
+  async function refresh() {
+    setRefreshing(true);
+    setActionError("");
+    try {
+      await onRefresh();
+      setMessage("商品清單已重新整理。");
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "商品清單重新整理失敗。");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function updateSelectedStatus() {
+    if (
+      !bulkStatus ||
+      selectedProducts.length === 0 ||
+      !availableBulkStatuses.includes(bulkStatus)
+    ) {
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    setActionError("");
+    try {
+      await requestJson("/api/admin/products/b2b/bulk-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_ids: selectedProducts.map((product) => product.id),
+          status: bulkStatus,
+        }),
+      });
+      await onRefresh();
+      setSelectedIds([]);
+      setBulkStatus("");
+      setMessage(`已更新 ${selectedProducts.length} 筆商品的狀態。`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "商品狀態更新失敗。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleAllVisible(checked: boolean) {
+    setSelectedIds((current) => {
+      if (checked) {
+        return [...new Set([...current, ...visibleProducts.map((product) => product.id)])];
+      }
+      const visibleIds = new Set(visibleProducts.map((product) => product.id));
+      return current.filter((id) => !visibleIds.has(id));
+    });
+  }
+
+  if (loading) {
+    return (
+      <PanelShell description="讀取 B2B 商品工作台資料。" title="B2B 商品工作台">
+        <div aria-busy="true" className="space-y-3">
+          {Array.from({ length: 5 }, (_, index) => (
+            <div className="h-14 animate-pulse rounded-lg bg-[#F4F7F8]" key={index} />
+          ))}
+        </div>
+      </PanelShell>
+    );
+  }
+
+  return (
+    <PanelShell
+      description="搜尋、篩選並批次管理 B2B 型錄商品；下架使用 offline 保留資料。"
+      title="B2B 商品工作台"
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+        <label className="min-w-0 flex-1 text-sm font-semibold text-[#536168]">
+          搜尋商品
+          <input
+            aria-label="搜尋 B2B 商品"
+            className={inputClass}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="商品編號、名稱、品牌或分類"
+            type="search"
+            value={search}
+          />
+        </label>
+        <label className="w-full text-sm font-semibold text-[#536168] md:w-44">
+          狀態
+          <select
+            aria-label="依商品狀態篩選"
+            className={inputClass}
+            onChange={(event) => setStatusFilter(event.target.value as "all" | B2bProductStatus)}
+            value={statusFilter}
+          >
+            <option value="all">所有狀態</option>
+            {B2B_PRODUCT_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {B2B_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Link
+          className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+          href="/admin/business/products/new"
+        >
+          新增商品
+        </Link>
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-[#536168]">
+        <span>
+          顯示 {visibleProducts.length} / {products.length} 筆
+          {selectedProducts.length > 0 ? `，已選 ${selectedProducts.length} 筆` : ""}
+        </span>
+        <button
+          className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+          disabled={refreshing}
+          onClick={() => void refresh()}
+          type="button"
+        >
+          {refreshing ? "整理中…" : "重新整理清單"}
+        </button>
+      </div>
+
+      {actionError ? (
+        <div className="mt-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert">
+          {actionError}
+        </div>
+      ) : null}
+      {message ? (
+        <div className="mt-4 rounded-xl border border-[#B8E1CB] bg-[#F0FBF4] px-4 py-3 text-sm text-[#18794E]" role="status">
+          {message}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#D8E1E5] bg-[#F8FBFC] p-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-semibold text-[#536168]" aria-live="polite">
+          批次操作：已選 {selectedProducts.length} 筆
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <select
+            aria-label="批次更新商品狀態"
+            className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] focus:border-[#005DAA] focus:outline-none"
+            disabled={selectedProducts.length === 0 || availableBulkStatuses.length === 0 || busy}
+            onChange={(event) => setBulkStatus(event.target.value as B2bProductStatus | "")}
+            value={selectedBulkStatus}
+          >
+            <option value="">選擇下一狀態</option>
+            {availableBulkStatuses.map((status) => (
+              <option key={status} value={status}>
+                {B2B_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+          <button
+            className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+            disabled={
+              selectedProducts.length === 0 ||
+              !bulkStatus ||
+              !availableBulkStatuses.includes(bulkStatus) ||
+              busy
+            }
+            onClick={() => void updateSelectedStatus()}
+            type="button"
+          >
+            {busy ? "更新中…" : "套用狀態"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-x-auto rounded-xl border border-[#D8E1E5]">
+        <table className="min-w-[900px] w-full text-left text-sm">
+          <thead className="bg-[#F4F7F8] text-xs font-bold text-[#536168]">
+            <tr>
+              <th className="w-12 px-4 py-3" scope="col">
+                <input
+                  aria-label="全選目前顯示商品"
+                  checked={allVisibleSelected}
+                  disabled={visibleProducts.length === 0}
+                  onChange={(event) => toggleAllVisible(event.target.checked)}
+                  type="checkbox"
+                />
+              </th>
+              <th className="px-4 py-3" scope="col">縮圖</th>
+              <th className="px-4 py-3" scope="col">商品編號／名稱</th>
+              <th className="px-4 py-3" scope="col">品牌／分類</th>
+              <th className="px-4 py-3" scope="col">狀態</th>
+              <th className="px-4 py-3" scope="col">圖片數</th>
+              <th className="px-4 py-3" scope="col">更新時間</th>
+              <th className="px-4 py-3 text-right" scope="col">操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#E7EDF0] bg-white">
+            {visibleProducts.map((product) => {
+              const status = product.status;
+              return (
+                <tr key={product.id}>
+                  <td className="px-4 py-4 align-top">
+                    <input
+                      aria-label={`選取 ${product.name}`}
+                      checked={selectedIds.includes(product.id)}
+                      onChange={(event) =>
+                        setSelectedIds((current) =>
+                          event.target.checked
+                            ? [...current, product.id]
+                            : current.filter((id) => id !== product.id),
+                        )
+                      }
+                      type="checkbox"
+                    />
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-[#D8E1E5] bg-[#F4F7F8] text-xs text-[#809099]">
+                      {product.thumbnail_url ? (
+                        <Image
+                          alt=""
+                          className="h-full w-full object-cover"
+                          height={48}
+                          src={product.thumbnail_url}
+                          unoptimized
+                          width={48}
+                        />
+                      ) : (
+                        <span aria-hidden="true">—</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <Link
+                      className="font-bold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      href={`/admin/business/products/${product.id}`}
+                    >
+                      {product.name}
+                    </Link>
+                    <p className="mt-1 text-xs text-[#809099]">{product.product_code ?? product.id}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top text-[#536168]">
+                    <p>{product.brand || "未填品牌"}</p>
+                    <p className="mt-1 text-xs text-[#809099]">{product.category}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${b2bStatusBadge(status)}`}>
+                      {status ? B2B_STATUS_LABELS[status] : "未設定"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 align-top text-[#536168]">{product.image_count ?? 0}</td>
+                  <td className="whitespace-nowrap px-4 py-4 align-top text-[#536168]">{formatDate(product.updated_at)}</td>
+                  <td className="px-4 py-4 text-right align-top">
+                    <Link
+                      className="font-semibold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      href={`/admin/business/products/${product.id}`}
+                    >
+                      編輯
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+            {visibleProducts.length === 0 ? (
+              <tr>
+                <td className="px-4 py-10 text-center text-[#809099]" colSpan={8}>
+                  {products.length === 0 ? "目前沒有 B2B 商品資料。" : "找不到符合搜尋或狀態條件的商品。"}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </PanelShell>
+  );
+}
+
 function ProductPanel({
-  channel,
   products,
   busyKey,
   onToggle,
 }: {
-  channel: Channel;
   products: Product[];
   busyKey: string;
-  onToggle: (channel: Channel, product: Product) => void;
+  onToggle: (product: Product) => void;
 }) {
-  const isB2c = channel === "b2c";
   return (
     <PanelShell
-      description={
-        isB2c
-          ? "管理 B2C 前台商品是否可見；下架不會刪除商品資料。"
-          : "管理 B2B 私有型錄是否提供給已啟用的企業會員。"
-      }
-      title={isB2c ? "B2C 商品上架管理" : "B2B 商品型錄管理"}
+      description="管理 B2C 前台商品是否可見；下架不會刪除商品資料。"
+      title="B2C 商品上架管理"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#536168]">
         <span>共 {products.length} 筆，已上架 {products.filter((product) => product.is_active).length} 筆</span>
@@ -634,14 +974,14 @@ function ProductPanel({
               <th className="px-4 py-3">商品</th>
               <th className="px-4 py-3">品牌／分類</th>
               <th className="px-4 py-3">規格</th>
-              {isB2c ? <th className="px-4 py-3">價格／庫存</th> : null}
+              <th className="px-4 py-3">價格／庫存</th>
               <th className="px-4 py-3">狀態</th>
               <th className="px-4 py-3 text-right">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E7EDF0] bg-white">
             {products.map((product) => {
-              const key = `${channel}-product-${product.id}`;
+              const key = `b2c-product-${product.id}`;
               return (
                 <tr key={product.id}>
                   <td className="px-4 py-4 align-top">
@@ -655,12 +995,10 @@ function ProductPanel({
                     <p className="mt-1 text-xs text-[#809099]">{product.category}</p>
                   </td>
                   <td className="px-4 py-4 align-top text-[#536168]">{product.specification}</td>
-                  {isB2c ? (
-                    <td className="px-4 py-4 align-top text-[#536168]">
-                      <p>{formatMoney(product.price)}</p>
-                      <p className="mt-1 text-xs text-[#809099]">模擬庫存 {product.mock_inventory ?? 0}</p>
-                    </td>
-                  ) : null}
+                  <td className="px-4 py-4 align-top text-[#536168]">
+                    <p>{formatMoney(product.price)}</p>
+                    <p className="mt-1 text-xs text-[#809099]">模擬庫存 {product.mock_inventory ?? 0}</p>
+                  </td>
                   <td className="px-4 py-4 align-top">
                     <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusBadge(product.is_active)}`}>
                       {product.is_active ? "上架中" : "已下架"}
@@ -674,7 +1012,7 @@ function ProductPanel({
                           : "bg-[#005DAA] text-white hover:bg-[#00457F]"
                       }`}
                       disabled={busyKey === key}
-                      onClick={() => void onToggle(channel, product)}
+                      onClick={() => void onToggle(product)}
                       type="button"
                     >
                       {busyKey === key ? "處理中…" : product.is_active ? "下架" : "上架"}
@@ -685,7 +1023,7 @@ function ProductPanel({
             })}
             {products.length === 0 ? (
               <tr>
-                <td className="px-4 py-10 text-center text-[#809099]" colSpan={isB2c ? 6 : 5}>
+                <td className="px-4 py-10 text-center text-[#809099]" colSpan={6}>
                   目前沒有商品資料。
                 </td>
               </tr>

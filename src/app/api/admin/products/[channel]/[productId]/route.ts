@@ -1,6 +1,6 @@
 import { apiError, isUuid, json, readJson } from "@/lib/api";
 import { attachB2bProductSpecOptions, attachProductTags } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
   ADMIN_PRODUCT_FIELDS,
   isAdminChannel,
@@ -10,18 +10,22 @@ import {
 import { attachProductImages } from "@/lib/product-images";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+function requireProductAdmin(channel: string) {
+  return channel === "b2b" ? requireBusinessAdmin() : requireAdmin();
+}
+
 export async function PATCH(
   request: Request,
   {
     params,
   }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireProductAdmin(channel);
   if (guard.response) {
     return guard.response;
   }
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品路徑不正確。", 400);
   }
@@ -70,12 +74,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireProductAdmin(channel);
   if (guard.response) {
     return guard.response;
   }
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品路徑不正確。", 400);
   }
@@ -123,12 +127,12 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireProductAdmin(channel);
   if (guard.response) {
     return guard.response;
   }
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品路徑不正確。", 400);
   }
@@ -140,11 +144,36 @@ export async function DELETE(
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
 
+  if (channel === "b2b") {
+    const { data: products, error } = await admin.rpc("admin_bulk_update_b2b_product_status", {
+      product_ids: [productId],
+      next_status: "offline",
+    });
+    if (error) {
+      if (error.code === "22023") {
+        return apiError("商品目前不可直接下架，請先完成合法狀態轉換。", 409);
+      }
+      if (error.code === "P0002") {
+        return apiError("找不到指定商品。", 404);
+      }
+      return apiError("目前無法停用商品。", 503);
+    }
+    const product = (products?.[0] ?? null) as {
+      id: string;
+      status: string;
+      updated_at: string;
+    } | null;
+    if (!product) {
+      return apiError("找不到指定商品。", 404);
+    }
+    return json({ channel, product });
+  }
+
   const { data: product, error } = await admin
     .from(PRODUCT_TABLES[channel])
     .update({ is_active: false })
     .eq("id", productId)
-    .select("id, is_active, updated_at")
+    .select(ADMIN_PRODUCT_FIELDS[channel])
     .maybeSingle();
 
   if (error) {

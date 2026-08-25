@@ -4,9 +4,41 @@ import { isNonEmptyString, parsePositiveInteger } from "@/lib/api";
 
 export type AdminChannel = "b2c" | "b2b";
 
+export const B2B_PRODUCT_STATUSES = ["draft", "review", "published", "offline"] as const;
+export type B2bProductStatus = (typeof B2B_PRODUCT_STATUSES)[number];
+
+export const B2B_STATUS_LABELS: Record<B2bProductStatus, string> = {
+  draft: "草稿",
+  review: "待審核",
+  published: "已發布",
+  offline: "已下架",
+};
+
+const B2B_STATUS_TRANSITIONS: Record<B2bProductStatus, readonly B2bProductStatus[]> = {
+  draft: ["review"],
+  review: ["draft", "published"],
+  published: ["offline"],
+  offline: ["published"],
+};
+
+export function isB2bProductStatus(value: unknown): value is B2bProductStatus {
+  return typeof value === "string" && B2B_PRODUCT_STATUSES.includes(value as B2bProductStatus);
+}
+
+export function canTransitionB2bProductStatus(
+  current: unknown,
+  next: unknown,
+) {
+  return (
+    isB2bProductStatus(current) &&
+    isB2bProductStatus(next) &&
+    B2B_STATUS_TRANSITIONS[current].includes(next)
+  );
+}
+
 export const ADMIN_PRODUCT_FIELDS: Record<AdminChannel, string> = {
   b2c: "id, slug, name, brand, category, specification, price, currency, short_description, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
-  b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, is_active, created_at, updated_at",
+  b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, status, is_active, created_at, updated_at",
 };
 
 export const PRODUCT_TABLES: Record<AdminChannel, "b2c_products" | "b2b_products"> = {
@@ -172,12 +204,16 @@ export function parseProductInput(
     }
   }
 
+  if (input.is_active !== undefined && channel === "b2b") {
+    return { error: "B2B 商品請使用 status 管理工作狀態。" };
+  }
+
   if (input.is_active !== undefined) {
     if (typeof input.is_active !== "boolean") {
       return { error: "商品啟用狀態格式不正確。" };
     }
     payload.is_active = input.is_active;
-  } else if (mode === "create") {
+  } else if (mode === "create" && channel === "b2c") {
     payload.is_active = true;
   }
 

@@ -22,9 +22,13 @@ const routes = {
   adminTags: read("src/app/api/admin/products/[channel]/[productId]/tags/route.ts"),
   adminProducts: read("src/app/api/admin/products/[channel]/route.ts"),
   adminProductStatus: read("src/app/api/admin/products/[channel]/[productId]/route.ts"),
+  adminBulkStatus: read("src/app/api/admin/products/b2b/bulk-status/route.ts"),
   adminCompanies: read("src/app/api/admin/companies/route.ts"),
   adminCompany: read("src/app/api/admin/companies/[companyId]/route.ts"),
   adminRfqs: read("src/app/api/admin/rfqs/route.ts"),
+  adminAuth: read("src/lib/auth-context.ts"),
+  adminPageAuth: read("src/lib/admin-page-auth.ts"),
+  adminDashboard: read("src/app/admin/admin-dashboard.tsx"),
 };
 
 const EVENT_NAMES = [
@@ -198,18 +202,35 @@ test("admin routes re-check admin authorization at the API boundary", () => {
   }
 });
 
+test("B2B admin catalog exposes status, media counts, and batch status boundaries", () => {
+  assert.match(routes.adminProducts, /requireBusinessAdmin\(\)/);
+  assert.match(routes.adminProducts, /status/);
+  assert.match(routes.adminProducts, /image_count/);
+  assert.match(routes.adminProducts, /thumbnail_url/);
+  assert.match(routes.adminBulkStatus, /requireBusinessAdmin\(\)/);
+  assert.match(routes.adminBulkStatus, /admin_bulk_update_b2b_product_status/);
+  assert.match(routes.adminBulkStatus, /product_ids/);
+  assert.match(routes.adminBulkStatus, /next_status/);
+  assert.match(routes.adminAuth, /business_staff/);
+  assert.match(routes.adminPageAuth, /isBusinessStaff/);
+  assert.match(routes.adminDashboard, /B2bProductPanel/);
+  assert.match(routes.adminDashboard, /\/admin\/business\/products\/new/);
+  assert.match(routes.b2bProducts, /\.eq\("status", "published"\)/);
+  assert.match(routes.b2bFinder, /\.eq\("status", "published"\)/);
+  assert.match(routes.b2bRfqs, /\.eq\("status", "published"\)/);
+});
+
 test("admin product, company and RFQ management routes stay server-authorized", () => {
   for (const route of [
-    routes.adminProducts,
     routes.adminProductStatus,
     routes.adminCompanies,
     routes.adminCompany,
-    routes.adminRfqs,
   ]) {
     assert.match(route, /requireAdmin\(\)/);
   }
+  assert.match(routes.adminRfqs, /requireBusinessAdmin\(\)/);
   assert.match(routes.adminProducts, /include_inactive/);
-  assert.match(routes.adminProductStatus, /is_active/);
+  assert.match(routes.adminProductStatus, /is_active|status/);
   assert.match(routes.adminCompanies, /auth\.admin\.createUser/);
   assert.match(routes.adminCompanies, /internalB2bAuthEmail/);
   assert.match(routes.adminCompany, /is_active/);

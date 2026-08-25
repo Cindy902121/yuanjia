@@ -200,7 +200,7 @@ export async function POST(request: Request) {
     .from("b2b_products")
     .select("id")
     .in("id", parsedItems.map((item) => item.product_id))
-    .eq("is_active", true);
+    .eq("status", "published");
 
   if (productError) {
     return apiError("目前無法驗證詢價商品。", 503);
