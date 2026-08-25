@@ -11,6 +11,7 @@ import {
   isB2bProductStatus,
   type B2bProductStatus,
 } from "@/lib/admin-catalog";
+import { ProductImageManager } from "./product-image-manager";
 
 type B2bFieldKey = (typeof B2B_PRODUCT_FIELD_RULES)[number]["key"];
 type B2bForm = Record<B2bFieldKey, string>;
@@ -41,7 +42,6 @@ type B2bProduct = B2bForm & {
   id: string;
   status: unknown;
   updated_at: string;
-  images?: unknown[];
 };
 
 type ApiResult<T> = T & { error?: string };
@@ -224,7 +224,6 @@ export function ProductEditor({
   const [savedForm, setSavedForm] = useState<B2bForm>(emptyForm);
   const [status, setStatus] = useState<B2bProductStatus>("draft");
   const [lastModified, setLastModified] = useState<string | null>(null);
-  const [imageCount, setImageCount] = useState(0);
   const [loading, setLoading] = useState(Boolean(productId));
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -294,7 +293,6 @@ export function ProductEditor({
         setSavedForm(nextForm);
         setStatus(isB2bProductStatus(product.status) ? product.status : "draft");
         setLastModified(product.updated_at);
-        setImageCount(product.images?.length ?? 0);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -1034,18 +1032,7 @@ export function ProductEditor({
             )}
           </section>
 
-          <section aria-labelledby="images-title" className="mt-5 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
-            <div className="flex flex-col gap-1 border-b border-[#E7EDF0] pb-4">
-              <h2 className="text-lg font-bold text-[#17242A]" id="images-title">圖片管理</h2>
-              <p className="text-sm leading-6 text-[#536168]">封面與詳細圖片會在圖片管理區段上傳、排序與移除。</p>
-            </div>
-            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[#536168]">目前有 {imageCount} 張圖片。</p>
-              <button className={`${buttonClass} border border-[#D8E1E5] bg-[#F4F7F8] text-[#536168]`} disabled type="button">
-                管理圖片（即將開放）
-              </button>
-            </div>
-          </section>
+          <ProductImageManager key={currentProductId ?? "new-product"} productId={currentProductId} />
 
           <div className="sticky bottom-4 z-10 mt-6 flex flex-col gap-3 rounded-xl border border-[#D8E1E5] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
             <p aria-live="polite" className={`text-sm ${dirty ? "font-semibold text-[#C84B31]" : "text-[#536168]"}`}>

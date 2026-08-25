@@ -66,7 +66,8 @@ const createdRows = {
 
 async function request(path, options = {}) {
   const headers = new Headers(options.headers);
-  if (options.body !== undefined && !headers.has("content-type")) {
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  if (options.body !== undefined && !isFormData && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
   return fetch(`${baseUrl}${path}`, {
@@ -189,6 +190,16 @@ async function cleanupCreatedRows() {
 
   const productIds = [...createdRows.productIds];
   if (productIds.length > 0) {
+    const { data: imageRows, error: imageSelectError } = await admin
+      .from("b2b_product_images")
+      .select("storage_path")
+      .in("product_id", productIds);
+    assert.ifError(imageSelectError);
+    const imagePaths = (imageRows ?? []).map((image) => image.storage_path).filter(Boolean);
+    if (imagePaths.length > 0) {
+      const { error: storageError } = await admin.storage.from("b2b-media").remove(imagePaths);
+      assert.ifError(storageError);
+    }
     const { error: imageError } = await admin
       .from("b2b_product_images")
       .delete()
@@ -481,6 +492,113 @@ test(
     createdRows.productIds.add(newProductPayload.product.id);
     assert.equal(newProductPayload.product.status, "draft");
     assert.equal("price" in newProductPayload.product, false);
+
+    const imageProductPath = `/api/admin/products/b2b/${newProductPayload.product.id}/images`;
+    assert.equal((await request(imageProductPath)).status, 401);
+    assert.equal((await request(imageProductPath, { headers: { cookie: b2cAdminCookies } })).status, 403);
+    const emptyImages = await request(imageProductPath, { headers: { cookie: adminCookies } });
+    assert.equal(emptyImages.status, 200);
+    assert.deepEqual((await json(emptyImages)).images, []);
+
+    function imageForm({ altText, fileName, imageRole = "detail", type = "image/png" }) {
+      const form = new FormData();
+      form.append("file", new Blob(["contract-image"], { type }), fileName);
+      form.set("alt_text", altText);
+      form.set("image_role", imageRole);
+      return form;
+    }
+
+    const invalidImage = await request(imageProductPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "格式錯誤", fileName: "test.pdf", type: "application/pdf" }),
+    });
+    assert.equal(invalidImage.status, 400);
+
+    const firstImageResponse = await request(imageProductPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "契約測試細節圖 1", fileName: "detail-1.png" }),
+    });
+    assert.equal(firstImageResponse.status, 201);
+    const firstImage = (await json(firstImageResponse)).image;
+    assert.ok(firstImage?.id);
+    assert.match(firstImage.url, /token=/, "B2B image URLs must be signed");
+
+    const altUpdate = await request(`${imageProductPath}/${firstImage.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ alt_text: "契約測試細節圖 1 更新" }),
+    });
+    assert.equal(altUpdate.status, 200);
+    assert.equal((await json(altUpdate)).image.alt_text, "契約測試細節圖 1 更新");
+
+    const replacement = await request(`${imageProductPath}/${firstImage.id}`, {
+      method: "PUT",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "契約測試細節圖 1 替換", fileName: "detail-1.webp", type: "image/webp" }),
+    });
+    assert.equal(replacement.status, 200);
+    const replacementPayload = await json(replacement);
+    assert.equal(replacementPayload.image.alt_text, "契約測試細節圖 1 替換");
+    assert.equal(replacementPayload.storage_cleanup, "ok");
+
+    const imageIds = [firstImage.id];
+    for (let index = 2; index <= 5; index += 1) {
+      const detailResponse = await request(imageProductPath, {
+        method: "POST",
+        headers: { cookie: adminCookies },
+        body: imageForm({ altText: `契約測試細節圖 ${index}`, fileName: `detail-${index}.jpg`, type: "image/jpeg" }),
+      });
+      assert.equal(detailResponse.status, 201);
+      imageIds.push((await json(detailResponse)).image.id);
+    }
+    const detailLimit = await request(imageProductPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "超過上限", fileName: "detail-6.png" }),
+    });
+    assert.equal(detailLimit.status, 409);
+
+    const coverResponse = await request(imageProductPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "契約測試封面", fileName: "cover.png", imageRole: "cover" }),
+    });
+    assert.equal(coverResponse.status, 201);
+    const coverImage = (await json(coverResponse)).image;
+    imageIds.push(coverImage.id);
+    const coverSwitch = await request(`${imageProductPath}/${firstImage.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ image_role: "cover" }),
+    });
+    assert.equal(coverSwitch.status, 200);
+    assert.equal((await json(coverSwitch)).image.image_role, "cover");
+    const duplicateCover = await request(imageProductPath, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: imageForm({ altText: "重複封面", fileName: "cover-duplicate.png", imageRole: "cover" }),
+    });
+    assert.equal(duplicateCover.status, 409);
+
+    const reorderedIds = [...imageIds].reverse();
+    const reorderResponse = await request(imageProductPath, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ image_ids: reorderedIds }),
+    });
+    assert.equal(reorderResponse.status, 200);
+    assert.deepEqual((await json(reorderResponse)).images.map((image) => image.id), reorderedIds);
+
+    const deleteImage = await request(`${imageProductPath}/${firstImage.id}`, {
+      method: "DELETE",
+      headers: { cookie: adminCookies },
+    });
+    assert.equal(deleteImage.status, 200);
+    const afterDelete = await request(imageProductPath, { headers: { cookie: adminCookies } });
+    assert.equal(afterDelete.status, 200);
+    assert.equal((await json(afterDelete)).images.length, 5);
 
     const originalB2bName = b2bProduct.name;
     try {
@@ -848,6 +966,10 @@ test(
     );
     assert.equal(
       (await request(`/api/admin/products/b2b/${product.id}/spec-options`, { headers: { cookie: cookies } })).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/api/admin/products/b2b/${product.id}/images`, { headers: { cookie: cookies } })).status,
       200,
     );
     const originalName = product.name;

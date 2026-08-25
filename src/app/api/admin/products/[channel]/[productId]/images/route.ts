@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { apiError, isNonEmptyString, isUuid, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
   isAdminChannel,
   PRODUCT_TABLES,
@@ -27,6 +27,19 @@ type ImageRow = {
   alt_text: string;
   sort_order: number;
 };
+
+function requireImageAdmin(channel: string) {
+  return channel === "b2b" ? requireBusinessAdmin() : requireAdmin();
+}
+
+function isProductStoragePath(value: unknown, productId: string): value is string {
+  return (
+    isNonEmptyString(value) &&
+    value.length <= 512 &&
+    value.startsWith(`products/${productId}/`) &&
+    /^products\/[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/i.test(value)
+  );
+}
 
 function parseSortOrder(value: unknown) {
   const number = typeof value === "number" ? value : Number(value);
@@ -80,10 +93,10 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireImageAdmin(channel);
   if (guard.response) return guard.response;
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
@@ -105,10 +118,10 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireImageAdmin(channel);
   if (guard.response) return guard.response;
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
@@ -166,18 +179,48 @@ export async function POST(
       .select(PRODUCT_IMAGE_FIELDS)
       .single();
     if (insertError || !image) {
-      await admin.storage.from(PRODUCT_IMAGE_BUCKETS[channel]).remove([storagePath]);
+      const { error: cleanupError } = await admin.storage
+        .from(PRODUCT_IMAGE_BUCKETS[channel])
+        .remove([storagePath]);
+      if (cleanupError) {
+        return json({
+          error: "目前無法保存商品圖片，暫時也無法清理上傳檔案。",
+          storage_cleanup: "failed",
+          storage_path: storagePath,
+        }, 503);
+      }
       if (insertError?.code === "23505") {
         return apiError("圖片排序或封面設定與既有圖片衝突。", 409);
       }
       return apiError("目前無法保存商品圖片。", 503);
     }
 
-    return json({
-      channel,
-      product_id: productId,
-      image: await decoratedImage(admin, channel, productId, image.id),
-    }, 201);
+    try {
+      return json({
+        channel,
+        product_id: productId,
+        image: await decoratedImage(admin, channel, productId, image.id),
+      }, 201);
+    } catch {
+      const { error: deleteError } = await admin
+        .from(PRODUCT_IMAGE_TABLES[channel])
+        .delete()
+        .eq("id", image.id);
+      if (deleteError) {
+        return apiError("目前無法建立商品圖片網址。", 503);
+      }
+      const { error: cleanupError } = await admin.storage
+        .from(PRODUCT_IMAGE_BUCKETS[channel])
+        .remove([storagePath]);
+      if (cleanupError) {
+        return json({
+          error: "目前無法建立商品圖片網址，暫時也無法清理上傳檔案。",
+          storage_cleanup: "failed",
+          storage_path: storagePath,
+        }, 503);
+      }
+      return apiError("目前無法建立商品圖片網址。", 503);
+    }
   } catch {
     return apiError("目前無法處理商品圖片。", 503);
   }
@@ -187,10 +230,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const { channel, productId } = await params;
+  const guard = await requireImageAdmin(channel);
   if (guard.response) return guard.response;
 
-  const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
@@ -226,5 +269,45 @@ export async function PATCH(
     return json({ channel, product_id: productId, images: product?.images ?? [] });
   } catch {
     return apiError("目前無法更新商品圖片排序。", 503);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ channel: string; productId: string }> },
+) {
+  const { channel, productId } = await params;
+  const guard = await requireImageAdmin(channel);
+  if (guard.response) return guard.response;
+
+  if (!isAdminChannel(channel) || !isUuid(productId)) {
+    return apiError("商品圖片路徑不正確。", 400);
+  }
+
+  const body = (await readJson(request)) as { storage_path?: unknown } | null;
+  if (!body || !isProductStoragePath(body.storage_path, productId)) {
+    return apiError("商品圖片清理路徑不正確。", 400);
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data: referencedImage, error: referenceError } = await admin
+      .from(PRODUCT_IMAGE_TABLES[channel])
+      .select("id")
+      .eq("storage_path", body.storage_path)
+      .maybeSingle();
+    if (referenceError) throw new Error(referenceError.message);
+    if (referencedImage) {
+      return apiError("圖片檔案仍被商品圖片資料引用，無法清理。", 409);
+    }
+    const { error } = await admin.storage
+      .from(PRODUCT_IMAGE_BUCKETS[channel])
+      .remove([body.storage_path]);
+    if (error) {
+      return json({ error: "商品圖片檔案清理失敗。", storage_cleanup: "failed" }, 503);
+    }
+    return json({ storage_cleanup: "ok" });
+  } catch {
+    return json({ error: "商品圖片檔案清理失敗。", storage_cleanup: "failed" }, 503);
   }
 }

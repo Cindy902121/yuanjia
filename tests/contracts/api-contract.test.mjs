@@ -20,6 +20,9 @@ const routes = {
   analytics: read("src/app/api/analytics/events/route.ts"),
   adminAnalytics: read("src/app/api/admin/analytics/summary/route.ts"),
   adminTags: read("src/app/api/admin/products/[channel]/[productId]/tags/route.ts"),
+  adminImages: read("src/app/api/admin/products/[channel]/[productId]/images/route.ts"),
+  adminImage: read("src/app/api/admin/products/[channel]/[productId]/images/[imageId]/route.ts"),
+  productImages: read("src/lib/product-images.ts"),
   adminSpecOptions: read("src/app/api/admin/products/b2b/[productId]/spec-options/route.ts"),
   adminSpecOption: read("src/app/api/admin/products/b2b/[productId]/spec-options/[optionId]/route.ts"),
   adminProducts: read("src/app/api/admin/products/[channel]/route.ts"),
@@ -265,14 +268,46 @@ test("B2B product tags and specification options stay isolated and staff-managea
   assert.match(routes.adminSpecOption, /規格選項代碼建立後不可修改/);
   assert.match(routes.adminSpecOption, /is_active: false/);
 
-  const editor = read("src/app/admin/business/products/product-editor.tsx");
+  const editor = read("src/app/admin/business/products/product-editor.tsx") +
+    read("src/app/admin/business/products/product-image-manager.tsx");
   assert.match(editor, /tag_ids/);
   assert.match(editor, /管理標籤/);
   assert.match(editor, /新增規格選項/);
   assert.match(editor, /option_code/);
   assert.match(editor, /上移|下移/);
   assert.match(editor, /停用|啟用/);
-  assert.doesNotMatch(editor, /拖曳|drag/i);
+});
+
+test("B2B product images stay private, validated, staff-manageable, and recoverable", () => {
+  assert.match(routes.adminImages, /requireBusinessAdmin/);
+  assert.match(routes.adminImage, /requireBusinessAdmin/);
+  assert.match(routes.productImages, /b2b-media/);
+  assert.match(routes.adminImages, /PRODUCT_IMAGE_MAX_DETAILS/);
+  assert.match(routes.adminImages, /validateProductImageFile/);
+  assert.match(routes.adminImages, /storage_cleanup/);
+  assert.match(routes.adminImage, /storage_cleanup/);
+  assert.match(routes.adminImage, /storage_path/);
+  assert.match(routes.productImages, /createSignedUrl/);
+  assert.match(routes.productImages, /600/);
+  assert.match(routes.productImages, /PRODUCT_IMAGE_MAX_BYTES/);
+
+  const editor = read("src/app/admin/business/products/product-editor.tsx") +
+    read("src/app/admin/business/products/product-image-manager.tsx");
+  for (const required of [
+    "onDrop",
+    "draggable",
+    "image/jpeg,image/png,image/webp",
+    "5 MB",
+    "替代文字",
+    "替換圖片",
+    "刪除圖片",
+    "window.confirm",
+    "重試清理",
+    "上移",
+    "下移",
+  ]) {
+    assert.match(editor, new RegExp(required));
+  }
 });
 
 test("admin product, company and RFQ management routes stay server-authorized", () => {
