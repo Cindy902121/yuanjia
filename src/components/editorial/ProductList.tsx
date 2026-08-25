@@ -101,8 +101,13 @@ export function EditorialProductList({
 
   return (
     <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16">
-      {/* 左側篩選欄：文字＋底線 toggle，不是圓角 pill。 */}
-      <aside className="flex w-full flex-col gap-8 lg:sticky lg:top-28 lg:w-56 lg:shrink-0">
+      {/* 左側篩選欄：文字＋底線 toggle，不是圓角 pill。
+          2026-08-25（響應式稽核發現）：手機版 order-2／桌機版 lg:order-1——
+          窄螢幕下 DOM 順序不變（螢幕閱讀器／鍵盤 Tab 還是先進篩選欄，篩選欄
+          在邏輯上仍是這個區塊的入口，這個順序沒問題），但視覺順序改成先看到
+          商品，不用先滑過整組篩選才看到商品，這是純 CSS `order` 排序，不影響
+          任何篩選／搜尋邏輯。桌機維持原樣（篩選欄在左）。 */}
+      <aside className="order-2 flex w-full flex-col gap-8 lg:order-1 lg:sticky lg:top-28 lg:w-56 lg:shrink-0">
         <div className="flex flex-col gap-2">
           <input
             type="search"
@@ -154,8 +159,8 @@ export function EditorialProductList({
         ))}
       </aside>
 
-      {/* 右側商品清單：2 欄網格，無編號。 */}
-      <div className="flex flex-1 flex-col gap-2">
+      {/* 右側商品清單：2 欄網格，無編號。手機版 order-1，見上方 aside 的說明。 */}
+      <div className="order-1 flex flex-1 flex-col gap-2 lg:order-2">
         <p className="mb-6 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]" aria-live="polite">
           {hasActiveFilters ? `${filtered.length} RESULTS` : `${filtered.length} ITEMS`}
         </p>

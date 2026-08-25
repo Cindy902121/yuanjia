@@ -69,6 +69,68 @@ export function B2CHelpWidget() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const firstFocusRef = useRef<HTMLAnchorElement>(null);
 
+  const [footerOverlap, setFooterOverlap] = useState(0);
+
+  /**
+   * 2026-08-25（響應式稽核發現）：這顆按鈕是 `position: fixed` 釘在視窗
+   * 右下角，內容較短的頁面（結帳空車、會員中心未登入畫面等）捲到底時，
+   * Footer 會跟這個固定位置疊在一起——實測過沒有蓋到任何可點擊的 Footer
+   * 連結，純粹是視覺重疊，但畫面看起來不乾淨。
+   *
+   * 做法：用 IntersectionObserver 監看 Footer 什麼時候進入視窗底部附近，
+   * 真的接近／進入視窗時才掛 scroll 監聽去算確切的重疊像素，把按鈕往上
+   * 推開剛好的距離，讓它穩穩貼在 Footer 上緣，不是整個隱藏（隱藏的話，
+   * 內容短的頁面等於整頁都看不到這顆按鈕，違反 FDD §6.6「全站 B2C 頁面
+   * 右下角固定顯示」的要求）。平常（Footer 不在視窗附近時）不掛 scroll
+   * 監聽，避免每頁多一個持續觸發的 scroll handler。
+   */
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer) {
+      return;
+    }
+
+    let ticking = false;
+
+    function measureOverlap() {
+      ticking = false;
+      const footerTop = footer!.getBoundingClientRect().top;
+      const overlap = window.innerHeight - footerTop;
+      setFooterOverlap(overlap > 0 ? overlap + 12 : 0);
+    }
+
+    function onScrollOrResize() {
+      if (ticking) {
+        return;
+      }
+      ticking = true;
+      requestAnimationFrame(measureOverlap);
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const isNearFooter = entries.some((entry) => entry.isIntersecting);
+        if (isNearFooter) {
+          measureOverlap();
+          window.addEventListener("scroll", onScrollOrResize, { passive: true });
+          window.addEventListener("resize", onScrollOrResize);
+        } else {
+          window.removeEventListener("scroll", onScrollOrResize);
+          window.removeEventListener("resize", onScrollOrResize);
+          setFooterOverlap(0);
+        }
+      },
+      { rootMargin: "80px 0px 0px 0px" },
+    );
+    observer.observe(footer);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, []);
+
   const isB2cException = B2C_EXCEPTION_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
@@ -190,7 +252,10 @@ export function B2CHelpWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 font-[family-name:var(--ep-font-sans)] sm:bottom-6 sm:right-6">
+    <div
+      className="fixed bottom-5 right-5 z-40 font-[family-name:var(--ep-font-sans)] transition-transform duration-150 sm:bottom-6 sm:right-6"
+      style={footerOverlap > 0 ? { transform: `translateY(-${footerOverlap}px)` } : undefined}
+    >
       <button
         ref={triggerRef}
         type="button"
