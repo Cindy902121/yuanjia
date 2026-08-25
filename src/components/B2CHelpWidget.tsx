@@ -12,16 +12,24 @@ const LINE_URL = "https://page.line.me/cdd6667c?openQrModal=true";
 
 /** FDD §6.6：只掛在 B2C 公開頁面，B2B（/business/*）、後台（/admin）不掛載；
  * /login 是 B2C／B2B 共用的統一登入頁，不屬於 FDD §7.2 列出的「B2C 頁面」，
- * 這裡也一併排除，避免 B2B 使用者在登入頁看到消費者導購小工具。 */
+ * 這裡也一併排除，避免 B2B 使用者在登入頁看到消費者導購小工具。
+ *
+ * 2026-08-25：Header／Footer／B2CHelpWidget 已經改成只掛在
+ * src/app/(b2c)/layout.tsx（見該檔案說明），不再是 root layout 全站套用，
+ * 所以 `/login`、`/business`（`/business/lead` 除外）、`/admin` 這幾個路徑
+ * 現在其實已經不會渲染到這個元件、不會執行到下面這段判斷——這裡的
+ * `usePathname()` 排除邏輯變成「多一層保險」而不是唯一防線，故意保留沒有
+ * 刪除：如果之後有人不小心把某個 B2B／Admin 頁面誤放進 `(b2c)` route group，
+ * 這裡還能再擋一次，不是遺漏沒清理。 */
 const EXCLUDED_PREFIXES = ["/login", "/business", "/admin"];
 
 /**
  * 2026-08-19（建立 /business/lead 時發現）：`/business/lead`（企業合作展示
  * 表單）雖然路徑開頭是 `/business`，但 FDD §7.2 明確把它列在「B2C 頁面」清單
- * 裡，不是 B2B 私有型錄的一部分（見 src/app/business/lead/page.tsx 檔頭
- * 說明）——上面的 `EXCLUDED_PREFIXES` 用「開頭是 /business 就排除」的寫法，
- * 會連這個其實該顯示小工具的頁面也一起擋掉，這裡另外白名單排除，蓋過上面的
- * 前綴規則。
+ * 裡，不是 B2B 私有型錄的一部分（見 src/app/(b2c)/business/lead/page.tsx
+ * 檔頭說明）——上面的 `EXCLUDED_PREFIXES` 用「開頭是 /business 就排除」的
+ * 寫法，會連這個其實該顯示小工具的頁面也一起擋掉，這裡另外白名單排除，蓋過
+ * 上面的前綴規則。
  */
 const B2C_EXCEPTION_PATHS = ["/business/lead"];
 
