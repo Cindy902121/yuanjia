@@ -5,7 +5,7 @@ import { isNonEmptyString, parsePositiveInteger } from "@/lib/api";
 export type AdminChannel = "b2c" | "b2b";
 
 export const ADMIN_PRODUCT_FIELDS: Record<AdminChannel, string> = {
-  b2c: "id, slug, name, brand, category, specification, price, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
+  b2c: "id, slug, name, brand, category, specification, price, currency, short_description, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
   b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, is_active, created_at, updated_at",
 };
 
@@ -122,6 +122,14 @@ export function parseProductInput(
       return { error: result.error };
     }
     payload[field] = result.value;
+  }
+
+  if (channel === "b2c" && (mode === "create" || input.short_description !== undefined)) {
+    const result = parseText(input.short_description, "商品摘要", 160, true);
+    if (result.error) {
+      return { error: result.error };
+    }
+    payload.short_description = result.value;
   }
 
   if (channel === "b2b" && (mode === "create" || input.packaging !== undefined)) {

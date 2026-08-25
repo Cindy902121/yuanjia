@@ -19,14 +19,6 @@ function isPassword(value: unknown): value is string {
   );
 }
 
-function tierLabel(prefix: string) {
-  return {
-    Z: "月營業額 20 萬以下",
-    E: "月營業額 50 萬以下",
-    W: "其他",
-  }[prefix] ?? "未分類";
-}
-
 export async function GET() {
   const guard = await requireAdmin();
   if (guard.response) {
@@ -62,8 +54,8 @@ export async function GET() {
       return {
         ...company,
         prefix,
-        tier_label: rule?.tier_label ?? tierLabel(prefix),
-        channel_label: rule?.channel_label ?? "B2B",
+        tier_label: rule?.tier_label ?? "unclassified",
+        channel_label: rule?.channel_label ?? "unclassified",
       };
     }),
   });
@@ -103,6 +95,16 @@ export async function POST(request: Request) {
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
 
+  const { data: prefixRule, error: prefixRuleError } = await admin
+    .from("customer_prefix_rules")
+    .select("tier_label, channel_label")
+    .eq("prefix", prefix)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (prefixRuleError) {
+    return apiError("目前無法確認客戶代碼規則。", 503);
+  }
+
   const clientCode = generateClientCode(prefix as ClientCodePrefix);
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email: internalB2bAuthEmail(clientCode),
@@ -138,7 +140,8 @@ export async function POST(request: Request) {
       company: {
         ...company,
         prefix,
-        tier_label: tierLabel(prefix),
+        tier_label: prefixRule?.tier_label ?? "unclassified",
+        channel_label: prefixRule?.channel_label ?? "unclassified",
       },
       credential: {
         client_code: clientCode,

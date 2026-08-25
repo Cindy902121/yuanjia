@@ -5,33 +5,6 @@
 
 begin;
 
-create table public.b2c_product_images (
-  id uuid primary key default gen_random_uuid(),
-  product_id uuid not null
-    references public.b2c_products (id) on delete cascade,
-  storage_path text not null unique,
-  image_role text not null
-    constraint b2c_product_images_role_check check (image_role in ('cover', 'detail')),
-  alt_text text not null
-    constraint b2c_product_images_alt_not_blank check (length(trim(alt_text)) > 0),
-  sort_order integer not null default 0
-    constraint b2c_product_images_sort_order_check check (sort_order >= 0),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (product_id, sort_order)
-);
-
-create unique index b2c_product_images_one_cover_idx
-  on public.b2c_product_images (product_id)
-  where image_role = 'cover';
-
-create index b2c_product_images_product_order_idx
-  on public.b2c_product_images (product_id, sort_order, id);
-
-create trigger b2c_product_images_set_updated_at
-before update on public.b2c_product_images
-for each row execute function public.set_updated_at();
-
 create table public.b2b_product_images (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null
@@ -68,19 +41,8 @@ from anon, authenticated;
 grant select on table public.b2c_product_images, public.b2b_product_images
 to authenticated;
 grant select on table public.b2c_product_images to anon;
-grant all on table public.b2c_product_images, public.b2b_product_images
+grant select, insert, update, delete on table public.b2c_product_images, public.b2b_product_images
 to service_role;
-
-create policy "b2c_active_product_images_public_read"
-on public.b2c_product_images for select to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.b2c_products product
-    where product.id = b2c_product_images.product_id
-      and product.is_active = true
-  )
-);
 
 create policy "b2b_active_product_images_company_read"
 on public.b2b_product_images for select to authenticated
