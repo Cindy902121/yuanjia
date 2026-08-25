@@ -1,7 +1,7 @@
 # 資料庫設計與契約
 
-> 狀態：schema、C API、Storage 邊界、B2B 管理頁與契約驗證已完成；local
-> real contract 已通過，僅未設定隔離 Postgres 的 seed rerun 測試保留 skipped。
+> 狀態：schema、C API、Storage 邊界、B2B 管理頁與契約驗證已完成；Admin 本週 P1
+> 已於 2026-08-25 定稿；local real contract 31/31 通過。
 > 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
 > `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
@@ -59,7 +59,9 @@ b2c_products 1 ── * b2c_order_items
 ### B：B2B／權限
 
 - [ ] 一家公司只對應一個 Supabase Auth identity。
-- [ ] 公司欄位包含客戶代碼、名稱、啟用狀態與 identity；不保存共用密碼明文。
+- [ ] 公司欄位包含外部系統提供的客戶代碼、名稱、啟用狀態與 identity；不保存共用密碼明文。
+- [ ] 建立企業會員時由 Admin 輸入完整 `client_code`；伺服器驗證 `^[ZEW][0-9]{6}$` 與唯一性，建立後不可修改，不自動產生或補號。
+- [ ] 企業會員只能查看自己公司的詢價紀錄與修改自己的密碼，不能修改或刪除企業資料；密碼修改需驗證目前密碼。
 - [ ] B2B 商品不含任何價格欄位。
 - [ ] 詢價送出時由伺服器填入 `company_id`、客戶級距與通路快照。
 
@@ -95,6 +97,7 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 - 所有後台 API 都必須在伺服器重新驗證 `app_admins` 管理者權限。
 - `admin` 可操作所有 admin API；`business_staff` 僅可操作 B2B 商品、標籤、規格選項、圖片與 RFQ API。
+- 本週 P1 僅交付 `business_staff` 的 `/admin/business`、B2B 商品狀態與 RFQ；商品內容、標籤、規格選項、圖片／Storage 與 CSV 匯入列為 P2。
 - B2C 商品可新增、編輯所有業務欄位：`slug`、名稱、品牌、分類、規格、價格、產地、保存方式、描述、食安資訊、品質／認證資訊、模擬庫存與圖片；B2B 商品可新增、編輯 `product_code`、名稱、品牌、分類、規格、包裝、產地、保存方式、描述與圖片，永不加入價格欄位。
 - B2B 商品使用 `draft`、`review`、`published`、`offline` 工作狀態；新增預設 `draft`，只有 `published` 可被企業型錄查詢，批次操作只接受既定合法轉換。
 - B2C `slug`、B2B `product_code` 建立後不可修改；新增時必須驗證格式與唯一性。所有 `NOT NULL` 欄位必填並去除前後空白，價格與模擬庫存不得為負數，模擬庫存必須為整數。
@@ -136,18 +139,20 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
 - [x] B2B 多規格選項由獨立 migration 建表，展示選項由 `supabase/seed.sql` 可重跑建立。
 - [x] 後台商品、前綴規則、規格選項、圖片、角色管理與 B2B CSV 批量新增 API 已建立；B2C／B2B Storage 權限與圖片 metadata migration 已建立。
-- [x] C API 與 B 的登入／前端整合已完成目前可驗證範圍；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，遠端 RFQ 公司隔離測試亦已通過。完整 HTTP 整合測試仍待設定 `CONTRACT_TEST_BASE_URL`。
+- [x] C API 與 B 的登入／前端整合已完成目前可驗證範圍；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，local real contract 31/31 通過。驗收只使用本機或隔離測試環境。
 
 ### B2B 客戶代碼規則
 
-- `client_code` 由後端產生，格式固定為 `^[ZEW][0-9]{6}$`。
+- `client_code` 由外部公司系統產生、建立時由 Admin 輸入，格式固定為 `^[ZEW][0-9]{6}$`；伺服器只驗證唯一性，不自動產生、補號或修改。
 - `Z` 代表月營業額 20 萬以下、`E` 代表月營業額 50 萬以下、`W` 代表其他。
 - 登入畫面只要求客戶代碼與公司共用密碼；Supabase Auth 的內部 Email identity 不對企業客戶公開。
+- Admin 可修改企業名稱與 `is_active`；企業會員只能查看公司資料與自己的詢價紀錄、修改自己的密碼，不提供企業資料刪除。
+- P1 待補：企業建立 API 改為接受 Admin 輸入的完整客戶代碼；B2B 會員修改密碼 API／介面與 session 失效流程。
 - [x] P2 外鍵索引 migration 已套用：`20260814032551_add_missing_foreign_key_indexes`；不阻塞功能整合。
 
 ### 後續整合備註
 
 - PR #1 的 B2C 擴充 schema 已合併至 GitHub，但目前不直接套用至遠端；其中新增的分類、圖片與認證資料表超出目前 PRD／FDD 的 MVP 資料模型，待 A／B 確認需求後另行拆分。
-- `CONTRACT_TEST_BASE_URL` 與隔離測試資料庫尚未設定前，不宣稱 6 個 HTTP／seed 整合測試全部完成。
+- 本機 `.env.test.local` 已設定 `CONTRACT_TEST_BASE_URL` 與隔離資料庫；8 個 HTTP／seed／Admin 整合案例已完成驗證。不得將同一組測試指向正式資料庫。
 
 在此之前，不建立 ERP 串接、CRM、團購、真實金流、正式訂單或個人 B2B 帳號。

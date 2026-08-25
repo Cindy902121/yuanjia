@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test:contracts": "node --test tests/contracts/*.test.mjs"
+    "test:contracts": "node --test tests/contracts/*.test.mjs",
+    "test:contracts:real": "node scripts/run-contract-tests-real.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
@@ -17,6 +18,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@next/swc-wasm-nodejs": "16.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

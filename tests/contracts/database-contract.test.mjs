@@ -6,15 +6,29 @@ import test from "node:test";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationDir = join(ROOT, "supabase", "migrations");
+const migrationFiles = readdirSync(migrationDir).filter((file) => file.endsWith(".sql"));
 
 function read(relativePath) {
   return readFileSync(join(ROOT, relativePath), "utf8");
 }
 
 const seed = read("supabase/seed.sql");
+const b2bTestFixtures = read("supabase/seed.b2b-test-fixtures.sql");
+const b2bTestCleanup = read("supabase/cleanup.b2b-test-fixtures.sql");
 const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814032613_align_b2b_demo_catalog.sql");
+const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes("b2b_product_spec_options"));
+const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
+  ? read(`supabase/migrations/${b2bSpecOptionsMigrationFile}`)
+  : "";
+const adminCatalogMigrationFile = migrationFiles.find((file) => file.includes("admin_catalog_media_and_management"));
+const adminCatalogMigration = adminCatalogMigrationFile
+  ? read(`supabase/migrations/${adminCatalogMigrationFile}`)
+  : "";
+const adminRolesStatusMigrationFile = migrationFiles.find((file) => file.includes("add_admin_roles_and_b2b_status"));
+const adminRolesStatusMigration = adminRolesStatusMigrationFile
+  ? read(`supabase/migrations/${adminRolesStatusMigrationFile}`)
+  : "";
 const databasePlan = read("docs/database-plan.md");
-const migrationFiles = readdirSync(migrationDir).filter((file) => file.endsWith(".sql"));
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));
 const securityMigration = migrationFiles.find((file) => file.includes("20260812150001_establish_mvp_security_contract"));
 
@@ -42,6 +56,7 @@ test("seed is a non-destructive, repeatable display-data contract", () => {
     "b2b_tags",
     "b2c_products",
     "b2b_products",
+    "b2b_product_spec_options",
     "b2c_product_tags",
     "b2b_product_tags",
   ]) {
@@ -113,6 +128,84 @@ test("Auth identity is outside seed ownership", () => {
   assert.ok(companyInsert);
   assert.doesNotMatch(companyInsert[1], /auth_user_id/);
   assert.doesNotMatch(seed, /auth\.admin/i);
+});
+
+test("B2B multi-spec migration and seed preserve option identity and ordering", () => {
+  assert.ok(b2bSpecOptionsMigrationFile, "B2B spec option migration should exist");
+  for (const field of [
+    "option_code",
+    "specification_text",
+    "packaging_text",
+    "is_active",
+    "display_order",
+  ]) {
+    assert.match(b2bSpecOptionsMigration, new RegExp(field));
+  }
+  assert.match(b2bSpecOptionsMigration, /enable row level security/);
+  assert.match(b2bSpecOptionsMigration, /grant select on table public\.b2b_product_spec_options to authenticated/);
+  assert.match(b2bSpecOptionsMigration, /rfq_items_specification_option_product_fkey/);
+  assert.match(b2bSpecOptionsMigration, /specification_text_snapshot/);
+  assert.match(b2bSpecOptionsMigration, /other_specification/);
+  assert.match(b2bSpecOptionsMigration, /other_packaging/);
+  assert.match(seed, /insert into public\.b2b_product_spec_options/);
+  assert.match(seed, /on conflict \(option_code\) do update/);
+  for (const optionCode of [
+    "B2B-FISH-001-200G",
+    "B2B-FISH-001-300G",
+    "B2B-FISH-001-500G",
+  ]) {
+    assert.match(seed, new RegExp(optionCode));
+  }
+  assert.match(seed, /other.*customer|客戶輸入/);
+});
+
+test("admin catalog migration protects product images and batch imports", () => {
+  assert.ok(adminCatalogMigrationFile, "admin catalog migration should exist");
+  for (const table of ["b2c_product_images", "b2b_product_images"]) {
+    assert.match(adminCatalogMigration, new RegExp(`create table public\\.${table}`));
+    assert.match(adminCatalogMigration, new RegExp(`${table}_one_cover_idx`));
+    assert.match(adminCatalogMigration, new RegExp(`${table}.*enable row level security`, "s"));
+  }
+  assert.match(adminCatalogMigration, /image_role.*cover.*detail/s);
+  assert.match(adminCatalogMigration, /storage_path text not null unique/);
+  assert.match(adminCatalogMigration, /file_size_limit,\s*allowed_mime_types/);
+  assert.match(adminCatalogMigration, /'b2c-media'.*true/s);
+  assert.match(adminCatalogMigration, /'b2b-media'.*false/s);
+  assert.match(adminCatalogMigration, /image\/jpeg.*image\/png.*image\/webp/s);
+  assert.match(adminCatalogMigration, /admin_insert_b2b_products_batch/);
+  assert.match(adminCatalogMigration, /jsonb_to_recordset/);
+  assert.match(adminCatalogMigration, /grant execute on function public\.admin_insert_b2b_products_batch\(jsonb\)\s*to service_role/s);
+});
+
+test("B2B status and admin role migration preserve the acceptance matrix", () => {
+  assert.ok(adminRolesStatusMigrationFile, "admin role/status migration should exist");
+  assert.match(adminRolesStatusMigration, /role text not null default 'admin'/);
+  assert.match(adminRolesStatusMigration, /'admin', 'business_staff'/);
+  assert.match(adminRolesStatusMigration, /status text/);
+  assert.match(adminRolesStatusMigration, /'draft', 'review', 'published', 'offline'/);
+  assert.match(adminRolesStatusMigration, /status = 'published'/);
+  assert.match(adminRolesStatusMigration, /admin_bulk_update_b2b_product_status/);
+  assert.match(adminRolesStatusMigration, /product\.status = 'draft' and next_status = 'review'/);
+  assert.match(adminRolesStatusMigration, /product\.status = 'review' and next_status in \('draft', 'published'\)/);
+  assert.match(adminRolesStatusMigration, /product\.status = 'published' and next_status = 'offline'/);
+  assert.match(adminRolesStatusMigration, /product\.status = 'offline' and next_status = 'published'/);
+});
+
+test("B2B authorization fixtures are isolated, repeatable and safely removable", () => {
+  assert.match(b2bTestFixtures, /^begin;$/m);
+  assert.match(b2bTestFixtures, /^commit;$/m);
+  assert.match(b2bTestFixtures, /B2B-TEST-INACTIVE-001/);
+  assert.match(b2bTestFixtures, /E853699/);
+  assert.match(b2bTestFixtures, /W483038/);
+  assert.match(b2bTestFixtures, /is_active\)\s*values\s*\([\s\S]*false/);
+  assert.match(b2bTestFixtures, /on conflict \(client_code\) do update/);
+  assert.match(b2bTestFixtures, /on conflict \(product_code\) do update/);
+  assert.doesNotMatch(b2bTestFixtures, /auth\.users|auth\.admin|password/i);
+  assert.match(b2bTestCleanup, /B2B-TEST-INACTIVE-001/);
+  assert.match(b2bTestCleanup, /E853699/);
+  assert.match(b2bTestCleanup, /W483038/);
+  assert.match(b2bTestCleanup, /auth_user_id is null/);
+  assert.match(b2bTestCleanup, /not exists/);
 });
 
 test("B2B demo seed matches the approved group names and category coverage", () => {

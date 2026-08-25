@@ -19,7 +19,7 @@ const modeContent = {
   "customer-code": {
     description: "供已開通的合作客戶使用，請輸入企業客戶代碼與密碼。",
     identifierLabel: "企業客戶代碼",
-    identifierPlaceholder: "例如：B2B-TEST-001",
+    identifierPlaceholder: "例如：Z232113",
     submitLabel: "企業客戶登入",
   },
 } satisfies Record<

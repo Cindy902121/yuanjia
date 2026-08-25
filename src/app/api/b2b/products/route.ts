@@ -5,6 +5,7 @@ import {
   attachProductTags,
   findProductIdsByTags,
 } from "@/lib/catalog";
+import { attachProductImages } from "@/lib/product-images";
 
 const B2B_PRODUCT_FIELDS =
   "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path";
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     let query = context.supabase
       .from("b2b_products")
       .select(B2B_PRODUCT_FIELDS)
-      .eq("is_active", true)
+      .eq("status", "published")
       .order("name");
 
     const search = url.searchParams.get("q")?.trim();
@@ -77,8 +78,13 @@ export async function GET(request: Request) {
       context.supabase,
       productsWithTags,
     );
+    const productsWithImages = await attachProductImages(
+      context.supabase,
+      "b2b",
+      productsWithTagsAndOptions,
+    );
 
-    return json({ products: productsWithTagsAndOptions });
+    return json({ products: productsWithImages });
   } catch {
     return apiError("目前無法讀取 B2B 型錄。", 503);
   }

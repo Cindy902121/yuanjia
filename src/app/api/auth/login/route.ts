@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isClientCode } from "@/lib/client-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -87,6 +88,10 @@ export async function POST(request: Request) {
   }
 
   const clientCode = identifier.toUpperCase();
+  if (!isClientCode(clientCode)) {
+    return failure("企業客戶代碼格式不正確，請輸入 1 碼前綴加 6 碼數字。", 400);
+  }
+
   const { data: company, error: companyError } = await adminClient
     .from("companies")
     .select("auth_user_id, is_active")

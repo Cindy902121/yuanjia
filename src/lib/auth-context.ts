@@ -9,6 +9,9 @@ export type CompanyContext = {
   is_active: boolean;
 };
 
+export const ADMIN_ROLES = ["admin", "business_staff"] as const;
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+
 export async function getSessionContext() {
   const supabase = await createServerClient();
   const {
@@ -47,6 +50,7 @@ export async function getAdminContext() {
     return {
       ...session,
       isAdmin: false,
+      role: null,
       configurationError: null,
       databaseError: null,
     };
@@ -56,14 +60,18 @@ export async function getAdminContext() {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("app_admins")
-      .select("user_id, is_active")
+      .select("user_id, is_active, role")
       .eq("user_id", session.user.id)
       .eq("is_active", true)
       .maybeSingle();
 
+    const role: AdminRole | null =
+      data?.role === "business_staff" ? "business_staff" : data ? "admin" : null;
+
     return {
       ...session,
       isAdmin: Boolean(data),
+      role,
       configurationError: null,
       databaseError: error,
     };
@@ -71,6 +79,7 @@ export async function getAdminContext() {
     return {
       ...session,
       isAdmin: false,
+      role: null,
       configurationError:
         error instanceof Error ? error.message : "Supabase server key is missing.",
       databaseError: null,
