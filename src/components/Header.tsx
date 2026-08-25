@@ -1,79 +1,156 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
+import { CartDrawer } from "@/components/CartDrawer";
 
 /**
  * 全站導覽列，掛在 root layout，所有頁面都會顯示（見 8/11–8/12 任務「首頁基本區塊與導覽」）。
  *
- * 依 PRD B2C-01：入口包含探索商品、會員登入、企業合作與購物車。「商品」「會員登入」
- * 是真正存在的頁面（/login 是 B 8/11–8/12 統一登入的成果，2026-08-13 merge 進來）；
- * 企業合作、購物車頁面還沒做，先用不可點擊的文字呈現「即將推出」，避免連到還不存在
- * 的路由（/business/lead、/cart）。原本放在首頁 Hero 區塊的同一組佔位入口已移除，
- * 改由這裡統一顯示，避免同一頁重複出現兩次。
+ * 依 PRD B2C-01：入口包含探索商品、會員登入、企業合作與購物車。
  *
- * 登入狀態（2026-08-13 補上，已跟 B 確認可以做；同日依 B 的意見再簡化一次）：
- * - 現在是 async Server Component，用 B 的 createClient()（src/lib/supabase/server.ts）
- *   讀 session。B 的要求：登入後**不要顯示「已登入」文字或 email**，只需要確保「會員
- *   登入」這個按鈕／連結不再出現就好，所以登入後這裡只留一個「登出」按鈕，沒有其他
- *   狀態文字。
- * - 刻意簡化，不判斷角色（B2C／B2B／Admin）：不管哪種身分登入，這裡都只顯示同一顆
- *   「登出」按鈕，不做角色專屬的文字或導轉。PRD AUTH-03 要求的角色分流（例如 B2B
- *   session 開啟 / 要導向 /business、B2C 不能進 B2B 路由）沒有在這裡處理，那是 B 的
- *   Auth／權限範圍，這裡只負責「有沒有登入」這一件事，避免搶做或跟他之後的設計衝突。
- * - 註冊功能不需要：PRD 3.2 明確排除「正式會員註冊」，AUTH-02 也明確排除 B2B 自助註冊，
- *   兩邊都是固定展示帳號／管理者建立帳號，不是使用者自己註冊。
+ * 登入狀態：async Server Component，用 B 的 createClient()（見
+ * src/lib/supabase/server.ts）讀 session；登入後只顯示「登出」，沒有其他狀態
+ * 文字（B 的要求）。不判斷角色（B2C／B2B／Admin），角色分流是 B 的 Auth／權限
+ * 範圍。
  *
- * 提醒：/login 目前是 teal／slate 配色，跟這裡以及其他 B2C 頁面維持的中性灰階不同——
- * 這是預期中的暫時不一致（兩邊分屬不同工作分工，尚未統一視覺設計），不是這次要處理
- * 的範圍，先留意，之後統一套用設計時一起處理。
+ * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風（原本只在 /design-preview/*
+ * 的提案），正式取代 design.md 舊有的「海洋藍＋鮮活綠」系統，這次連 Header／
+ * Footer 也一起換（使用者明確選擇「也一起改成編輯風」，不是只換內容頁）：
+ * - 底色從 `bg-surface-white` 改成跟全站一致的暖白 `#FAF9F6`，分隔線從實色
+ *   `border-border-subtle` 改成極淡的 `border-[#2b2b2b]/10`，呼應整體「細線
+ *   條、低對比」的編輯風語言。
+ * - 導覽文字改用內文字體＋拉寬字距（`tracking-[0.15em]`），不是原本 design.md
+ *   §5.3 的黑體導覽字級，跟其他頁面「文字稀疏、呼吸感重」的排版邏輯一致。
+ * - 「企業合作（即將推出）」原本是藍框徽章，改成單純的淡色文字——徽章本身是
+ *   舊系統「用色塊強調」的視覺語言，編輯風幾乎不用實色塊做強調。
+ * - 「會員登入／登出」改成 src/lib/editorial/styles.ts 的直角方框按鈕
+ *   （editorialButtonLight），跟商品頁的「加入購物車」用同一套按鈕語言。
+ * - 購物車入口（CartDrawer 的觸發按鈕）也順手改成同樣的導覽文字樣式，見
+ *   src/components/CartDrawer.tsx 的對應調整；購物車抽屜本身（品項清單、
+ *   結帳按鈕）**還沒改版**，這次範圍只到觸發按鈕，抽屜內部維持舊樣式，是已知
+ *   待辦，不是遺漏。
+ * - 「關於元家」懸浮選單維持同一套 CSS group-hover／group-focus-within 做法
+ *   （不用另外拆 Client Component，理由不變：Header 是 async Server
+ *   Component），只換視覺——直角、細框、內文字體。
  *
- * 響應式細節（手機版漢堡選單等）排在 8/16 任務再處理，現在先用 flex-wrap 讓小螢幕
- * 自動換行，不至於無法使用。
+ * `/products/tags/[slug]`、`/products/categories/[slug]`、`/cart`、
+ * `/checkout`、`/login` 這幾個頁面本身還沒重新設計，繼續依賴 design.md 的舊
+ * token（`ink-900`／`brand-ocean-700` 等，這些 token 本身沒有被刪除，見
+ * src/app/globals.css），但因為 Header／Footer 現在全站共用同一份，訪客從
+ * 這些舊頁面看到的 Header／Footer 也會是新樣式——這是刻意的（Header／Footer
+ * 本來就是「全站唯一一份」，不會有新舊兩種版本並存），頁面本身的改版是後續
+ * 待辦。
+ *
+ * 2026-08-19（同日，回報 bug 後修正）：Header 一度加了 `backdrop-blur`
+ * （毛玻璃效果），結果讓 CartDrawer 的購物車抽屜點開後整個跑位、變成一個
+ * 縮在角落的小方塊，不是原本滿版右側抽屜。原因是 CSS 規則：`backdrop-filter`
+ * （`backdrop-blur` 對應的屬性）會讓套用的元素變成底下 `position: fixed`
+ * 子元素的「新定位基準」（containing block）——CartDrawer 是 `<Header>` 的
+ * 子元件（見下方 `<CartDrawer />`），它的滿版遮罩＋抽屜面板都是
+ * `position: fixed`，套用範圍因此從「整個瀏覽器視窗」被 Header 自己的方框
+ * 大小取代，才會整個跑位。`filter`、`transform`、`perspective`、
+ * `will-change: transform` 這幾個 CSS 屬性都有同樣效果，**以後 Header／任何
+ * 包著 CartDrawer 的祖先元素都不能加這幾個屬性**，這裡已經拿掉
+ * `backdrop-blur`，改用純色半透明背景（`bg-[#FAF9F6]`，這裡目前是不透明），
+ * 視覺差異很小，換掉風險最低。
+ *
+ * 2026-08-19（同日，補上 /user 入口）：新增 src/app/user/page.tsx（會員中心，
+ * PRD 伸展項目）之後，發現全站沒有任何地方連得過去——原本登入後只有「登出」
+ * 按鈕，沒有連結。這裡在登入狀態的「登出」旁邊加一個「會員中心」文字連結
+ * （同樣用 navLinkClass，跟其他導覽字級一致），未登入狀態不受影響。
+ *
+ * 2026-08-19（同日，/business/lead 上線）：原本「企業合作（即將推出）」是純
+ * 文字、不可點擊——現在頁面做好了（見 src/app/business/lead/page.tsx，PRD
+ * 5.4／6.7 正式規格頁面，不是伸展項目），改成真的 `<Link>`，拿掉「即將推出」
+ * 字樣。
  */
 export async function Header() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const isLoggedIn = Boolean(data?.claims);
 
+  const navLinkClass =
+    "text-[#4a4a4a] tracking-[0.1em] transition-colors hover:text-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]";
+
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+    <header className="sticky top-0 z-40 border-b border-[#2b2b2b]/10 bg-[#FAF9F6]">
+      <div className="mx-auto flex w-full max-w-[1300px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4 sm:px-8 lg:h-[76px] lg:px-10 lg:py-0">
         <Link
           href="/"
-          className="text-base font-semibold text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-50"
+          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
         >
-          元家
+          <Image
+            src="/yens-logo.png"
+            alt="元家"
+            width={116}
+            height={40}
+            priority
+            style={{ width: "auto" }}
+            className="h-8 sm:h-9"
+          />
         </Link>
 
-        <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <Link
-            href="/products"
-            className="text-zinc-600 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
-          >
-            商品
+        <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-7 gap-y-2 text-sm">
+          <Link href="/products" className={navLinkClass}>
+            商品分類
+          </Link>
+          <Link href="/#quality" className={navLinkClass}>
+            食安與產地
+          </Link>
+          <div className="group relative">
+            <Link href="/#about" className={navLinkClass}>
+              關於元家
+            </Link>
+            <div className="invisible absolute left-1/2 top-full z-10 w-40 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div className="flex flex-col gap-1 border border-[#2b2b2b]/15 bg-[#FAF9F6] p-2 shadow-[0_8px_24px_rgba(43,43,43,0.1)]">
+                <Link href="/#brand-story" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                  品牌故事
+                </Link>
+                <Link href="/#advantages" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                  企業優勢
+                </Link>
+                <Link href="/media" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                  媒體報導
+                </Link>
+              </div>
+            </div>
+          </div>
+          <Link href="/faq" className={navLinkClass}>
+            常見問題
+          </Link>
+        </nav>
+
+        <div className="flex flex-wrap items-center gap-5 text-sm">
+          <Link href="/business/lead" className={`${navLinkClass} text-xs`}>
+            企業合作
           </Link>
 
           {isLoggedIn ? (
-            <form action={logout}>
-              <button
-                type="submit"
-                className="text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
-              >
-                登出
-              </button>
-            </form>
+            <>
+              <Link href="/user" className={navLinkClass}>
+                會員中心
+              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
+                >
+                  登出
+                </button>
+              </form>
+            </>
           ) : (
             <Link
               href="/login"
-              className="text-zinc-600 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-zinc-300 dark:hover:text-zinc-50"
+              className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
             >
               會員登入
             </Link>
           )}
 
-          <span className="text-zinc-400">企業合作（即將推出）</span>
-          <span className="text-zinc-400">購物車（即將推出）</span>
-        </nav>
+          <CartDrawer />
+        </div>
       </div>
     </header>
   );

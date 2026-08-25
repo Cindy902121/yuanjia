@@ -20,7 +20,10 @@ const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes(
 const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
   ? read(`supabase/migrations/${b2bSpecOptionsMigrationFile}`)
   : "";
-const adminCatalogMigrationFile = migrationFiles.find((file) => file.includes("admin_catalog_media_and_management"));
+const adminCatalogMigrationFile = migrationFiles
+  .filter((file) => file.includes("admin_catalog_media_and_management"))
+  .sort()
+  .at(-1);
 const adminCatalogMigration = adminCatalogMigrationFile
   ? read(`supabase/migrations/${adminCatalogMigrationFile}`)
   : "";
@@ -162,7 +165,7 @@ test("B2B multi-spec migration and seed preserve option identity and ordering", 
 test("admin catalog migration protects product images and batch imports", () => {
   assert.ok(adminCatalogMigrationFile, "admin catalog migration should exist");
   for (const table of ["b2c_product_images", "b2b_product_images"]) {
-    assert.match(adminCatalogMigration, new RegExp(`create table public\\.${table}`));
+    assert.match(adminCatalogMigration, new RegExp(`create table(?: if not exists)? public\\.${table}`));
     assert.match(adminCatalogMigration, new RegExp(`${table}_one_cover_idx`));
     assert.match(adminCatalogMigration, new RegExp(`${table}.*enable row level security`, "s"));
   }

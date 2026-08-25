@@ -72,6 +72,14 @@ export interface ProductCardData {
   inventoryStatus: InventoryStatus;
   coverImage: ProductImageRef | null;
   tags: ProductTagRef[];
+  /**
+   * 2026-08-17：新增，給 /products 頁面上方「當季主打商品」banner 用（使用者要求）。
+   * 對應正式 schema 已經規劃好的 b2c_products.is_featured（見
+   * docs/supabase-schema-alignment.md，該 migration 還沒套用到正式資料庫），這裡
+   * 先在 fixture／型別加上同名概念，之後接 Supabase 時欄位語意直接沿用，不用改
+   * 元件。可選（optional），沒特別標記的商品視為 false。
+   */
+  isFeatured?: boolean;
 }
 
 /** 商品詳情頁使用；擴充卡片欄位。 */
@@ -109,6 +117,23 @@ export type ProductDetailState =
   | { status: "not_found" }
   | { status: "ready"; product: ProductDetailData };
 
+/**
+ * 排序：庫存中的商品在前，缺貨排到最後；同一種庫存狀態內維持原本順序（穩定排序，
+ * Array.prototype.sort 自 ES2019 起保證穩定）。2026-08-17 使用者要求缺貨商品排在
+ * 最後——用排序而不是手動調整 fixture 陣列順序，之後不管加幾筆新商品、不管
+ * 哪一筆缺貨，順序都會自動正確，不用每次手動搬動陣列位置。
+ */
+export function sortByAvailability<T extends { inventoryStatus: InventoryStatus }>(
+  items: T[],
+): T[] {
+  return [...items].sort((a, b) => {
+    if (a.inventoryStatus === b.inventoryStatus) {
+      return 0;
+    }
+    return a.inventoryStatus === "out_of_stock" ? 1 : -1;
+  });
+}
+
 /** 由 ProductDetailData 取出卡片所需欄位，確保卡片與詳情頁資料永遠一致（單一資料來源）。 */
 export function toCardData(product: ProductDetailData): ProductCardData {
   const {
@@ -121,6 +146,18 @@ export function toCardData(product: ProductDetailData): ProductCardData {
     inventoryStatus,
     coverImage,
     tags,
+    isFeatured,
   } = product;
-  return { id, slug, name, price, currency, shortDescription, inventoryStatus, coverImage, tags };
+  return {
+    id,
+    slug,
+    name,
+    price,
+    currency,
+    shortDescription,
+    inventoryStatus,
+    coverImage,
+    tags,
+    isFeatured,
+  };
 }

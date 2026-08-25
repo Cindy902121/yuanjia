@@ -73,14 +73,14 @@ set group_name = excluded.group_name,
 
 insert into public.b2c_products (
   slug, name, brand, category, specification, price, origin, storage_method,
-  description, food_safety_info, quality_info, mock_inventory, is_active
+  description, short_description, food_safety_info, quality_info, mock_inventory, is_active
 )
 values
-  ('norwegian-salmon-fillet', '挪威鮭魚菲力', '宅鮮配', '魚類', '200g/包', 239, '挪威', '冷凍 -18°C 以下', '油脂豐富，適合煎烤與氣炸。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true),
-  ('taiwan-milkfish-belly', '台灣虱目魚肚', '宅鮮配', '魚類', '180g/包', 169, '台灣', '冷凍 -18°C 以下', '肉質細緻，適合香煎與煮湯。', '低溫冷鏈配送。', '展示用品質資訊。', 25, true),
-  ('argentine-red-shrimp', '阿根廷天使紅蝦', '宅鮮配', '蝦類', '500g/盒', 329, '阿根廷', '冷凍 -18°C 以下', '鮮甜飽滿，適合火鍋與燒烤。', '低溫冷鏈配送。', '展示用品質資訊。', 15, true),
-  ('taiwan-clam', '台灣鮮甜蛤蜊', '宅鮮配', '貝類', '500g/包', 139, '台灣', '冷凍 -18°C 以下', '適合煮湯與義大利麵。', '低溫冷鏈配送。', '展示用品質資訊。', 30, true),
-  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '調味完成，快速加熱即可享用。', '低溫冷鏈配送。', '展示用品質資訊。', 18, true)
+  ('norwegian-salmon-fillet', '挪威鮭魚菲力', '宅鮮配', '魚類', '200g/包', 239, '挪威', '冷凍 -18°C 以下', '油脂豐富，適合煎烤與氣炸。', '油脂豐富，適合煎烤與氣炸。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true),
+  ('taiwan-milkfish-belly', '台灣虱目魚肚', '宅鮮配', '魚類', '180g/包', 169, '台灣', '冷凍 -18°C 以下', '肉質細緻，適合香煎與煮湯。', '肉質細緻，適合香煎與煮湯。', '低溫冷鏈配送。', '展示用品質資訊。', 25, true),
+  ('argentine-red-shrimp', '阿根廷天使紅蝦', '宅鮮配', '蝦類', '500g/盒', 329, '阿根廷', '冷凍 -18°C 以下', '鮮甜飽滿，適合火鍋與燒烤。', '鮮甜飽滿，適合火鍋與燒烤。', '低溫冷鏈配送。', '展示用品質資訊。', 15, true),
+  ('taiwan-clam', '台灣鮮甜蛤蜊', '宅鮮配', '貝類', '500g/包', 139, '台灣', '冷凍 -18°C 以下', '適合煮湯與義大利麵。', '適合煮湯與義大利麵。', '低溫冷鏈配送。', '展示用品質資訊。', 30, true),
+  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '調味完成，快速加熱即可享用。', '調味完成，快速加熱即可享用。', '低溫冷鏈配送。', '展示用品質資訊。', 18, true)
 on conflict (slug) do update
 set name = excluded.name,
     brand = excluded.brand,
@@ -90,6 +90,7 @@ set name = excluded.name,
     origin = excluded.origin,
     storage_method = excluded.storage_method,
     description = excluded.description,
+    short_description = excluded.short_description,
     food_safety_info = excluded.food_safety_info,
     quality_info = excluded.quality_info,
     mock_inventory = excluded.mock_inventory,

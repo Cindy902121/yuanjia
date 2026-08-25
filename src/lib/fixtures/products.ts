@@ -1,6 +1,13 @@
 /**
  * B2C 展示商品的本機開發用假資料（fixture）。
  *
+ * 2026-08-17：/products 系列頁面已經改接正式 Supabase（見
+ * src/lib/supabase/products.ts），這個檔案**不再被任何頁面/元件引用**——C 本週
+ * 排程明講「先以目前 Supabase 的 5 筆 seed 作 MVP 驗收資料，12（現在 14）筆
+ * 展示資料留作後續擴充」，所以沒有刪掉，留著給之後真的要擴充正式 seed 資料時
+ * 參考用（分類/標籤組合、邊界案例設計都還算完整）。如果之後確定不會再用到，
+ * 可以整批刪除，屆時記得一併刪 categories.ts。
+ *
  * 狀態：draft，僅供前端開發／UI 串接使用，**不是**正式 seed 或正式商品資料。
  *
  * 內容改寫自 docs/B2C商品展示資料.md 的 12 筆展示商品，但欄位形狀已改用
@@ -21,6 +28,14 @@
  *
  * 團隊尚未決定「這 12 筆是否要正式成為 Supabase seed」（見 review 第 5 節
  * 建議處理順序第 1 點），在那之前這份檔案只在前端本機使用。
+ *
+ * 2026-08-17：新增 fx-13、fx-14 兩筆，共 14 筆。原本的 12 筆裡「軟體類」「肉類」
+ * 兩個分類各只有 1 筆商品，標籤組合也偏窄，B2C 需求釐清浮動工具（見
+ * src/lib/product-finder）的四步 AND 篩選遇到這兩個分類時很容易 0 筆結果，篩選器
+ * 展示效果打折扣。使用者請 C 確認後同意可以自行補商品資料，只要有助於篩選器
+ * 派上用場即可；這兩筆命名與規格參考元家自己的宅鮮配購物網（asf.com.tw）真實
+ * 品項命名習慣改寫（例如「特選鮮甜活凍軟絲」「舒肥嫩雞胸」），不是逐字照抄
+ * 定價／文案，一樣是展示用假資料，不是真的商品或真的價格。
  */
 
 import type { ProductDetailData } from "@/lib/types/product";
@@ -34,6 +49,9 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "鮭魚菲力去刺去鱗切塊，肉質細緻、油脂均勻，乾煎、氣炸皆可快速上桌。",
     inventoryStatus: "in_stock",
+    // 2026-08-17：/products 頁面「當季主打商品」banner 用，見 src/lib/types/product.ts
+    // 的 isFeatured 說明；挑 4 筆跨分類（魚/蝦蟹/貝/軟體）示範，不是隨機選。
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "salmon", name: "鮭魚", groupName: "食材" },
@@ -151,6 +169,7 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "紅海海域養殖藍鑽蝦，純手工剝殼挑腸泥，肉質Q彈鮮甜，小包裝衛生方便。",
     inventoryStatus: "in_stock",
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "shrimp", name: "蝦", groupName: "食材" },
@@ -208,6 +227,7 @@ export const products: ProductDetailData[] = [
     currency: "TWD",
     shortDescription: "元家與北光聯名推出，生食等級規格，鮮甜多汁，適合生食或簡單炙燒。",
     inventoryStatus: "in_stock",
+    isFeatured: true,
     coverImage: null,
     tags: [
       { slug: "scallop", name: "干貝", groupName: "食材" },
@@ -367,6 +387,64 @@ export const products: ProductDetailData[] = [
     foodSafetyInfo: null,
     qualityInfo: null,
     categories: [{ slug: "prepared-food", name: "調理食品", isPrimary: true }],
+    images: [],
+    certifications: [],
+  },
+  {
+    id: "fx-13",
+    slug: "fresh-frozen-cuttlefish",
+    name: "特選鮮甜活凍軟絲",
+    price: 320,
+    currency: "TWD",
+    shortDescription: "活凍鎖鮮處理，肉質細嫩鮮甜有嚼勁，適合快炒、氣炸或簡單汆燙。",
+    inventoryStatus: "in_stock",
+    isFeatured: true,
+    coverImage: null,
+    tags: [
+      { slug: "cuttlefish", name: "軟絲", groupName: "食材" },
+      { slug: "pan-fry", name: "煎／烤", groupName: "料理方式" },
+      { slug: "air-fry", name: "氣炸", groupName: "料理方式" },
+      { slug: "boneless", name: "少刺／無刺", groupName: "需求特性" },
+      { slug: "high-protein", name: "高蛋白", groupName: "需求特性" },
+      { slug: "original", name: "原味", groupName: "加工方式" },
+    ],
+    brand: "元家",
+    specification: "275±25g／尾",
+    origin: "台灣",
+    storageMethod: "冷凍 -18°C 以下保存",
+    description:
+      "台灣籍船活凍鎖鮮處理，肉質細嫩鮮甜有嚼勁，適合快炒、氣炸、汆燙或做涼拌料理。",
+    foodSafetyInfo: "船凍急速鎖鮮，全程冷鏈配送。",
+    qualityInfo: null,
+    categories: [{ slug: "cephalopods", name: "軟體類", isPrimary: true }],
+    images: [],
+    certifications: [],
+  },
+  {
+    id: "fx-14",
+    slug: "sous-vide-chicken-breast",
+    name: "舒肥嫩雞胸",
+    price: 180,
+    currency: "TWD",
+    shortDescription: "低溫舒肥烹調鎖住肉汁，低脂高蛋白，健身餐與輕食料理首選。",
+    inventoryStatus: "in_stock",
+    coverImage: null,
+    tags: [
+      { slug: "chicken", name: "雞肉", groupName: "食材" },
+      { slug: "steam", name: "清蒸", groupName: "料理方式" },
+      { slug: "high-protein", name: "高蛋白", groupName: "需求特性" },
+      { slug: "easy-to-cook", name: "方便料理", groupName: "需求特性" },
+      { slug: "original", name: "原味", groupName: "加工方式" },
+    ],
+    brand: "元家",
+    specification: "200g／包",
+    origin: "台灣（國產雞肉）",
+    storageMethod: "冷凍 -18°C 以下保存",
+    description:
+      "低溫舒肥烹調鎖住肉汁與口感，低脂高蛋白，健身餐、輕食便當與沙拉料理的方便選擇。",
+    foodSafetyInfo: "使用國產雞肉，符合食品安全衛生管理規範。",
+    qualityInfo: null,
+    categories: [{ slug: "meat", name: "肉類", isPrimary: true }],
     images: [],
     certifications: [],
   },

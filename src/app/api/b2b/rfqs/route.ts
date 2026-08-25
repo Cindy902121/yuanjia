@@ -91,6 +91,17 @@ export async function GET() {
     return apiError("目前無法讀取詢價品項。", 503);
   }
 
+  const productIds = Array.from(new Set((items ?? []).map((item) => item.product_id)));
+  const { data: products, error: productError } = productIds.length
+    ? await context.supabase.from("b2b_products").select("id, product_code, name, brand").in("id", productIds)
+    : { data: [], error: null };
+
+  if (productError) {
+    return apiError("目前無法讀取詢價商品。", 503);
+  }
+
+  const productsById = new Map((products ?? []).map((product) => [product.id, product]));
+
   const itemsByRfq = new Map<string, typeof items>();
   for (const item of items ?? []) {
     const current = itemsByRfq.get(item.rfq_id) ?? [];
@@ -101,7 +112,10 @@ export async function GET() {
   return json({
     rfqs: (rfqs ?? []).map((rfq) => ({
       ...rfq,
-      items: itemsByRfq.get(rfq.id) ?? [],
+      items: (itemsByRfq.get(rfq.id) ?? []).map((item) => ({
+        ...item,
+        product: productsById.get(item.product_id) ?? null,
+      })),
     })),
   });
 }

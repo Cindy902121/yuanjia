@@ -5,7 +5,7 @@
 
 begin;
 
-create table public.b2c_product_images (
+create table if not exists public.b2c_product_images (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null
     references public.b2c_products (id) on delete cascade,
@@ -21,18 +21,19 @@ create table public.b2c_product_images (
   unique (product_id, sort_order)
 );
 
-create unique index b2c_product_images_one_cover_idx
+create unique index if not exists b2c_product_images_one_cover_idx
   on public.b2c_product_images (product_id)
   where image_role = 'cover';
 
-create index b2c_product_images_product_order_idx
+create index if not exists b2c_product_images_product_order_idx
   on public.b2c_product_images (product_id, sort_order, id);
 
+drop trigger if exists b2c_product_images_set_updated_at on public.b2c_product_images;
 create trigger b2c_product_images_set_updated_at
 before update on public.b2c_product_images
 for each row execute function public.set_updated_at();
 
-create table public.b2b_product_images (
+create table if not exists public.b2b_product_images (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null
     references public.b2b_products (id) on delete cascade,
@@ -48,13 +49,14 @@ create table public.b2b_product_images (
   unique (product_id, sort_order)
 );
 
-create unique index b2b_product_images_one_cover_idx
+create unique index if not exists b2b_product_images_one_cover_idx
   on public.b2b_product_images (product_id)
   where image_role = 'cover';
 
-create index b2b_product_images_product_order_idx
+create index if not exists b2b_product_images_product_order_idx
   on public.b2b_product_images (product_id, sort_order, id);
 
+drop trigger if exists b2b_product_images_set_updated_at on public.b2b_product_images;
 create trigger b2b_product_images_set_updated_at
 before update on public.b2b_product_images
 for each row execute function public.set_updated_at();
@@ -71,6 +73,7 @@ grant select on table public.b2c_product_images to anon;
 grant all on table public.b2c_product_images, public.b2b_product_images
 to service_role;
 
+drop policy if exists "b2c_active_product_images_public_read" on public.b2c_product_images;
 create policy "b2c_active_product_images_public_read"
 on public.b2c_product_images for select to anon, authenticated
 using (
@@ -82,6 +85,7 @@ using (
   )
 );
 
+drop policy if exists "b2b_active_product_images_company_read" on public.b2b_product_images;
 create policy "b2b_active_product_images_company_read"
 on public.b2b_product_images for select to authenticated
 using (

@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { isNonEmptyString } from "@/lib/api";
 
 export type AdminChannel = "b2c" | "b2b";
@@ -5,13 +7,26 @@ export const B2B_PRODUCT_STATUSES = ["draft", "review", "published", "offline"] 
 export type B2bProductStatus = (typeof B2B_PRODUCT_STATUSES)[number];
 
 export const ADMIN_PRODUCT_FIELDS: Record<AdminChannel, string> = {
-  b2c: "id, slug, name, brand, category, specification, price, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
+  b2c: "id, slug, name, brand, category, specification, price, currency, short_description, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
   b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, status, is_active, created_at, updated_at",
 };
 
 export const PRODUCT_TABLES: Record<AdminChannel, "b2c_products" | "b2b_products"> = {
   b2c: "b2c_products",
   b2b: "b2b_products",
+};
+
+export const TAG_TABLES: Record<AdminChannel, "b2c_tags" | "b2b_tags"> = {
+  b2c: "b2c_tags",
+  b2b: "b2b_tags",
+};
+
+export const PRODUCT_TAG_TABLES: Record<
+  AdminChannel,
+  "b2c_product_tags" | "b2b_product_tags"
+> = {
+  b2c: "b2c_product_tags",
+  b2b: "b2b_product_tags",
 };
 
 type ProductInputResult =
@@ -133,6 +148,14 @@ export function parseProductInput(
     payload[field] = result.value;
   }
 
+  if (channel === "b2c" && (mode === "create" || input.short_description !== undefined)) {
+    const result = parseText(input.short_description, "商品摘要", 160, true);
+    if (result.error) {
+      return { error: result.error };
+    }
+    payload.short_description = result.value;
+  }
+
   if (channel === "b2b" && (mode === "create" || input.packaging !== undefined)) {
     const result = parseText(input.packaging, "包裝", 500, false);
     if (result.error) {
@@ -198,4 +221,66 @@ export function parseProductInput(
   }
 
   return { payload };
+}
+
+export function parseTagIds(value: unknown) {
+  if (value === undefined) {
+    return { value: undefined as string[] | undefined };
+  }
+  if (!Array.isArray(value)) {
+    return { error: "tag_ids 必須是陣列。" };
+  }
+
+  const tagIds = [...new Set(value)];
+  if (
+    tagIds.some((tagId) => typeof tagId !== "string" || !/^[0-9a-f-]{36}$/i.test(tagId)) ||
+    tagIds.length > 100
+  ) {
+    return { error: "標籤資料不正確。" };
+  }
+  return { value: tagIds as string[] };
+}
+
+export async function replaceProductTags(
+  admin: SupabaseClient,
+  channel: AdminChannel,
+  productId: string,
+  tagIds: string[],
+) {
+  const tagTable = TAG_TABLES[channel];
+  const relationTable = PRODUCT_TAG_TABLES[channel];
+  const { data: tags, error: tagError } =
+    tagIds.length > 0
+      ? await admin
+          .from(tagTable)
+          .select("id")
+          .in("id", tagIds)
+          .eq("is_active", true)
+      : { data: [], error: null };
+
+  if (tagError) {
+    return "目前無法確認產品標籤。";
+  }
+  if ((tags ?? []).length !== tagIds.length) {
+    return "只能套用同一產品線中已啟用的既有標籤。";
+  }
+
+  const { error: deleteError } = await admin
+    .from(relationTable)
+    .delete()
+    .eq("product_id", productId);
+  if (deleteError) {
+    return "目前無法更新產品標籤。";
+  }
+
+  if (tagIds.length > 0) {
+    const { error: insertError } = await admin
+      .from(relationTable)
+      .insert(tagIds.map((tagId) => ({ product_id: productId, tag_id: tagId })));
+    if (insertError) {
+      return "目前無法套用產品標籤。";
+    }
+  }
+
+  return null;
 }
