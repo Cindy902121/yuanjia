@@ -41,6 +41,7 @@ export const MEDIA_ITEMS: MediaItem[] = [
     title: "從兩座101高的減量奇蹟，看元家海鮮如何用「永續」捍衛你的餐桌？",
     summary: "報導元家推動「保麗龍轉紙箱」包材改革，首年減少的保麗龍箱堆疊起來相當於兩座台北 101 的高度，作為供應鏈永續行動的具體案例。",
     sourceUrl: "https://www.xinmedia.com/article/305125",
+    slug: "sustainability-msc-asc-packaging",
   },
   {
     date: "2026-01-27",
@@ -95,6 +96,7 @@ export const MEDIA_ITEMS: MediaItem[] = [
     summary: "報導元家在倉儲管理與檢驗團隊上的投入，以及取得的多項國際食品安全認證。",
     sourceUrl: "https://www.foodnext.net/news/newssafe/paper/5739965854",
     image: { src: "/media-certifications.jpg", alt: "元家取得的多項國際食品安全認證證書照片" },
+    slug: "food-safety-warehouse-management",
   },
   {
     date: "2023-11-24",
