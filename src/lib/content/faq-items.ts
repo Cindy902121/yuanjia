@@ -18,6 +18,12 @@ export type FaqAnswerBlock =
   | { type: "note"; text: string };
 
 export interface FaqItem {
+  /**
+   * 穩定 id，給需要「引用某一題」的其他頁面用（例如 /media/[slug] 詳情頁
+   * 想在文章末尾附上跟這篇報導相關的公司問答），2026-08-25 新增。不是每題
+   * 都需要，只有被其他頁面引用的題目才需要填。
+   */
+  id?: string;
   question: string;
   subQuestions?: string[];
   /** 給 FAQPage JSON-LD 用的純文字摘要，不需要跟畫面排版一致，只要語意正確。 */
@@ -156,4 +162,65 @@ export const FAQ_ITEMS: FaqItem[] = [
       },
     ],
   },
+  /**
+   * 2026-08-25 新增，原本寫在 /news 文章裡的「公司介紹型」FAQ（跟上面 7 題
+   * 「消費者使用面」FAQ 性質不同），使用者確認要併入 /faq，並讓
+   * /media/[slug]（今周刊供應鏈報導詳情頁）用 `id` 引用這幾題，不要兩邊
+   * 各自維護一份文字。這 4 題內容改寫自今周刊 2025/10/08（第 1503 期）
+   * 報導，來源見 src/lib/content/media-items.ts 的 `2wan-dun-supply-chain`
+   * 項目。
+   */
+  {
+    id: "about-yuanjia",
+    question: "元家企業是做什麼的？",
+    jsonLdAnswer:
+      "元家企業是台灣規模最大的冷凍水產供應商，成立超過 40 年，每年自 35 國進口逾 18,000 公噸海鮮，供應好市多、家樂福等量販通路與島語、饗賓、漢來美食等餐飲品牌，服務客戶數超過 4,000 家。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家企業是台灣規模最大的冷凍水產供應商，成立超過 40 年，每年自 35 國進口逾 18,000 公噸海鮮，供應好市多、家樂福等量販通路與島語、饗賓、漢來美食等餐飲品牌，服務客戶數超過 4,000 家。",
+      },
+    ],
+  },
+  {
+    id: "top-import-volume",
+    question: "元家企業有哪些海鮮的進口量是全台第一？",
+    jsonLdAnswer:
+      "根據今周刊報導，元家在大比目魚、白蝦、干貝、圓鱈與帝王蟹五項海鮮品類的進口量，皆為全台第一。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "根據今周刊報導，元家在大比目魚、白蝦、干貝、圓鱈與帝王蟹五項海鮮品類的進口量，皆為全台第一。",
+      },
+    ],
+  },
+  {
+    id: "2-hour-shipping",
+    question: "元家企業為什麼能做到「2 小時出貨」？",
+    jsonLdAnswer:
+      "元家透過 ERP 系統即時協調接單、庫存與出貨流程，並配合 40 輛自有物流車隊配送，加上海鮮料號細分至 2,000 多個品項、倉儲依出貨頻率分類擺放，讓接單到出貨僅需 2 小時。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家透過 ERP 系統即時協調接單、庫存與出貨流程，並配合 40 輛自有物流車隊配送，加上海鮮料號細分至 2,000 多個品項、倉儲依出貨頻率分類擺放，讓接單到出貨僅需 2 小時。",
+      },
+    ],
+  },
+  {
+    id: "supply-risk-mitigation",
+    question: "元家企業如何因應海鮮供應鏈的斷貨風險？",
+    jsonLdAnswer:
+      "元家累積數百家海外供應商，同一種海鮮備有多個產地來源，即使單一產區因天災、疫病或政治因素受影響，也能從其他來源調度，降低斷貨風險。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家累積數百家海外供應商，同一種海鮮備有多個產地來源，即使單一產區因天災、疫病或政治因素受影響，也能從其他來源調度，降低斷貨風險。",
+      },
+    ],
+  },
 ];
+
+/** 依 id 取得單一 FAQ 項目；找不到時回傳 undefined，呼叫端自行決定要不要顯示。 */
+export function getFaqItemById(id: string): FaqItem | undefined {
+  return FAQ_ITEMS.find((item) => item.id === id);
+}

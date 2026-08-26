@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { MEDIA_ITEMS } from "@/lib/content/media-items";
@@ -28,9 +29,17 @@ export const metadata: Metadata = {
  * 數字編號＋非對稱兩欄跨頁（有圖的項目左右交錯），沒圖的項目收成純文字條列
  * （跟舊版「沒有乾淨圖片就維持純文字」的原則一致）。
  *
- * 沒有掛結構化資料——這些不是我們自己發布的新聞（NewsArticle 這個 schema 語意
- * 是「這個頁面本身就是一篇報導」，我們只是整理別人報導我們的清單，用了語意會
- * 不正確）。
+ * 這頁本身沒有掛結構化資料——這些不是我們自己發布的新聞（NewsArticle 這個
+ * schema 語意是「這個頁面本身就是一篇報導」，我們只是整理別人報導我們的
+ * 清單，用了語意會不正確）。
+ *
+ * 2026-08-25：部分報導原文資訊量夠豐富，值得做成深度詳情頁
+ * （`/media/[slug]`，內容見 src/lib/content/media-detail.ts）——這幾篇的
+ * `READ MORE`／清單項目改連到站內詳情頁（`Link`），不是外部原文
+ * （`item.slug` 有值時）；沒有詳情頁的報導維持連到外部原文（`item.slug`
+ * 是 undefined 時，跟改版前行為一樣）。**這頁本身**還是純引用清單，不需要
+ * 掛結構化資料，真正的 `Article`／`FAQPage` schema 是掛在
+ * `/media/[slug]` 詳情頁裡，不是這裡。
  */
 export default function MediaPage() {
   const withImage = MEDIA_ITEMS.filter((item) => item.image);
@@ -82,15 +91,25 @@ export default function MediaPage() {
                     {item.title}
                   </h2>
                   <p className="text-sm font-light leading-[1.9] text-[#4a4a4a]">{item.summary}</p>
-                  <a
-                    href={item.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group mt-1 inline-flex w-fit items-center gap-3 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#2b2b2b]"
-                  >
-                    READ MORE
-                    <span className="h-px w-6 bg-[#2b2b2b] transition-all duration-300 group-hover:w-10" aria-hidden="true" />
-                  </a>
+                  {item.slug ? (
+                    <Link
+                      href={`/media/${item.slug}`}
+                      className="group mt-1 inline-flex w-fit items-center gap-3 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#2b2b2b]"
+                    >
+                      READ MORE
+                      <span className="h-px w-6 bg-[#2b2b2b] transition-all duration-300 group-hover:w-10" aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <a
+                      href={item.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group mt-1 inline-flex w-fit items-center gap-3 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#2b2b2b]"
+                    >
+                      READ MORE
+                      <span className="h-px w-6 bg-[#2b2b2b] transition-all duration-300 group-hover:w-10" aria-hidden="true" />
+                    </a>
+                  )}
                 </div>
               </div>
             </FadeInSection>
@@ -107,14 +126,11 @@ export default function MediaPage() {
             </span>
           </FadeInSection>
           <div className="flex flex-col">
-            {textOnly.map((item) => (
-              <FadeInSection key={item.sourceUrl}>
-                <a
-                  href={item.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex flex-col gap-2 border-t border-[#2b2b2b]/15 py-6 sm:flex-row sm:items-baseline sm:gap-8"
-                >
+            {textOnly.map((item) => {
+              const rowClassName =
+                "group flex flex-col gap-2 border-t border-[#2b2b2b]/15 py-6 sm:flex-row sm:items-baseline sm:gap-8";
+              const rowContent = (
+                <>
                   <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] sm:w-24 sm:shrink-0">
                     {item.date.replaceAll("-", ".")}
                   </time>
@@ -122,9 +138,23 @@ export default function MediaPage() {
                   <span className="font-[family-name:var(--ep-font-serif)] text-sm leading-[1.7] text-[#2b2b2b] group-hover:text-[#3E5C6B]">
                     {item.title}
                   </span>
-                </a>
-              </FadeInSection>
-            ))}
+                </>
+              );
+
+              return (
+                <FadeInSection key={item.sourceUrl}>
+                  {item.slug ? (
+                    <Link href={`/media/${item.slug}`} className={rowClassName}>
+                      {rowContent}
+                    </Link>
+                  ) : (
+                    <a href={item.sourceUrl} target="_blank" rel="noreferrer" className={rowClassName}>
+                      {rowContent}
+                    </a>
+                  )}
+                </FadeInSection>
+              );
+            })}
           </div>
           <FadeInSection>
             <a
