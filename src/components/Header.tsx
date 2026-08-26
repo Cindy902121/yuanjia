@@ -64,6 +64,12 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 文字、不可點擊——現在頁面做好了（見 src/app/business/lead/page.tsx，PRD
  * 5.4／6.7 正式規格頁面，不是伸展項目），改成真的 `<Link>`，拿掉「即將推出」
  * 字樣。
+ *
+ * 2026-08-25：「關於元家」下拉選單加上「最新消息」（`/news`，SEO／AEO／GEO
+ * 內容策略新增的原創編輯內容區塊，見 src/lib/content/news-items.ts 檔頭
+ * 說明），跟原本就在的「媒體報導」並列——媒體報導是別人報導我們的清單，
+ * 最新消息是我們自己寫的深度內容，兩者性質不同但都放在同一個下拉選單裡，
+ * 對使用者來說都是「想多了解元家」的入口，不需要分開兩個地方。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -112,6 +118,9 @@ export async function Header() {
                 </Link>
                 <Link href="/media" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
                   媒體報導
+                </Link>
+                <Link href="/news" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                  最新消息
                 </Link>
               </div>
             </div>
