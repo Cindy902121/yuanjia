@@ -1,0 +1,81 @@
+export type NewsCategory = "activities" | "yuanjia" | "offers";
+
+export type NewsArticle = {
+  attachment?: { href: string; label: string };
+  category: NewsCategory;
+  categoryLabel: string;
+  date: string;
+  faq?: Array<{ answer: string; question: string }>;
+  imagePaths?: string[];
+  slug: string;
+  sourceHref: string;
+  summary: string;
+  title: string;
+  content: string[];
+  offer?: {
+    eligibility: string;
+    imagePath: string;
+    moq: string;
+    packaging: string;
+    period: string;
+    pricing: string;
+    productCategories: string;
+    purchaseNote: string;
+  };
+};
+
+export const newsCategories = {
+  activities: {
+    description: "掌握元家的展覽、企業交流與產品推廣活動。",
+    featuredSummary: "元家公布年度國際參展規劃，企業客戶可由公告掌握各展覽的時間、地點與攤位資訊。",
+    source: "https://www.yens.com.tw/msg/message-%E5%B1%95%E8%A6%BD-EVENT-20.html",
+    title: "活動訊息",
+  },
+  yuanjia: {
+    description: "產品、規格、品牌與企業服務的公開公告。",
+    featuredSummary: "日本干貝尺寸規格表提供尺寸、每公斤粒數與約當重量對照，方便採購溝通時快速辨識規格。",
+    source: "https://www.yens.com.tw/msg/message-%E5%BD%A2%E8%B1%A1-%E7%94%A2%E5%93%81%E6%8E%A8%E5%BB%A3-19.html",
+    title: "元家資訊",
+  },
+  offers: {
+    description: "企業採購專案與優惠條件，皆依詢價內容由業務個別確認。",
+    featuredSummary: "從企業型錄選擇品項與規格後送出詢價；供應、交期與報價將由專屬業務依實際需求提供建議。",
+    source: "/business/catalog",
+    title: "大宗專案",
+  },
+} satisfies Record<NewsCategory, { description: string; featuredSummary: string; source: string; title: string }>;
+
+export const newsArticles: NewsArticle[] = [
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-08-24", slug: "shanghai-fisheries-2026", sourceHref: "https://www.yens.com.tw/msg/msg498.html", summary: "元家將參與 2026 上海國際漁業博覽會，展示水產品與調理食品。", title: "上海國際漁業博覽會 Shanghai International Fisheries & Seafood Exhibition 2026", content: ["元家將參加 2026 上海國際漁業博覽會，展示水產品與調理食品，並與國際採購夥伴交流市場趨勢與合作機會。", "展覽日期為 2026 年 8 月 26 日至 28 日，地點位於 Shanghai New International Expo Centre，元家攤位為 W3A6-06。", "企業客戶可先透過企業型錄整理有興趣的品項與規格，再由詢價流程與業務確認供應、包裝及合作條件。"], faq: [{ question: "上海國際漁業博覽會的元家攤位在哪裡？", answer: "元家攤位為 W3A6-06，位於 Shanghai New International Expo Centre。" }, { question: "展覽期間可以洽詢哪些內容？", answer: "可洽詢水產品、調理食品、規格、包裝與企業合作需求；實際供應條件由業務確認。" }], imagePaths: ["/news/shanghai-2026.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-07-30", slug: "wofex-manila-2026", sourceHref: "https://www.yens.com.tw/msg/msg496.html", summary: "元家完成 WOFEX MANILA 2026 參展，與菲律賓及國際買家交流。", title: "菲律賓國際食品展 WOFEX MANILA 2026", content: ["元家完成 WOFEX MANILA 2026 菲律賓國際食品展，於展會中展示水產品與調理食品。", "此次與菲律賓及各地的專業買家、通路夥伴和餐飲業者交流，呈現產品研發、食品安全與國際市場服務的成果。", "展覽於 2026 年 7 月 29 日至 8 月 1 日在 World Trade Center 與 SMX Metro Manila 舉行，攤位為 418。"], faq: [{ question: "WOFEX MANILA 2026 的展期與地點？", answer: "展期為 2026 年 7 月 29 日至 8 月 1 日，地點在菲律賓 World Trade Center 與 SMX Metro Manila。" }, { question: "元家在展會展示哪些類型產品？", answer: "以水產品與調理食品為主，實際合作品項可由企業詢價進一步確認。" }], imagePaths: ["/news/wofex-2026-01.jpg", "/news/wofex-2026-02.jpg", "/news/wofex-2026-03.jpg", "/news/wofex-2026-04.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-07-01", slug: "food-taipei-2026-recap", sourceHref: "https://www.yens.com.tw/msg/msg494.html", summary: "2026 台北國際食品展回顧：展示百款水產與即食解方。", title: "【2026台北國際食品展】榮耀謝幕，相約2027再創巔峰！", content: ["元家感謝業界夥伴與來訪民眾參與 2026 台北國際食品展，於展位交流產品趨勢與餐飲採購需求。", "現場設置互動拍照牆、試吃活動與新品展示，呈現即食料理、熟食系列及多款水產品的應用情境。", "元家持續透過一站式供應鏈、產品研發與數位化服務，協助企業客戶建立更有效率的採購流程。"], faq: [{ question: "2026 台北國際食品展的元家展位有哪些內容？", answer: "包含水產品、即食料理、熟食系列、新品展示及試吃活動。" }, { question: "企業採購如何延續展後合作？", answer: "可從企業型錄選擇品項與規格，建立詢價單後由業務協助確認。" }], imagePaths: ["/news/food-taipei-2026-01.jpg", "/news/food-taipei-2026-02.jpg", "/news/food-taipei-2026-03.jpg", "/news/food-taipei-2026-04.jpg", "/news/food-taipei-2026-05.jpg", "/news/food-taipei-2026-06.jpg", "/news/food-taipei-2026-07.jpg", "/news/food-taipei-2026-08.jpg", "/news/food-taipei-2026-09.jpg", "/news/food-taipei-2026-10.jpg", "/news/food-taipei-2026-11.jpg", "/news/food-taipei-2026-12.jpg", "/news/food-taipei-2026-13.jpg", "/news/food-taipei-2026-14.jpg", "/news/food-taipei-2026-15.jpg", "/news/food-taipei-2026-16.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-06-01", slug: "food-taipei-2026-invitation", sourceHref: "https://www.yens.com.tw/msg/msg492.html", summary: "元家邀請產業夥伴參與 2026 台北國際食品展。", title: "元家企業敬邀您【2026台北國際食品展】", content: ["元家於 2026 台北國際食品展展示多款水產與調理食品，邀請產業夥伴現場交流。", "展覽於 2026 年 6 月 24 日至 27 日在南港展覽館一館舉行，攤位位於 J 區 J0108。", "展區包含互動拍照牆、百款精選產品與新品試吃，讓來訪者了解元家的企業供應與產品提案能力。"], faq: [{ question: "2026 台北國際食品展的元家攤位號碼？", answer: "攤位位於南港展覽館一館 J 區 J0108。" }], imagePaths: ["/news/food-taipei-invite-2026.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-04-28", slug: "thaifex-2026", sourceHref: "https://www.yens.com.tw/msg/msg488.html", summary: "元家完成 THAIFEX – ANUGA ASIA 2026 參展。", title: "泰國國際食品展 THAIFEX – ANUGA ASIA 2026", content: ["元家完成 THAIFEX – ANUGA ASIA 2026 泰國國際食品展，展示水產品及調理食品。", "展會中與亞洲及全球專業買家交流，展現元家在產品研發、食品安全與國際市場服務上的專業能力。", "展覽於 2026 年 5 月 26 日至 30 日在曼谷 IMPACT Muang Thong Thani 舉行，攤位為 Hall 1-MM41。"], faq: [{ question: "THAIFEX 2026 元家攤位在哪裡？", answer: "元家攤位為 Hall 1-MM41，展場位於曼谷 IMPACT Muang Thong Thani。" }], imagePaths: ["/news/thaifex-2026-01.jpg", "/news/thaifex-2026-02.jpg", "/news/thaifex-2026-03.jpg", "/news/thaifex-2026-04.jpg", "/news/thaifex-2026-05.jpg", "/news/thaifex-2026-06.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-03-06", slug: "seafood-expo-global-2026", sourceHref: "https://www.yens.com.tw/msg/msg486.html", summary: "元家完成巴塞隆納全球海產品展參展。", title: "全球海產品展（巴塞隆納）SEAFOOD EXPO GLOBAL 2026", content: ["元家完成 SEAFOOD EXPO GLOBAL 2026 參展，展示水產品與調理食品，並與全球買家及業界夥伴交流。", "展覽聚焦元家的產品研發、食品安全與國際市場服務能力。", "展期為 2026 年 4 月 21 日至 23 日，地點在 Fira Barcelona Gran Via Venue，攤位為 2K100-2。"], faq: [{ question: "巴塞隆納全球海產品展的元家攤位在哪裡？", answer: "元家攤位為 2K100-2，展場位於 Fira Barcelona Gran Via Venue。" }], imagePaths: ["/news/barcelona-2026-01.jpg", "/news/barcelona-2026-02.jpg", "/news/barcelona-2026-03.jpg", "/news/barcelona-2026-04.jpg", "/news/barcelona-2026-05.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-02-09", slug: "seafood-expo-north-america-2026", sourceHref: "https://www.yens.com.tw/msg/msg484.html", summary: "元家完成北美海產品展，拓展國際合作機會。", title: "北美海產品展（波士頓）SEAFOOD EXPO NORTH AMERICA 2026", content: ["元家完成 SEAFOOD EXPO NORTH AMERICA 2026 展出，展示高品質水產品與調理食品。", "展會中與全球專業買家及業界夥伴深入交流，拓展多元合作機會。", "企業客戶可透過型錄與詢價流程進一步確認適合的產品、規格與供應方案。"], faq: [{ question: "北美海產品展的元家展出重點是什麼？", answer: "重點為水產品與調理食品展示，以及與國際買家、業界夥伴的合作交流。" }], imagePaths: ["/news/boston-2026-01.jpg", "/news/boston-2026-02.jpg", "/news/boston-2026-03.jpg", "/news/boston-2026-04.jpg", "/news/boston-2026-05.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-02-09", slug: "foodex-japan-2026", sourceHref: "https://www.yens.com.tw/msg/msg483.html", summary: "東京國際食品展 FOODEX JAPAN 2026 參展回顧。", title: "東京國際食品展 FOODEX JAPAN 2026 圓滿落幕", content: ["元家已完成 FOODEX JAPAN 2026 展出，於展會中展示多樣水產品與調理食品。", "活動期間與來自全球的專業買家及業界夥伴交流，並感謝到訪展位的貴賓支持。"], imagePaths: ["/news/foodex-2026-01.png", "/news/foodex-2026-02.jpg", "/news/foodex-2026-03.jpg", "/news/foodex-2026-04.jpg", "/news/foodex-2026-05.jpg", "/news/foodex-2026-06.jpg", "/news/foodex-2026-07.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2026-02-09", slug: "2026-exhibition-information", sourceHref: "https://www.yens.com.tw/msg/msg482.html", summary: "2026 年國際食品與海產品展覽行程。", title: "2026年元家參覽資訊", content: ["元家 2026 年將參與北美、亞洲與歐洲多場食品及海產品展覽，展示海鮮、調理食品與健康蔬食小菜，並與全球合作夥伴交流。", "3 月安排東京國際食品展與北美海產品展（波士頓）；4 月參加巴塞隆納全球海產品展；5 月參加泰國國際食品展。", "6 月為台北國際食品展（南港展覽館一館 J0108）；7 月菲律賓 WOFEX；8 月上海國際漁業博覽會；9 月紐約日本食品及餐飲博覽會；10 月為青島中國國際漁業博覽會。"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2025-07-03", slug: "2025-taipei-food-show", sourceHref: "https://www.yens.com.tw/msg/msg424.html", summary: "2025 台北國際食品展活動回顧。", title: "〖2025台北國際食品展〗圓滿落幕！期待2026年再相見！", content: ["元家感謝業界夥伴與消費者參與 2025 台北國際食品展，與品牌共同完成展會交流。", "展區以餐飲氛圍呈現海味美學與飲食體驗，展示水產品、調理商品、熟食系列及新產品。", "展期最後一天也舉辦限時快閃活動，回饋長期支持元家的消費者。"], imagePaths: ["/news/food-taipei-2025-01.jpg", "/news/food-taipei-2025-02.jpg", "/news/food-taipei-2025-03.jpg", "/news/food-taipei-2025-04.jpg", "/news/food-taipei-2025-05.jpg", "/news/food-taipei-2025-06.jpg", "/news/food-taipei-2025-07.jpg", "/news/food-taipei-2025-08.jpg", "/news/food-taipei-2025-09.jpg", "/news/food-taipei-2025-10.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2024-12-30", slug: "taiwan-grouper-processing", sourceHref: "https://www.yens.com.tw/msg/msg377.html", summary: "龍虎斑的捕撈與加工資訊。", title: "〖元家企業〗台灣最大冷凍海鮮進口品牌 龍虎斑加工", content: ["龍虎斑結合龍膽石斑的彈性口感與老虎斑的鮮甜肉質，是深受消費者喜愛的魚種。", "本公告透過影片帶領讀者了解龍虎斑的捕撈與加工過程。"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2024-10-18", slug: "2024-china-fisheries-expo", sourceHref: "https://www.yens.com.tw/msg/msg361.html", summary: "中國國際漁業博覽會參展資訊。", title: "2024年中國國際漁業博覽會 CHINA FISHERIES & SEAFOOD EXPO", content: ["元家參與中國國際漁業博覽會，持續與國際水產產業夥伴交流。", "相關展覽內容與現場資訊，請參閱官方原始公告。"], imagePaths: ["/news/china-fisheries-2024-01.jpg", "/news/china-fisheries-2024-02.jpg", "/news/china-fisheries-2024-03.jpg", "/news/china-fisheries-2024-04.jpg"] },
+  { category: "activities", categoryLabel: "活動訊息", date: "2024-09-16", slug: "2024-shanghai-food-expo", sourceHref: "https://www.yens.com.tw/msg/msg357.html", summary: "上海國際餐飲食材展覽會資訊。", title: "2024 上海國際餐飲食材展覽會", content: ["元海鄉實業股份有限公司參與 2024 上海國際餐飲食材展覽會。", "現場展示海鮮加工產品，以及緣嘟嘟品牌的日式調理小菜與龍蝦沙拉。"], imagePaths: ["/news/shanghai-2024-01.jpg", "/news/shanghai-2024-02.jpg", "/news/shanghai-2024-03.jpg"] },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-07-02", slug: "japan-scallop-size-guide", sourceHref: "https://www.yens.com.tw/msg/msg495.html", summary: "日本干貝尺寸、粒數與重量對照資訊。", title: "元家-日本干貝尺寸規格表", content: ["元家提供日本干貝分級表，包含 2L、L、M、S、2S 至 6S 等規格，並對照直徑、每公斤粒數與約當重量。", "採購端可先依尺寸與粒數進行菜單、份量及成本溝通，再由業務確認實際可供應的規格與包裝。", "原始公告提供可下載的規格表；列印時應選擇 A4、100% 原尺寸、不縮放，才可作為 1:1 實物尺寸對照。"], faq: [{ question: "日本干貝規格表包含哪些資訊？", answer: "包含 2L 至 6S 的尺寸分級、直徑、每公斤粒數與約當重量。" }, { question: "列印干貝尺寸表時要注意什麼？", answer: "請使用 A4、100% 原尺寸且不縮放列印，才能進行 1:1 尺寸對照。" }], imagePaths: ["/news/scallop-size-guide.jpg"], attachment: { href: "/news/scallop-size-guide.pdf", label: "下載干貝尺寸規格表 PDF" } },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-05-19", slug: "manyo-grilled-eel", sourceHref: "https://www.yens.com.tw/msg/msg491.html", summary: "万葉一味蒲燒鰻新品資訊。", title: "《万葉 一味蒲燒鰻》極致美味，經典上市", content: ["元家分享万葉一味蒲燒鰻的上市資訊與產品特色，提供餐飲與零售通路作為日式料理提案參考。", "企業客戶可依餐期、菜單與預估用量提出需求，由業務協助確認規格、包裝及供應條件。"], faq: [{ question: "蒲燒鰻適合哪些採購情境？", answer: "可作為餐飲菜單、日式料理與零售熟食提案的採購參考，實際規格請以詢價確認。" }], imagePaths: ["/news/manyo-eel.jpg"] },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-05-12", slug: "far-east-bubble-ice", sourceHref: "https://www.yens.com.tw/msg/msg490.html", summary: "遠東泡泡冰產品代理資訊。", title: "基隆《遠東泡泡冰》堅持台灣本土新鮮水果製作，用心做好冰，吃得好安心！元家企業總代理", content: ["本公告介紹遠東泡泡冰以台灣本土新鮮水果製作的產品特色，以及元家的代理服務資訊。", "冰品通路可依銷售場景、保存條件與預估數量提出合作需求，供應內容、規格與合作方式由業務進一步確認。"], faq: [{ question: "遠東泡泡冰由誰代理？", answer: "本公告說明由元家企業提供總代理相關資訊。" }, { question: "如何確認冰品的供應與規格？", answer: "請透過企業詢價提供需求量與通路情境，由業務確認合作方式。" }], imagePaths: ["/news/bubble-ice-01.jpg", "/news/bubble-ice-02.jpeg"] },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-04-28", slug: "content-infringement-statement", sourceHref: "https://www.yens.com.tw/msg/msg489.html", summary: "元家針對影音素材侵權的正式聲明。", title: "〖聲明〗元家企業針對網路冒用影音素材及侵權行為之嚴正聲明", content: ["元家就網路冒用影音素材及相關侵權行為發布正式聲明，提醒合作夥伴辨識官方資訊來源。", "如需核對聲明內容、授權使用或後續資訊，請以本頁的官方原始公告為準。"], faq: [{ question: "如何確認元家官方公告？", answer: "請以元家官方網站發布的公告頁為準，避免依據未經授權轉載內容。" }], imagePaths: ["/news/statement-2026.jpg"] },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-03-16", slug: "edamame-quinoa-award", sourceHref: "https://www.yens.com.tw/msg/msg487.html", summary: "毛豆藜麥洋栖菜獲 iTi 三星資訊。", title: "《毛豆藜麥洋栖菜》引領全球的卓越風味，榮獲 2026 iTi 國際風味評鑑三星最高殊榮！", content: ["元家分享毛豆藜麥洋栖菜獲得 2026 iTi 國際風味評鑑三星肯定的消息。", "此產品結合毛豆、藜麥與洋栖菜，適合餐飲配菜、冷盤與便利餐食提案；企業採購規格與供應狀況由業務依詢價內容確認。"], faq: [{ question: "毛豆藜麥洋栖菜獲得什麼肯定？", answer: "本公告指出產品獲得 2026 iTi 國際風味評鑑三星肯定。" }], imagePaths: ["/news/edamame-quinoa.jpg"] },
+  { category: "yuanjia", categoryLabel: "元家資訊", date: "2026-02-06", slug: "frozen-clam-meat", sourceHref: "https://www.yens.com.tw/msg/msg481.html", summary: "熟凍花蛤肉產品推廣資訊。", title: "《熟凍花蛤肉》急凍鎖鮮，快速上菜", content: ["元家介紹熟凍花蛤肉的產品特色與使用便利性，適合需要快速出餐的餐飲與團膳採購情境。", "企業客戶可提出預計菜單、規格與包裝需求，業務將依實際供應與交期協助確認。"], faq: [{ question: "熟凍花蛤肉適合哪些使用情境？", answer: "適合快速出餐的餐飲、團膳與料理應用；實際規格與供應條件請以詢價確認。" }], imagePaths: ["/news/clam-meat-01.jpg", "/news/clam-meat-02.jpg", "/news/clam-meat-03.jpg", "/news/clam-meat-04.jpg", "/news/clam-meat-05.jpg"] },
+  { category: "offers", categoryLabel: "優惠活動", date: "2026-08-26", slug: "summer-restaurant-restock", sourceHref: "/business/catalog", summary: "以夏季餐期與穩定備貨為主的企業採購示範方案。", title: "夏季餐飲補貨專案", content: ["炎夏餐期需求集中，從魚片、蝦仁到貝類，備貨速度與規格一致性都會直接影響出餐品質。本方案以餐飲採購節奏為出發點，協助企業先整理主力菜單、預估用量與希望到貨區間。", "請在企業型錄中選擇欲採購的品項與規格後加入詢價單；業務將依實際庫存、包裝與配送地點，提供適合的供應與交期建議。", "此頁為 B2B 服務展示用方案，不公開固定售價或折扣；最終合作條件以業務確認的正式報價為準。"], imagePaths: ["/offers/summer-restock.png"], offer: { eligibility: "限餐飲、團膳與食品加工企業帳戶洽詢", imagePath: "/offers/summer-restock.png", moq: "10 箱起（可依規格確認）", packaging: "依品項採 1 kg × 10 包／箱或原裝箱規", period: "2026/08/26－2026/09/30", pricing: "專案價請洽業務", productCategories: "冷凍魚片、蝦仁、貝類、調理水產", purchaseNote: "請提供預估月用量、期望規格與到貨地點，讓業務安排合適供應建議。" } },
+  { category: "offers", categoryLabel: "優惠活動", date: "2026-08-26", slug: "new-product-trial", sourceHref: "/business/catalog", summary: "為餐飲通路規劃的新品導入與菜單測試示範方案。", title: "餐飲通路新品體驗", content: ["新品導入不只在於試吃，更需要評估餐期、烹調便利性、出餐穩定度與顧客接受度。本方案以餐飲通路的測試流程為主軸，協助採購端建立更有效率的新品評估方式。", "可先選擇有興趣的調理食品與水產規格，並於詢價說明中填寫預計使用的餐期與門市／據點數量。", "此頁為 B2B 服務展示用方案，實際可供應品項、樣品與合作條件由業務依申請內容確認。"], imagePaths: ["/offers/new-product-trial.png"], offer: { eligibility: "限具餐飲通路、連鎖餐廳或中央廚房需求之企業帳戶", imagePath: "/offers/new-product-trial.png", moq: "每品項 5 箱起", packaging: "依商品規格與樣品供應方式確認", period: "2026/09/01－2026/09/20", pricing: "專案價請洽業務", productCategories: "新品調理食品、即食料理、精選水產", purchaseNote: "建議於詢價備註中留下使用情境、預計餐期與測試數量。" } },
+  { category: "offers", categoryLabel: "優惠活動", date: "2026-08-26", slug: "group-meal-proposal", sourceHref: "/business/catalog", summary: "依供餐人數與菜單需求規劃的團膳採購組合示範方案。", title: "團膳採購組合提案", content: ["團膳採購需要同時考量供餐人數、成本結構、烹調流程與穩定供應。本方案提供以冷凍魚類、調理食品與蔬食配菜為核心的組合採購規劃方向。", "請先從型錄中建立欲討論的品項清單，再註明每餐供應人數、每週頻率與預計起始日期；業務會協助比對可供應規格與包裝。", "此頁為 B2B 服務展示用方案，不構成固定價格或最低採購承諾，實際內容以正式詢價回覆為準。"], imagePaths: ["/offers/group-meal.png"], offer: { eligibility: "限學校、企業團膳、醫療與餐飲供餐單位帳戶洽詢", imagePath: "/offers/group-meal.png", moq: "單次採購 20 箱起", packaging: "依菜單與供餐人數規劃箱規", period: "2026/09/01－2026/10/15", pricing: "專案價請洽業務", productCategories: "冷凍魚類、調理食品、便利配菜", purchaseNote: "請提供供餐人數、供應頻率、預計菜單與希望包裝規格。" } },
+  { category: "offers", categoryLabel: "優惠活動", date: "2026-08-26", slug: "holiday-preorder", sourceHref: "/business/catalog", summary: "針對節慶餐期提前安排庫存與配送節奏的示範方案。", title: "節慶備貨優先排程", content: ["節慶檔期通常伴隨集中採購與高峰配送需求。越早確認品項、規格與預估數量，越能讓採購與供應端保留彈性，減少臨時替代品的風險。", "企業客戶可將預計使用的魚類、蝦類與貝類加入詢價單，並標示希望交貨的週次、分批方式與保存條件。", "此頁為 B2B 服務展示用方案；庫存保留、交期與報價均須由業務依實際需求完成確認。"], imagePaths: ["/offers/holiday-preorder.png"], offer: { eligibility: "限有節慶檔期備貨需求之企業帳戶洽詢", imagePath: "/offers/holiday-preorder.png", moq: "15 箱起，可申請分批配送", packaging: "依商品提供原裝箱或混箱建議", period: "2026/09/15－2026/10/31", pricing: "專案價請洽業務", productCategories: "魚類、蝦類、貝類、節慶調理品", purchaseNote: "請於詢價備註填寫希望到貨週次、是否分批及保存條件。" } },
+  { category: "offers", categoryLabel: "優惠活動", date: "2026-08-26", slug: "expo-consultation", sourceHref: "/business/rfq", summary: "為展會後採購洽談與產品媒合設計的示範方案。", title: "展會洽談專屬方案", content: ["展會交流後，採購需求通常需要回到實際菜單、通路與供應條件進一步確認。本方案協助已完成展會接觸的企業客戶，將感興趣品項整理為可追蹤的詢價項目。", "請將想評估的產品、規格與預計使用情境加入詢價單，並在備註留下展會名稱或接洽資訊，方便業務銜接後續洽談。", "此頁為 B2B 服務展示用方案，並非公開價格優惠；實際合作條件由業務依需求、供應狀況與交期確認。"], imagePaths: ["/offers/expo-consultation.png"], offer: { eligibility: "限曾於展會或商務洽談接觸元家之企業帳戶", imagePath: "/offers/expo-consultation.png", moq: "不限箱數，須提供預估需求", packaging: "依洽談品項與市場需求確認", period: "2026/08/26－2026/10/31", pricing: "專案價請洽業務", productCategories: "全品類水產、調理食品與新品提案", purchaseNote: "請於詢價備註填寫展會名稱、接洽人或希望評估的產品方向。" } },
+];
+
+export function getNewsArticle(slug: string) {
+  return newsArticles.find((article) => article.slug === slug);
+}
+
+export function getNewsArticles(category: NewsCategory) {
+  return newsArticles.filter((article) => article.category === category);
+}
