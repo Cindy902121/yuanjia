@@ -38,9 +38,7 @@ import { SITE_URL } from "@/lib/seo";
  *
  * 2026-08-25：補上 `/news`（列表頁，靜態）跟每篇文章各自的 `/news/[slug]`
  * （見 src/lib/content/news-items.ts）——跟商品／分類／標籤同一個做法，
- * 直接從內容資料產生，之後新增文章不用手動改這裡。目前
- * `NEWS_ARTICLES` 是空陣列，`newsEntries` 因此也是空陣列，只有 `/news`
- * 這個列表頁本身會被加進 sitemap，不是漏掉。
+ * 直接從內容資料產生，之後新增文章不用手動改這裡。
  *
  * 2026-08-25（同日，重新分工後）：補上 `/media/[slug]`（有深度詳情頁的
  * 報導，見 src/lib/content/media-detail.ts）——原本規劃給 /news 的內容

@@ -68,9 +68,7 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 2026-08-25：「關於元家」下拉選單加上「最新消息」（`/news`），跟原本就在
  * 的「媒體報導」並列。同日重新分工過一次：媒體報導是別人報導我們的清單
  * （含深度詳情頁 `/media/[slug]`），最新消息專門留給元家自己發布的第一手
- * 消息（新品、優惠、公告），見 src/lib/content/news-items.ts 檔頭說明——
- * 目前 `/news` 還沒有真的可以發布的內容，會顯示誠實的空狀態，連結先留著，
- * 之後有公告直接補資料即可。
+ * 消息（新品、優惠、公告），見 src/lib/content/news-items.ts 檔頭說明。
  */
 export async function Header() {
   const supabase = await createClient();
