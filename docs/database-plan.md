@@ -2,8 +2,7 @@
 
 > 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；本機
 > HTTP／seed／Admin real contract 31/31 已於 2026-08-27 通過。
-> 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
-> `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
+> 遠端 Supabase 已套用目前 10 支 active migrations；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
 > 不是尚未建立的草案。
 
@@ -152,5 +151,10 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 - PR #1 的 B2C 擴充 schema 已合併至 GitHub，但目前不直接套用至遠端；其中新增的分類、圖片與認證資料表超出目前 PRD／FDD 的 MVP 資料模型，待 A／B 確認需求後另行拆分。
 - 測試只使用本機 Supabase 與本機 Next server；測試用 Auth identity 與 fixture 不進入 Git，也不指向正式資料庫。
+
+### 驗證收尾（2026-08-27）
+
+- [x] 清除舊 `.next` 產物後重新完成 TypeScript 檢查與 production build。
+- [x] `pnpm lint` 通過；目前僅保留 5 個既有 warning，沒有 lint error。
 
 在此之前，不建立 ERP 串接、CRM、團購、真實金流、正式訂單或個人 B2B 帳號。
