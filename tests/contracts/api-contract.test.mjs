@@ -261,6 +261,7 @@ test("B2B product tags and specification options stay isolated and staff-managea
   assert.match(routes.adminTags, /b2b_tags/);
   assert.match(routes.adminTags, /\.eq\("is_active", true\)/);
   assert.match(routes.adminTags, /tag_ids/);
+  assert.match(routes.adminTags, /admin\.rpc\("admin_replace_b2b_product_tags"/);
   assert.match(routes.adminSpecOptions, /requireBusinessAdmin/);
   assert.match(routes.adminSpecOptions, /option_code/);
   assert.match(routes.adminSpecOptions, /23505/);
@@ -273,6 +274,7 @@ test("B2B product tags and specification options stay isolated and staff-managea
   assert.match(editor, /tag_ids/);
   assert.match(editor, /管理標籤/);
   assert.match(editor, /新增規格選項/);
+  assert.match(editor, /重試規格選項/);
   assert.match(editor, /option_code/);
   assert.match(editor, /上移|下移/);
   assert.match(editor, /停用|啟用/);
@@ -287,6 +289,8 @@ test("B2B product images stay private, validated, staff-manageable, and recovera
   assert.match(routes.adminImages, /storage_cleanup/);
   assert.match(routes.adminImage, /storage_cleanup/);
   assert.match(routes.adminImage, /storage_path/);
+  assert.match(routes.adminImages, /channel !== "b2b"/);
+  assert.match(routes.adminImage, /channel === "b2b" && nextRole === "cover"/);
   assert.match(routes.productImages, /createSignedUrl/);
   assert.match(routes.productImages, /600/);
   assert.match(routes.productImages, /PRODUCT_IMAGE_MAX_BYTES/);
@@ -323,13 +327,16 @@ test("B2B admin workbench is responsive and keyboard-recoverable", () => {
   assert.match(dashboard, /motion-reduce:transition-none/);
 
   assert.match(editor, /productReloadKey/);
+  assert.match(editor, /imagesDirty/);
   assert.match(editor, /disabled=\{loading \|\| saving \|\| Boolean\(loadError\)\}/);
   assert.match(editor, /tabIndex=\{-1\}/);
   assert.match(editor, /pb-20 sm:pb-6/);
   assert.match(editor, /motion-reduce:animate-none/);
 
   assert.match(images, /loadError/);
+  assert.match(images, /onDirtyChange/);
   assert.match(images, /重試讀取/);
+  assert.match(images, /item\.image_role === "cover"/);
   assert.match(images, /tabIndex=\{-1\}/);
   assert.match(images, /className="mt-5 grid gap-3 grid-cols-2/);
   assert.match(images, /aria-live="polite"/);

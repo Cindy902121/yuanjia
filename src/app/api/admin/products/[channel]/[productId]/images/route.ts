@@ -182,7 +182,7 @@ export async function POST(
       const { error: cleanupError } = await admin.storage
         .from(PRODUCT_IMAGE_BUCKETS[channel])
         .remove([storagePath]);
-      if (cleanupError) {
+      if (channel === "b2b" && cleanupError) {
         return json({
           error: "目前無法保存商品圖片，暫時也無法清理上傳檔案。",
           storage_cleanup: "failed",
@@ -193,6 +193,14 @@ export async function POST(
         return apiError("圖片排序或封面設定與既有圖片衝突。", 409);
       }
       return apiError("目前無法保存商品圖片。", 503);
+    }
+
+    if (channel === "b2c") {
+      return json({
+        channel,
+        product_id: productId,
+        image: await decoratedImage(admin, channel, productId, image.id),
+      }, 201);
     }
 
     try {
@@ -287,6 +295,9 @@ export async function DELETE(
   const body = (await readJson(request)) as { storage_path?: unknown } | null;
   if (!body || !isProductStoragePath(body.storage_path, productId)) {
     return apiError("商品圖片清理路徑不正確。", 400);
+  }
+  if (channel !== "b2b") {
+    return apiError("B2C 圖片不支援此清理操作。", 404);
   }
 
   try {

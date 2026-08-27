@@ -20,6 +20,10 @@ const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes(
 const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
   ? read(`supabase/migrations/${b2bSpecOptionsMigrationFile}`)
   : "";
+const b2bTagReplaceMigrationFile = migrationFiles.find((file) => file.includes("replace_b2b_product_tags"));
+const b2bTagReplaceMigration = b2bTagReplaceMigrationFile
+  ? read(`supabase/migrations/${b2bTagReplaceMigrationFile}`)
+  : "";
 const databasePlan = read("docs/database-plan.md");
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));
 const securityMigration = migrationFiles.find((file) => file.includes("20260812150001_establish_mvp_security_contract"));
@@ -149,6 +153,17 @@ test("B2B multi-spec migration and seed preserve option identity and ordering", 
     assert.match(seed, new RegExp(optionCode));
   }
   assert.match(seed, /other.*customer|客戶輸入/);
+});
+
+test("B2B tag replacement is atomic and service-role only", () => {
+  assert.ok(b2bTagReplaceMigrationFile, "B2B tag replacement migration should exist");
+  assert.match(b2bTagReplaceMigration, /create or replace function public\.admin_replace_b2b_product_tags/);
+  assert.match(b2bTagReplaceMigration, /returns void/);
+  assert.match(b2bTagReplaceMigration, /language plpgsql/);
+  assert.match(b2bTagReplaceMigration, /delete from public\.b2b_product_tags/);
+  assert.match(b2bTagReplaceMigration, /insert into public\.b2b_product_tags/);
+  assert.match(b2bTagReplaceMigration, /revoke execute on function public\.admin_replace_b2b_product_tags\(uuid, uuid\[\]\)/);
+  assert.match(b2bTagReplaceMigration, /grant execute on function public\.admin_replace_b2b_product_tags\(uuid, uuid\[\]\)\s+to service_role/);
 });
 
 test("B2B authorization fixtures are isolated, repeatable and safely removable", () => {

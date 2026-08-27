@@ -76,6 +76,9 @@ async function validateRoleLimit(
     .eq("product_id", image.product_id);
   if (error) throw new Error(error.message);
   const images = (data ?? []) as Array<{ id: string; image_role: ProductImageRole }>;
+  if (channel === "b2c" && nextRole === "cover" && images.some((item) => item.id !== image.id && item.image_role === "cover")) {
+    return "每個商品只能有一張封面圖。";
+  }
   if (
     nextRole === "detail" &&
     image.image_role !== "detail" &&
@@ -162,7 +165,7 @@ export async function PATCH(
     const roleError = await validateRoleLimit(admin, channel, image, nextRole);
     if (roleError) return apiError(roleError, 409);
 
-    const demotedCoverId = nextRole === "cover" && image.image_role !== "cover"
+    const demotedCoverId = channel === "b2b" && nextRole === "cover" && image.image_role !== "cover"
       ? await demoteExistingCover(admin, channel, productId, imageId)
       : null;
     const updates: Record<string, unknown> = { image_role: nextRole, alt_text: altText };
@@ -241,7 +244,7 @@ export async function PUT(
       });
     if (uploadError) return apiError("目前無法上傳商品圖片。", 503);
 
-    const demotedCoverId = nextRole === "cover" && image.image_role !== "cover"
+    const demotedCoverId = channel === "b2b" && nextRole === "cover" && image.image_role !== "cover"
       ? await demoteExistingCover(admin, channel, productId, imageId)
       : null;
 
@@ -261,7 +264,7 @@ export async function PUT(
         .from(PRODUCT_IMAGE_BUCKETS[channel])
         .remove([storagePath]);
       if (demotedCoverId) await restoreCover(admin, channel, demotedCoverId);
-      if (cleanupError) {
+      if (channel === "b2b" && cleanupError) {
         return json({
           error: "目前無法保存商品圖片，暫時也無法清理上傳檔案。",
           storage_cleanup: "failed",
@@ -279,7 +282,7 @@ export async function PUT(
       product_id: productId,
       image: await imageResponse(admin, channel, productId, imageId),
       storage_cleanup: cleanupError ? "failed" : "ok",
-      ...(cleanupError ? { storage_path: image.storage_path } : {}),
+      ...(channel === "b2b" && cleanupError ? { storage_path: image.storage_path } : {}),
     });
   } catch {
     return apiError("目前無法替換商品圖片。", 503);
@@ -303,6 +306,20 @@ export async function DELETE(
     admin = createAdminClient();
     const image = await readImage(admin, channel, productId, imageId);
     if (!image) return apiError("找不到指定商品圖片。", 404);
+
+    if (channel === "b2c") {
+      const { error: storageError } = await admin.storage
+        .from(PRODUCT_IMAGE_BUCKETS[channel])
+        .remove([image.storage_path]);
+      if (storageError) return apiError("目前無法刪除商品圖片檔案。", 503);
+
+      const { error: deleteError } = await admin
+        .from(PRODUCT_IMAGE_TABLES[channel])
+        .delete()
+        .eq("id", imageId);
+      if (deleteError) return apiError("目前無法刪除商品圖片資料。", 503);
+      return json({ channel, product_id: productId, image_id: imageId, deleted: true });
+    }
 
     const { error: deleteError } = await admin
       .from(PRODUCT_IMAGE_TABLES[channel])

@@ -37,6 +37,10 @@ type B2bSpecOption = {
 };
 
 type OptionOrder = Array<{ id: string; display_order: number }>;
+type OptionRetry =
+  | { kind: "create" }
+  | { kind: "save"; optionId: string }
+  | { kind: "toggle"; optionId: string };
 
 type B2bProduct = B2bForm & {
   id: string;
@@ -259,6 +263,8 @@ export function ProductEditor({
   const [productReloadKey, setProductReloadKey] = useState(0);
   const [relatedReloadKey, setRelatedReloadKey] = useState(0);
   const [retryOrder, setRetryOrder] = useState<OptionOrder | null>(null);
+  const [optionRetry, setOptionRetry] = useState<OptionRetry | null>(null);
+  const [imagesDirty, setImagesDirty] = useState(false);
 
   const isEditing = currentProductId !== null;
   const basicDirty = useMemo(
@@ -277,7 +283,7 @@ export function ProductEditor({
     newOption.option_code.trim() !== "" ||
     newOption.specification_text.trim() !== "" ||
     newOption.packaging_text.trim() !== "";
-  const dirty = basicDirty || tagsDirty || optionsDirty || newOptionDirty;
+  const dirty = basicDirty || tagsDirty || optionsDirty || newOptionDirty || imagesDirty;
   const visibleTags = useMemo(() => {
     const query = tagSearch.trim().toLowerCase();
     return availableTags.filter(
@@ -483,6 +489,7 @@ export function ProductEditor({
   ) {
     setNewOption((current) => ({ ...current, [field]: value }));
     setRetryOrder(null);
+    setOptionRetry(null);
     setNewOptionError("");
     setOptionsError("");
   }
@@ -496,6 +503,7 @@ export function ProductEditor({
       current.map((option) => (option.id === optionId ? { ...option, [field]: value } : option)),
     );
     setRetryOrder(null);
+    setOptionRetry(null);
     setOptionsError("");
     setOptionsMessage("");
   }
@@ -504,6 +512,7 @@ export function ProductEditor({
     if (!currentProductId || optionsSavingId !== null) {
       return;
     }
+    setOptionRetry(null);
     const optionCode = newOption.option_code.trim();
     const specification = newOption.specification_text.trim();
     const packaging = newOption.packaging_text.trim();
@@ -546,6 +555,7 @@ export function ProductEditor({
       setOptionsMessage("規格選項已新增。");
     } catch (error: unknown) {
       setNewOptionError(error instanceof Error ? error.message : "規格選項新增失敗，請重試。");
+      setOptionRetry({ kind: "create" });
     } finally {
       setOptionsSavingId(null);
     }
@@ -555,6 +565,7 @@ export function ProductEditor({
     if (!currentProductId || optionsSavingId !== null) {
       return;
     }
+    setOptionRetry(null);
     setOptionsSavingId(option.id);
     setRetryOrder(null);
     setOptionsError("");
@@ -578,6 +589,7 @@ export function ProductEditor({
       setOptionsMessage(`${option.option_code} 已儲存。`);
     } catch (error: unknown) {
       setOptionsError(error instanceof Error ? error.message : "規格選項儲存失敗，請重試。");
+      setOptionRetry({ kind: "save", optionId: option.id });
     } finally {
       setOptionsSavingId(null);
     }
@@ -587,6 +599,7 @@ export function ProductEditor({
     if (!currentProductId || optionsSavingId !== null) {
       return;
     }
+    setOptionRetry(null);
     setOptionsSavingId(option.id);
     setRetryOrder(null);
     setOptionsError("");
@@ -608,6 +621,7 @@ export function ProductEditor({
       setOptionsMessage(`${option.option_code} 已${option.is_active ? "停用" : "啟用"}。`);
     } catch (error: unknown) {
       setOptionsError(error instanceof Error ? error.message : "規格選項狀態更新失敗，請重試。");
+      setOptionRetry({ kind: "toggle", optionId: option.id });
     } finally {
       setOptionsSavingId(null);
     }
@@ -629,6 +643,7 @@ export function ProductEditor({
 
     setOptions(normalized);
     setRetryOrder(order);
+    setOptionRetry(null);
     setOptionsSavingId("reorder");
     setOptionsError("");
     setOptionsMessage("");
@@ -681,6 +696,25 @@ export function ProductEditor({
   function retryOptionOrder() {
     if (retryOrder) {
       void persistOptionOrder(retryOrder);
+    }
+  }
+
+  function retryFailedOption() {
+    if (!optionRetry) {
+      return;
+    }
+    if (optionRetry.kind === "create") {
+      void createOption();
+      return;
+    }
+    const option = options.find((item) => item.id === optionRetry.optionId);
+    if (!option) {
+      return;
+    }
+    if (optionRetry.kind === "save") {
+      void saveOption(option);
+    } else {
+      void toggleOption(option);
     }
   }
 
@@ -1080,7 +1114,21 @@ export function ProductEditor({
                       />
                     </label>
                   </div>
-                  {newOptionError ? <p className="mt-3 text-sm font-semibold text-[#B42318]" ref={newOptionErrorRef} role="alert" tabIndex={-1}>{newOptionError}</p> : null}
+                  {newOptionError ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <p className="text-sm font-semibold text-[#B42318]" ref={newOptionErrorRef} role="alert" tabIndex={-1}>{newOptionError}</p>
+                      {optionRetry?.kind === "create" ? (
+                        <button
+                          className={`${buttonClass} border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
+                          disabled={optionsSavingId !== null}
+                          onClick={retryFailedOption}
+                          type="button"
+                        >
+                          重試規格選項
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <button
                     className={`${buttonClass} mt-4 bg-[#005DAA] text-white hover:bg-[#00457F]`}
                     disabled={optionsSavingId !== null}
@@ -1103,6 +1151,16 @@ export function ProductEditor({
                         重試排序
                       </button>
                     ) : null}
+                    {optionRetry && optionRetry.kind !== "create" ? (
+                      <button
+                        className={`${buttonClass} border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
+                        disabled={optionsSavingId !== null}
+                        onClick={retryFailedOption}
+                        type="button"
+                      >
+                        重試規格選項
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
                 {optionsMessage ? <p className="text-sm font-semibold text-[#18794E]" role="status">{optionsMessage}</p> : null}
@@ -1110,11 +1168,15 @@ export function ProductEditor({
             )}
           </section>
 
-          <ProductImageManager key={currentProductId ?? "new-product"} productId={currentProductId} />
+          <ProductImageManager
+            key={currentProductId ?? "new-product"}
+            onDirtyChange={setImagesDirty}
+            productId={currentProductId}
+          />
 
           <div className="sticky bottom-4 z-10 mt-6 flex min-w-0 scroll-mb-24 flex-col gap-3 rounded-xl border border-[#D8E1E5] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
             <p aria-live="polite" className={`break-words text-sm ${dirty ? "font-semibold text-[#C84B31]" : "text-[#536168]"}`}>
-              {basicDirty ? "有尚未儲存的基本資料" : tagsDirty ? "有尚未套用的標籤變更" : optionsDirty || newOptionDirty ? "有尚未儲存的規格選項變更" : "目前沒有尚未儲存的變更"}
+              {basicDirty ? "有尚未儲存的基本資料" : tagsDirty ? "有尚未套用的標籤變更" : optionsDirty || newOptionDirty ? "有尚未儲存的規格選項變更" : imagesDirty ? "有尚未儲存的圖片變更" : "目前沒有尚未儲存的變更"}
             </p>
             <button
               className={`${buttonClass} w-full bg-[#005DAA] text-white hover:bg-[#00457F] sm:w-auto`}

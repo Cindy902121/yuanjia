@@ -84,7 +84,13 @@ function requestFailure(error: unknown, fallback: string) {
   };
 }
 
-export function ProductImageManager({ productId }: { productId: string | null }) {
+export function ProductImageManager({
+  onDirtyChange,
+  productId,
+}: {
+  onDirtyChange?: (dirty: boolean) => void;
+  productId: string | null;
+}) {
   const [images, setImages] = useState<B2bProductImage[]>([]);
   const [loading, setLoading] = useState(Boolean(productId));
   const [busy, setBusy] = useState<string | null>(null);
@@ -92,6 +98,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState<{ file: File; altText: string } | null>(null);
+  const [pendingAltIds, setPendingAltIds] = useState<string[]>([]);
   const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +117,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
     () => orderedImages.filter((image) => image.image_role === "detail"),
     [orderedImages],
   );
+  const imageDirty = pendingAltIds.length > 0 || draft !== null;
 
   useEffect(() => {
     if (!productId) {
@@ -122,6 +130,8 @@ export function ProductImageManager({ productId }: { productId: string | null })
         if (!cancelled) {
           setLoadError("");
           setImages(sortImages(result.images ?? []));
+          setPendingAltIds([]);
+          setDraft(null);
         }
       })
       .catch((requestError: unknown) => {
@@ -139,6 +149,10 @@ export function ProductImageManager({ productId }: { productId: string | null })
       cancelled = true;
     };
   }, [productId, reloadKey]);
+
+  useEffect(() => {
+    onDirtyChange?.(imageDirty);
+  }, [imageDirty, onDirtyChange]);
 
   useEffect(() => {
     if (loadError) {
@@ -177,6 +191,12 @@ export function ProductImageManager({ productId }: { productId: string | null })
 
   function updateLocalImage(imageId: string, update: Partial<B2bProductImage>) {
     setImages((current) => current.map((image) => (image.id === imageId ? { ...image, ...update } : image)));
+  }
+
+  function updateLocalAltText(imageId: string, altText: string) {
+    updateLocalImage(imageId, { alt_text: altText });
+    setPendingAltIds((current) => current.includes(imageId) ? current : [...current, imageId]);
+    setError("");
   }
 
   function showRequestError(requestError: unknown, fallback: string) {
@@ -249,6 +269,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
       if (result.image) {
         updateLocalImage(image.id, result.image);
       }
+      setPendingAltIds((current) => current.filter((id) => id !== image.id));
       setMessage("替代文字已更新。");
     } catch (requestError: unknown) {
       showRequestError(requestError, "替代文字更新失敗，請重試。");
@@ -273,9 +294,13 @@ export function ProductImageManager({ productId }: { productId: string | null })
         },
       );
       if (result.image) {
-        setImages((current) =>
-          current.map((item) => (item.id === image.id ? result.image : item)),
-        );
+        const nextImage = result.image;
+        setImages((current) => current.map((item) => {
+          if (item.id === image.id) {
+            return nextImage;
+          }
+          return item.image_role === "cover" ? { ...item, image_role: "detail" } : item;
+        }));
       }
       setMessage("封面圖已更新。");
     } catch (requestError: unknown) {
@@ -315,6 +340,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
       if (result.image) {
         updateLocalImage(image.id, result.image);
       }
+      setPendingAltIds((current) => current.filter((id) => id !== image.id));
       if (result.storage_cleanup === "failed" && result.storage_path) {
         setCleanupWarning(result.storage_path);
         setMessage("圖片已替換，但舊檔案清理失敗，請重試清理。");
@@ -340,12 +366,14 @@ export function ProductImageManager({ productId }: { productId: string | null })
         { method: "DELETE" },
       );
       setImages((current) => current.filter((item) => item.id !== image.id));
+      setPendingAltIds((current) => current.filter((id) => id !== image.id));
       setMessage("圖片已刪除。");
     } catch (requestError: unknown) {
       const failure = requestFailure(requestError, "圖片刪除失敗，請重試。");
       showRequestError(requestError, "圖片刪除失敗，請重試。");
       if (failure.cleanupPath) {
         setImages((current) => current.filter((item) => item.id !== image.id));
+        setPendingAltIds((current) => current.filter((id) => id !== image.id));
         setMessage("圖片資料已刪除，但檔案清理失敗，請重試清理。");
       }
     } finally {
@@ -479,7 +507,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
             disabled={disabled}
             id={`image-alt-${image.id}`}
             maxLength={200}
-            onChange={(event) => updateLocalImage(image.id, { alt_text: event.target.value })}
+            onChange={(event) => updateLocalAltText(image.id, event.target.value)}
             value={image.alt_text}
           />
         </label>

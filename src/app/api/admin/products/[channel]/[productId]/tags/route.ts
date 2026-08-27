@@ -137,6 +137,17 @@ export async function PATCH(
     return apiError("只能套用同一產品線中已啟用的既有標籤。", 400);
   }
 
+  if (channel === "b2b") {
+    const { error } = await admin.rpc("admin_replace_b2b_product_tags", {
+      p_product_id: productId,
+      p_tag_ids: tagIds,
+    });
+    if (error) {
+      return apiError("目前無法套用產品標籤。", 503);
+    }
+    return json({ channel, product_id: productId, tag_ids: tagIds });
+  }
+
   const { error: deleteError } = await admin
     .from(relationTable)
     .delete()
