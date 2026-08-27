@@ -5,6 +5,8 @@
 import type { DragEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { ProductImageChannel } from "@/lib/product-images";
+
 type B2bProductImage = {
   id: string;
   product_id: string;
@@ -24,6 +26,10 @@ type ApiFailure = Error & {
   storage_cleanup?: "ok" | "failed";
   storage_path?: string;
 };
+
+function imageApiPath(channel: ProductImageChannel, productId: string, imageId?: string) {
+  return `/api/admin/products/${channel}/${productId}/images${imageId ? `/${imageId}` : ""}`;
+}
 
 const imageAccept = "image/jpeg,image/png,image/webp";
 const imageMaxBytes = 5 * 1024 * 1024;
@@ -85,9 +91,13 @@ function requestFailure(error: unknown, fallback: string) {
 }
 
 export function ProductImageManager({
+  channel = "b2b",
+  onCoverChange,
   onDirtyChange,
   productId,
 }: {
+  channel?: ProductImageChannel;
+  onCoverChange?: (hasCover: boolean) => void;
   onDirtyChange?: (dirty: boolean) => void;
   productId: string | null;
 }) {
@@ -125,7 +135,7 @@ export function ProductImageManager({
     }
 
     let cancelled = false;
-    void requestJson<{ images: B2bProductImage[] }>(`/api/admin/products/b2b/${productId}/images`)
+    void requestJson<{ images: B2bProductImage[] }>(imageApiPath(channel, productId))
       .then((result) => {
         if (!cancelled) {
           setLoadError("");
@@ -148,11 +158,15 @@ export function ProductImageManager({
     return () => {
       cancelled = true;
     };
-  }, [productId, reloadKey]);
+  }, [channel, productId, reloadKey]);
 
   useEffect(() => {
     onDirtyChange?.(imageDirty);
   }, [imageDirty, onDirtyChange]);
+
+  useEffect(() => {
+    onCoverChange?.(coverImage !== null);
+  }, [coverImage, onCoverChange]);
 
   useEffect(() => {
     if (loadError) {
@@ -230,7 +244,7 @@ export function ProductImageManager({
     form.set("alt_text", altText);
     try {
       const result = await requestJson<{ image: B2bProductImage }>(
-        `/api/admin/products/b2b/${productId}/images`,
+        imageApiPath(channel, productId),
         { method: "POST", body: form },
       );
       if (result.image) {
@@ -259,7 +273,7 @@ export function ProductImageManager({
     setError("");
     try {
       const result = await requestJson<{ image: B2bProductImage }>(
-        `/api/admin/products/b2b/${productId}/images/${image.id}`,
+        imageApiPath(channel, productId, image.id),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -286,7 +300,7 @@ export function ProductImageManager({
     setError("");
     try {
       const result = await requestJson<{ image: B2bProductImage }>(
-        `/api/admin/products/b2b/${productId}/images/${image.id}`,
+        imageApiPath(channel, productId, image.id),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -336,7 +350,7 @@ export function ProductImageManager({
         image: B2bProductImage;
         storage_cleanup?: "ok" | "failed";
         storage_path?: string;
-      }>(`/api/admin/products/b2b/${productId}/images/${image.id}`, { method: "PUT", body: form });
+      }>(imageApiPath(channel, productId, image.id), { method: "PUT", body: form });
       if (result.image) {
         updateLocalImage(image.id, result.image);
       }
@@ -362,7 +376,7 @@ export function ProductImageManager({
     setError("");
     try {
       await requestJson<{ deleted: boolean }>(
-        `/api/admin/products/b2b/${productId}/images/${image.id}`,
+        imageApiPath(channel, productId, image.id),
         { method: "DELETE" },
       );
       setImages((current) => current.filter((item) => item.id !== image.id));
@@ -392,7 +406,7 @@ export function ProductImageManager({
     setError("");
     try {
       const result = await requestJson<{ images: B2bProductImage[] }>(
-        `/api/admin/products/b2b/${productId}/images`,
+        imageApiPath(channel, productId),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -445,7 +459,7 @@ export function ProductImageManager({
     setError("");
     try {
       await requestJson<{ storage_cleanup: "ok" }>(
-        `/api/admin/products/b2b/${productId}/images`,
+        imageApiPath(channel, productId),
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },

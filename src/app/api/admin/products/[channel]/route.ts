@@ -139,6 +139,10 @@ export async function POST(
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
 
+  if (channel === "b2c" && payload.is_active === true) {
+    return apiError("B2C 商品請先以下架狀態建立，再設定封面圖後上架。", 409);
+  }
+
   const { data: product, error } = await admin
     .from(PRODUCT_TABLES[channel])
     .insert(payload)

@@ -14,6 +14,22 @@ function requireProductAdmin(channel: string) {
   return channel === "b2b" ? requireBusinessAdmin() : requireAdmin();
 }
 
+async function b2cActivationError(
+  admin: ReturnType<typeof createAdminClient>,
+  productId: string,
+) {
+  const { data: cover, error } = await admin
+    .from("b2c_product_images")
+    .select("id")
+    .eq("product_id", productId)
+    .eq("image_role", "cover")
+    .maybeSingle();
+  if (error) {
+    return apiError("目前無法確認商品封面圖。", 503);
+  }
+  return cover ? null : apiError("B2C 商品上架前必須先設定封面圖。", 409);
+}
+
 export async function PATCH(
   request: Request,
   {
@@ -48,6 +64,13 @@ export async function PATCH(
     admin = createAdminClient();
   } catch {
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
+  }
+
+  if (channel === "b2c" && payload.is_active === true) {
+    const activationError = await b2cActivationError(admin, productId);
+    if (activationError) {
+      return activationError;
+    }
   }
 
   const { data: product, error } = await admin

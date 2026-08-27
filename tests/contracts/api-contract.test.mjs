@@ -35,6 +35,9 @@ const routes = {
   adminPageAuth: read("src/lib/admin-page-auth.ts"),
   adminCatalog: read("src/lib/admin-catalog.ts"),
   adminDashboard: read("src/app/admin/admin-dashboard.tsx"),
+  b2cProductNewPage: read("src/app/admin/products/new/page.tsx"),
+  b2cProductEditPage: read("src/app/admin/products/[productId]/page.tsx"),
+  b2cProductEditor: read("src/app/admin/products/product-editor.tsx"),
 };
 
 const EVENT_NAMES = [
@@ -253,6 +256,26 @@ test("B2B product editor has shared new/edit routes and guarded form behavior", 
   assert.doesNotMatch(editor, /price/);
   assert.match(routes.adminPageAuth, /business.*products/);
   assert.match(routes.adminCatalog, /B2B_PRODUCT_CODE_PATTERN/);
+});
+
+test("B2C product editor has guarded new/edit flow and channel-scoped media", () => {
+  assert.match(routes.b2cProductNewPage, /requireAdminPage\("\/admin\/products\/new"\)/);
+  assert.match(routes.b2cProductEditPage, /requireAdminPage\(.*productId/);
+  assert.match(routes.b2cProductNewPage, /ProductEditor/);
+  assert.match(routes.b2cProductEditPage, /ProductEditor/);
+  assert.match(routes.b2cProductEditor, /B2C_PRODUCT_FIELD_RULES/);
+  assert.match(routes.b2cProductEditor, /B2C_SLUG_PATTERN/);
+  assert.match(routes.b2cProductEditor, /\/api\/admin\/products\/b2c/);
+  assert.match(routes.b2cProductEditor, /ProductImageManager/);
+  assert.match(routes.b2cProductEditor, /onCoverChange/);
+  assert.match(routes.b2cProductEditor, /beforeunload/);
+  assert.match(routes.b2cProductEditor, /popstate/);
+  assert.match(routes.adminCatalog, /payload\.is_active = false/);
+  assert.match(routes.adminProductStatus, /b2cActivationError/);
+  assert.match(routes.adminProductStatus, /b2c_product_images/);
+  assert.match(routes.adminImage, /activeB2cCoverError/);
+  assert.match(routes.adminDashboard, /\/admin\/products\/new/);
+  assert.match(routes.adminDashboard, /\/admin\/products\/\$\{product\.id\}/);
 });
 
 test("B2B product tags and specification options stay isolated and staff-manageable", () => {

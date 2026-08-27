@@ -15,6 +15,7 @@ export const B2B_STATUS_LABELS: Record<B2bProductStatus, string> = {
 };
 
 export const B2B_PRODUCT_CODE_PATTERN = "^[A-Z0-9][A-Z0-9._-]{0,79}$";
+export const B2C_SLUG_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
 
 export const B2B_PRODUCT_FIELD_RULES = [
   {
@@ -39,6 +40,20 @@ export const B2B_PRODUCT_FIELD_RULES = [
     hint: "最多 240 字元。",
   },
   { key: "description", label: "商品描述", maxLength: 5000, required: true, hint: "最多 5,000 字元。" },
+] as const;
+
+export const B2C_PRODUCT_FIELD_RULES = [
+  { key: "slug", label: "網址代稱", maxLength: 160, required: true, hint: "限小寫英數與連字號；建立後不可修改。" },
+  { key: "name", label: "商品名稱", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "brand", label: "品牌", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "category", label: "分類", maxLength: 120, required: true, hint: "目前使用單一文字分類，最多 120 字元。" },
+  { key: "specification", label: "規格", maxLength: 500, required: true, hint: "例如：去骨魚排，2 片／盒；最多 500 字元。" },
+  { key: "short_description", label: "商品摘要", maxLength: 160, required: true, hint: "商品列表使用的簡短介紹，最多 160 字元。" },
+  { key: "origin", label: "產地", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "storage_method", label: "保存方式", maxLength: 240, required: true, hint: "例如：冷凍 -18°C 以下；最多 240 字元。" },
+  { key: "description", label: "商品描述", maxLength: 5000, required: true, hint: "最多 5,000 字元。" },
+  { key: "food_safety_info", label: "食品安全資訊", maxLength: 5000, required: false, hint: "選填，例如檢驗、過敏原或加工環境資訊。" },
+  { key: "quality_info", label: "品質／認證資訊", maxLength: 5000, required: false, hint: "選填，例如品質標準、選品方式或製程補充。" },
 ] as const;
 
 const B2B_STATUS_TRANSITIONS: Record<B2bProductStatus, readonly B2bProductStatus[]> = {
@@ -121,7 +136,7 @@ function parseProductCode(value: unknown) {
 }
 
 function parseSlug(value: unknown) {
-  if (!isNonEmptyString(value) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.trim())) {
+  if (!isNonEmptyString(value) || !new RegExp(B2C_SLUG_PATTERN).test(value.trim())) {
     return null;
   }
   return value.trim();
@@ -244,7 +259,7 @@ export function parseProductInput(
     }
     payload.is_active = input.is_active;
   } else if (mode === "create" && channel === "b2c") {
-    payload.is_active = true;
+    payload.is_active = false;
   }
 
   return { payload };

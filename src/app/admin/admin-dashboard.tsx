@@ -1080,7 +1080,15 @@ function ProductPanel({
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#536168]">
         <span>共 {products.length} 筆，已上架 {products.filter((product) => product.is_active).length} 筆</span>
-        <span>狀態更新後會立即套用至前台查詢。</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span>狀態更新後會立即套用至前台查詢。</span>
+          <Link
+            className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+            href="/admin/products/new"
+          >
+            新增 B2C 商品
+          </Link>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-[#D8E1E5]">
         <table className="min-w-[760px] w-full text-left text-sm">
@@ -1100,7 +1108,12 @@ function ProductPanel({
               return (
                 <tr key={product.id}>
                   <td className="px-4 py-4 align-top">
-                    <p className="font-bold text-[#17242A]">{product.name}</p>
+                    <Link
+                      className="font-bold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+                      href={`/admin/products/${product.id}`}
+                    >
+                      {product.name}
+                    </Link>
                     <p className="mt-1 text-xs text-[#809099]">
                       {product.product_code ?? product.slug ?? product.id}
                     </p>
@@ -1120,18 +1133,26 @@ function ProductPanel({
                     </span>
                   </td>
                   <td className="px-4 py-4 text-right align-top">
-                    <button
-                      className={`${buttonClass} ${
-                        product.is_active
-                          ? "border border-[#E5D2D0] bg-white text-[#A43B34] hover:bg-[#FFF5F4]"
-                          : "bg-[#005DAA] text-white hover:bg-[#00457F]"
-                      }`}
-                      disabled={busyKey === key}
-                      onClick={() => void onToggle(product)}
-                      type="button"
-                    >
-                      {busyKey === key ? "處理中…" : product.is_active ? "下架" : "上架"}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Link
+                        className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+                        href={`/admin/products/${product.id}`}
+                      >
+                        編輯
+                      </Link>
+                      <button
+                        className={`${buttonClass} ${
+                          product.is_active
+                            ? "border border-[#E5D2D0] bg-white text-[#A43B34] hover:bg-[#FFF5F4]"
+                            : "bg-[#005DAA] text-white hover:bg-[#00457F]"
+                        }`}
+                        disabled={busyKey === key}
+                        onClick={() => void onToggle(product)}
+                        type="button"
+                      >
+                        {busyKey === key ? "處理中…" : product.is_active ? "下架" : "上架"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

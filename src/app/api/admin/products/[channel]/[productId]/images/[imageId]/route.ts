@@ -54,6 +54,19 @@ async function readImage(
   return (data as ImageRow | null) ?? null;
 }
 
+async function activeB2cCoverError(
+  admin: ReturnType<typeof createAdminClient>,
+  productId: string,
+) {
+  const { data: product, error } = await admin
+    .from("b2c_products")
+    .select("is_active")
+    .eq("id", productId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return product?.is_active ? apiError("上架中的 B2C 商品必須保留一張封面圖。", 409) : null;
+}
+
 async function imageResponse(
   admin: ReturnType<typeof createAdminClient>,
   channel: "b2c" | "b2b",
@@ -76,9 +89,6 @@ async function validateRoleLimit(
     .eq("product_id", image.product_id);
   if (error) throw new Error(error.message);
   const images = (data ?? []) as Array<{ id: string; image_role: ProductImageRole }>;
-  if (channel === "b2c" && nextRole === "cover" && images.some((item) => item.id !== image.id && item.image_role === "cover")) {
-    return "每個商品只能有一張封面圖。";
-  }
   if (
     nextRole === "detail" &&
     image.image_role !== "detail" &&
@@ -156,6 +166,10 @@ export async function PATCH(
     if (!isProductImageRole(nextRole)) {
       return apiError("圖片角色只能是 cover 或 detail。", 400);
     }
+    if (channel === "b2c" && image.image_role === "cover" && nextRole === "detail") {
+      const coverError = await activeB2cCoverError(admin, productId);
+      if (coverError) return coverError;
+    }
     const altText = body.alt_text === undefined ? image.alt_text : parseAltText(body.alt_text);
     if (!altText) return apiError("圖片替代文字必須是 200 字以內的非空白文字。", 400);
     const sortOrder = body.sort_order === undefined ? undefined : parseSortOrder(body.sort_order);
@@ -165,7 +179,10 @@ export async function PATCH(
     const roleError = await validateRoleLimit(admin, channel, image, nextRole);
     if (roleError) return apiError(roleError, 409);
 
-    const demotedCoverId = channel === "b2b" && nextRole === "cover" && image.image_role !== "cover"
+    const demotedCoverId = (
+      (channel === "b2b" && nextRole === "cover") ||
+      (channel === "b2c" && nextRole === "cover")
+    ) && image.image_role !== "cover"
       ? await demoteExistingCover(admin, channel, productId, imageId)
       : null;
     const updates: Record<string, unknown> = { image_role: nextRole, alt_text: altText };
@@ -308,6 +325,10 @@ export async function DELETE(
     if (!image) return apiError("找不到指定商品圖片。", 404);
 
     if (channel === "b2c") {
+      if (image.image_role === "cover") {
+        const coverError = await activeB2cCoverError(admin, productId);
+        if (coverError) return coverError;
+      }
       const { error: storageError } = await admin.storage
         .from(PRODUCT_IMAGE_BUCKETS[channel])
         .remove([image.storage_path]);

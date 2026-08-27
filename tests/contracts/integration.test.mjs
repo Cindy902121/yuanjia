@@ -62,6 +62,7 @@ const createdRows = {
   companyIds: new Set(),
   optionIds: new Set(),
   productIds: new Set(),
+  b2cProductIds: new Set(),
 };
 
 async function request(path, options = {}) {
@@ -218,6 +219,32 @@ async function cleanupCreatedRows() {
     const { error } = await admin.from("b2b_products").delete().in("id", productIds);
     assert.ifError(error);
   }
+
+  const b2cProductIds = [...createdRows.b2cProductIds];
+  if (b2cProductIds.length > 0) {
+    const { data: imageRows, error: imageSelectError } = await admin
+      .from("b2c_product_images")
+      .select("storage_path")
+      .in("product_id", b2cProductIds);
+    assert.ifError(imageSelectError);
+    const imagePaths = (imageRows ?? []).map((image) => image.storage_path).filter(Boolean);
+    if (imagePaths.length > 0) {
+      const { error: storageError } = await admin.storage.from("b2c-media").remove(imagePaths);
+      assert.ifError(storageError);
+    }
+    const { error: imageError } = await admin
+      .from("b2c_product_images")
+      .delete()
+      .in("product_id", b2cProductIds);
+    assert.ifError(imageError);
+    const { error: tagError } = await admin
+      .from("b2c_product_tags")
+      .delete()
+      .in("product_id", b2cProductIds);
+    assert.ifError(tagError);
+    const { error } = await admin.from("b2c_products").delete().in("id", b2cProductIds);
+    assert.ifError(error);
+  }
 }
 
 async function setCustomerPrefixRuleActive(prefix, isActive) {
@@ -346,27 +373,84 @@ test(
     const b2cProductsPayload = await json(b2cProductsResponse);
     const b2cProduct = b2cProductsPayload.products?.[0];
     assert.ok(b2cProduct?.id, "the B2C admin catalog needs a product id");
-    const originalB2cStatus = b2cProduct.is_active;
-    try {
-      const disableB2c = await request(`/api/admin/products/b2c/${b2cProduct.id}`, {
-        method: "PATCH",
-        headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: false }),
-      });
-      assert.equal(disableB2c.status, 200);
-      const disabledB2cList = await request("/api/admin/products/b2c?include_inactive=false", {
-        headers: { cookie: adminCookies },
-      });
-      const disabledB2cPayload = await json(disabledB2cList);
-      assert.ok(!(disabledB2cPayload.products ?? []).some((product) => product.id === b2cProduct.id));
-    } finally {
-      const restoreB2c = await request(`/api/admin/products/b2c/${b2cProduct.id}`, {
-        method: "PATCH",
-        headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: originalB2cStatus }),
-      });
-      assert.equal(restoreB2c.status, 200);
-    }
+    const newB2cProduct = await request("/api/admin/products/b2c", {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({
+        slug: `contract-b2c-${Date.now()}`,
+        name: "B2C 契約測試商品",
+        brand: "契約測試品牌",
+        category: "魚類",
+        specification: "契約測試規格",
+        short_description: "B2C 契約測試商品摘要。",
+        price: 129,
+        origin: "台灣",
+        storage_method: "冷凍 -18°C 以下",
+        description: "B2C 契約測試商品描述。",
+        mock_inventory: 3,
+      }),
+    });
+    assert.equal(newB2cProduct.status, 201);
+    const newB2cPayload = await json(newB2cProduct);
+    assert.ok(newB2cPayload.product?.id, "the B2C create response needs a product id");
+    createdRows.b2cProductIds.add(newB2cPayload.product.id);
+    assert.equal(newB2cPayload.product.is_active, false);
+    assert.equal(
+      (await request(`/admin/products/${newB2cPayload.product.id}`, { headers: { cookie: adminCookies } })).status,
+      200,
+    );
+
+    const activateWithoutCover = await request(`/api/admin/products/b2c/${newB2cPayload.product.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ is_active: true }),
+    });
+    assert.equal(activateWithoutCover.status, 409);
+
+    const b2cCoverForm = new FormData();
+    b2cCoverForm.append("file", new Blob(["contract-b2c-cover"], { type: "image/png" }), "cover.png");
+    b2cCoverForm.set("image_role", "cover");
+    b2cCoverForm.set("alt_text", "B2C 契約測試封面");
+    const b2cCoverResponse = await request(`/api/admin/products/b2c/${newB2cPayload.product.id}/images`, {
+      method: "POST",
+      headers: { cookie: adminCookies },
+      body: b2cCoverForm,
+    });
+    assert.equal(b2cCoverResponse.status, 201);
+    const b2cCover = (await json(b2cCoverResponse)).image;
+    assert.ok(b2cCover?.id, "the B2C cover response needs an image id");
+
+    const activateWithCover = await request(`/api/admin/products/b2c/${newB2cPayload.product.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ is_active: true }),
+    });
+    assert.equal(activateWithCover.status, 200);
+    assert.equal((await json(activateWithCover)).product.is_active, true);
+
+    const deleteActiveCover = await request(
+      `/api/admin/products/b2c/${newB2cPayload.product.id}/images/${b2cCover.id}`,
+      { method: "DELETE", headers: { cookie: adminCookies } },
+    );
+    assert.equal(deleteActiveCover.status, 409);
+
+    const disableB2c = await request(`/api/admin/products/b2c/${newB2cPayload.product.id}`, {
+      method: "PATCH",
+      headers: { cookie: adminCookies },
+      body: JSON.stringify({ is_active: false }),
+    });
+    assert.equal(disableB2c.status, 200);
+    const disabledB2cList = await request("/api/admin/products/b2c?include_inactive=false", {
+      headers: { cookie: adminCookies },
+    });
+    const disabledB2cPayload = await json(disabledB2cList);
+    assert.ok(!(disabledB2cPayload.products ?? []).some((product) => product.id === newB2cPayload.product.id));
+
+    const deleteB2cCover = await request(
+      `/api/admin/products/b2c/${newB2cPayload.product.id}/images/${b2cCover.id}`,
+      { method: "DELETE", headers: { cookie: adminCookies } },
+    );
+    assert.equal(deleteB2cCover.status, 200);
 
     const b2bProductsResponse = await request("/api/admin/products/b2b?include_inactive=true", {
       headers: { cookie: adminCookies },
