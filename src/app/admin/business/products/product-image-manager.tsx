@@ -29,9 +29,9 @@ const imageAccept = "image/jpeg,image/png,image/webp";
 const imageMaxBytes = 5 * 1024 * 1024;
 const imageMaxDetails = 5;
 const imageInputClass =
-  "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB] disabled:cursor-not-allowed disabled:bg-[#F4F7F8]";
+  "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition motion-reduce:transition-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB] disabled:cursor-not-allowed disabled:bg-[#F4F7F8]";
 const imageButtonClass =
-  "inline-flex min-h-10 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] disabled:cursor-not-allowed disabled:opacity-50";
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   const response = await fetch(input, { ...init, cache: "no-store" });
@@ -88,13 +88,18 @@ export function ProductImageManager({ productId }: { productId: string | null })
   const [images, setImages] = useState<B2bProductImage[]>([]);
   const [loading, setLoading] = useState(Boolean(productId));
   const [busy, setBusy] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState<{ file: File; altText: string } | null>(null);
   const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceTargetRef = useRef<string | null>(null);
+  const loadErrorRef = useRef<HTMLDivElement>(null);
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
+  const cleanupWarningRef = useRef<HTMLDivElement>(null);
 
   const orderedImages = useMemo(() => sortImages(images), [images]);
   const coverImage = useMemo(
@@ -115,12 +120,13 @@ export function ProductImageManager({ productId }: { productId: string | null })
     void requestJson<{ images: B2bProductImage[] }>(`/api/admin/products/b2b/${productId}/images`)
       .then((result) => {
         if (!cancelled) {
+          setLoadError("");
           setImages(sortImages(result.images ?? []));
         }
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
-          setError(requestFailure(requestError, "目前無法讀取商品圖片。").message);
+          setLoadError(requestFailure(requestError, "目前無法讀取商品圖片。").message);
         }
       })
       .finally(() => {
@@ -132,7 +138,25 @@ export function ProductImageManager({ productId }: { productId: string | null })
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [productId, reloadKey]);
+
+  useEffect(() => {
+    if (loadError) {
+      loadErrorRef.current?.focus();
+    }
+  }, [loadError]);
+
+  useEffect(() => {
+    if (error) {
+      actionErrorRef.current?.focus();
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (cleanupWarning) {
+      cleanupWarningRef.current?.focus();
+    }
+  }, [cleanupWarning]);
 
   function selectUploadFile(file: File | null) {
     const fileError = validateImageFile(file);
@@ -143,6 +167,12 @@ export function ProductImageManager({ productId }: { productId: string | null })
     setDraft({ file, altText: "" });
     setError("");
     setMessage("");
+  }
+
+  function retryLoad() {
+    setLoadError("");
+    setLoading(true);
+    setReloadKey((current) => current + 1);
   }
 
   function updateLocalImage(imageId: string, update: Partial<B2bProductImage>) {
@@ -158,7 +188,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
   }
 
   async function uploadImage() {
-    if (!productId || loading || !draft || busy) {
+    if (!productId || loading || loadError || !draft || busy) {
       return;
     }
     const altText = draft.altText.trim();
@@ -410,7 +440,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
     const disabled = busy !== null;
     return (
       <article
-        className="rounded-lg border border-[#D8E1E5] bg-white p-3"
+        className="min-w-0 rounded-lg border border-[#D8E1E5] bg-white p-3"
         draggable={!isCover && !disabled}
         key={image.id}
         onDragOver={(event) => {
@@ -517,11 +547,14 @@ export function ProductImageManager({ productId }: { productId: string | null })
 
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    if (loading || loadError || busy) {
+      return;
+    }
     selectUploadFile(event.dataTransfer.files[0] ?? null);
   };
 
   return (
-    <section aria-labelledby="images-title" className="mt-5 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
+    <section aria-busy={loading} aria-labelledby="images-title" className="mt-5 min-w-0 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
       <div className="flex flex-col gap-1 border-b border-[#E7EDF0] pb-4">
         <h2 className="text-lg font-bold text-[#17242A]" id="images-title">圖片管理</h2>
         <p className="text-sm leading-6 text-[#536168]">封面與細節圖片會立即寫入；不需要按下商品欄位的主儲存按鈕。</p>
@@ -531,6 +564,24 @@ export function ProductImageManager({ productId }: { productId: string | null })
         <p className="mt-5 rounded-lg bg-[#F4F7F8] px-4 py-3 text-sm text-[#536168]">先儲存基本資料，才能管理商品圖片。</p>
       ) : (
         <>
+          {loadError ? (
+            <div
+              className="mt-5 flex flex-col gap-3 rounded-lg border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318] sm:flex-row sm:items-center sm:justify-between"
+              ref={loadErrorRef}
+              role="alert"
+              tabIndex={-1}
+            >
+              <span>商品圖片讀取失敗：{loadError}</span>
+              <button
+                className={`${imageButtonClass} shrink-0 border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
+                disabled={loading}
+                onClick={retryLoad}
+                type="button"
+              >
+                {loading ? "讀取中…" : "重試讀取"}
+              </button>
+            </div>
+          ) : null}
           <div
             aria-label="拖曳或選擇圖片上傳"
             className="mt-5 rounded-lg border border-dashed border-[#8AA8B6] bg-[#F8FBFC] p-5 text-center focus-within:border-[#005DAA]"
@@ -541,7 +592,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
               aria-label="選擇要上傳的商品圖片"
               accept={imageAccept}
               className="sr-only"
-              disabled={busy !== null || loading}
+              disabled={busy !== null || loading || Boolean(loadError)}
               onChange={(event) => {
                 selectUploadFile(event.currentTarget.files?.[0] ?? null);
                 event.currentTarget.value = "";
@@ -553,7 +604,7 @@ export function ProductImageManager({ productId }: { productId: string | null })
             <p className="mt-1 text-xs leading-5 text-[#536168]">JPEG／PNG／WebP，單張 5 MB；新上傳預設為細節圖，最多 5 張。</p>
             <button
               className={`${imageButtonClass} mt-3 bg-[#005DAA] text-white hover:bg-[#00457F]`}
-              disabled={busy !== null || loading}
+              disabled={busy !== null || loading || Boolean(loadError)}
               onClick={(event) => {
                 event.stopPropagation();
                 uploadInputRef.current?.click();
@@ -624,29 +675,34 @@ export function ProductImageManager({ productId }: { productId: string | null })
             </div>
           ) : null}
 
-          <p className="mt-5 text-sm text-[#536168]">目前有 {images.length} 張圖片（封面 1 張、細節最多 {imageMaxDetails} 張）。</p>
-          {loading ? <div aria-busy="true" className="mt-4 h-40 animate-pulse rounded-lg bg-[#F4F7F8]" /> : null}
-          {!loading && images.length === 0 ? (
+          {!loadError ? <p className="mt-5 text-sm text-[#536168]">目前有 {images.length} 張圖片（封面 1 張、細節最多 {imageMaxDetails} 張）。</p> : null}
+          {loading ? <div aria-busy="true" className="mt-4 h-40 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none" /> : null}
+          {!loading && !loadError && images.length === 0 ? (
             <p className="mt-4 rounded-lg bg-[#F4F7F8] px-4 py-3 text-sm text-[#536168]">目前沒有圖片；可直接拖曳或選擇檔案開始上傳。</p>
           ) : null}
 
-          {coverImage ? (
+          {!loadError && coverImage ? (
             <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
               {renderImageCard(coverImage, true)}
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 grid-cols-2">
                 {detailImages.map((image, index) => renderImageCard(image, false, index))}
               </div>
             </div>
-          ) : detailImages.length > 0 ? (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          ) : !loadError && detailImages.length > 0 ? (
+            <div className="mt-5 grid gap-3 grid-cols-2 lg:grid-cols-3">
               {detailImages.map((image, index) => renderImageCard(image, false, index))}
             </div>
           ) : null}
 
-          {error ? <p className="mt-4 text-sm font-semibold text-[#B42318]" role="alert">{error}</p> : null}
-          {message ? <p className="mt-4 text-sm font-semibold text-[#18794E]" role="status">{message}</p> : null}
+          {error ? <p className="mt-4 text-sm font-semibold text-[#B42318]" ref={actionErrorRef} role="alert" tabIndex={-1}>{error}</p> : null}
+          {message ? <p aria-live="polite" className="mt-4 text-sm font-semibold text-[#18794E]" role="status">{message}</p> : null}
           {cleanupWarning ? (
-            <div className="mt-4 flex flex-col gap-3 rounded-lg border border-[#F2D7A3] bg-[#FFF9E9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <div
+              className="mt-4 flex flex-col gap-3 rounded-lg border border-[#F2D7A3] bg-[#FFF9E9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              ref={cleanupWarningRef}
+              role="alert"
+              tabIndex={-1}
+            >
               <p className="text-sm font-semibold text-[#8A5A00]">舊圖片檔案清理失敗，可能暫時保留。</p>
               <button
                 className={`${imageButtonClass} border border-[#E8C36A] bg-white text-[#8A5A00] hover:bg-[#FFF4D6]`}

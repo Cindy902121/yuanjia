@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   B2B_PRODUCT_STATUSES,
@@ -124,8 +124,11 @@ const statusLabels = {
 
 const inputClass =
   "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]";
+const b2bInputClass = `${inputClass} motion-reduce:transition-none`;
 const buttonClass =
   "inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+const b2bButtonClass =
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] disabled:cursor-not-allowed disabled:opacity-50";
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   const response = await fetch(input, { ...init, cache: "no-store" });
@@ -185,6 +188,7 @@ export function AdminDashboard({
     initialTab ?? (scope === "business" ? "b2b-products" : "overview"),
   );
   const visibleTabs = tabs.filter((tab) => tabsByScope[scope].includes(tab.id));
+  const topButtonClass = scope === "business" ? b2bButtonClass : buttonClass;
   const [b2cProducts, setB2cProducts] = useState<Product[]>([]);
   const [b2bProducts, setB2bProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -193,6 +197,7 @@ export function AdminDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
   const [error, setError] = useState("");
+  const errorRef = useRef<HTMLDivElement>(null);
   const [notice, setNotice] = useState("");
   const [credentialNotice, setCredentialNotice] = useState("");
   const [companyForm, setCompanyForm] = useState<CompanyForm>({
@@ -256,6 +261,12 @@ export function AdminDashboard({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [loadAll]);
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.focus();
+    }
+  }, [error]);
 
   const activeB2cCount = useMemo(
     () => b2cProducts.filter((product) => product.is_active).length,
@@ -402,8 +413,8 @@ export function AdminDashboard({
   }
 
   return (
-    <main className="min-h-screen flex-1 bg-[#F4F7F8] text-[#17242A]">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <main className="min-h-screen flex-1 overflow-x-hidden bg-[#F4F7F8] text-[#17242A]">
+      <div className="mx-auto min-w-0 w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="flex flex-col gap-5 border-b border-[#D8E1E5] pb-6 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-bold tracking-[0.22em] text-[#005DAA]">YUANJIA ADMIN</p>
@@ -415,20 +426,20 @@ export function AdminDashboard({
           <div className="flex flex-wrap gap-3">
             {scope !== "business" ? (
               <Link
-                className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+                className={`${topButtonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
                 href="/admin/business"
               >
                 B2B 管理
               </Link>
             ) : null}
             <Link
-              className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+              className={`${topButtonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
               href="/"
             >
               回到前台
             </Link>
             <button
-              className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+              className={`${topButtonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
               disabled={isLoading}
               onClick={() => void loadAll()}
               type="button"
@@ -454,7 +465,7 @@ export function AdminDashboard({
                     ) : null}
                     <button
                       aria-current={activeTab === tab.id ? "page" : undefined}
-                      className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition ${
+                      className={`min-h-11 w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] ${
                         activeTab === tab.id
                           ? "bg-[#EAF5FB] text-[#005DAA]"
                           : "text-[#536168] hover:bg-[#F4F7F8] hover:text-[#17242A]"
@@ -472,7 +483,13 @@ export function AdminDashboard({
 
           <section className="min-w-0">
             {error ? (
-              <div className="mb-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert">
+              <div
+                aria-live="assertive"
+                className="mb-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]"
+                ref={errorRef}
+                role="alert"
+                tabIndex={-1}
+              >
                 {error}
               </div>
             ) : null}
@@ -645,6 +662,13 @@ function B2bProductPanel({
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
+  const actionErrorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (actionError) {
+      actionErrorRef.current?.focus();
+    }
+  }, [actionError]);
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -733,12 +757,18 @@ function B2bProductPanel({
     });
   }
 
+  function toggleSelection(productId: string, checked: boolean) {
+    setSelectedIds((current) =>
+      checked ? [...new Set([...current, productId])] : current.filter((id) => id !== productId),
+    );
+  }
+
   if (loading) {
     return (
       <PanelShell description="讀取 B2B 商品工作台資料。" title="B2B 商品工作台">
         <div aria-busy="true" className="space-y-3">
           {Array.from({ length: 5 }, (_, index) => (
-            <div className="h-14 animate-pulse rounded-lg bg-[#F4F7F8]" key={index} />
+            <div className="h-14 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none" key={index} />
           ))}
         </div>
       </PanelShell>
@@ -755,7 +785,7 @@ function B2bProductPanel({
           搜尋商品
           <input
             aria-label="搜尋 B2B 商品"
-            className={inputClass}
+            className={b2bInputClass}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="商品編號、名稱、品牌或分類"
             type="search"
@@ -766,7 +796,7 @@ function B2bProductPanel({
           狀態
           <select
             aria-label="依商品狀態篩選"
-            className={inputClass}
+            className={b2bInputClass}
             onChange={(event) => setStatusFilter(event.target.value as "all" | B2bProductStatus)}
             value={statusFilter}
           >
@@ -779,7 +809,7 @@ function B2bProductPanel({
           </select>
         </label>
         <Link
-          className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+          className={`${b2bButtonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
           href="/admin/business/products/new"
         >
           新增商品
@@ -792,7 +822,7 @@ function B2bProductPanel({
           {selectedProducts.length > 0 ? `，已選 ${selectedProducts.length} 筆` : ""}
         </span>
         <button
-          className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+          className={`${b2bButtonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
           disabled={refreshing}
           onClick={() => void refresh()}
           type="button"
@@ -802,7 +832,12 @@ function B2bProductPanel({
       </div>
 
       {actionError ? (
-        <div className="mt-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert">
+        <div
+          className="mt-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]"
+          ref={actionErrorRef}
+          role="alert"
+          tabIndex={-1}
+        >
           {actionError}
         </div>
       ) : null}
@@ -819,7 +854,7 @@ function B2bProductPanel({
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="批次更新商品狀態"
-            className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] focus:border-[#005DAA] focus:outline-none"
+            className="min-h-11 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] focus:border-[#005DAA] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
             disabled={selectedProducts.length === 0 || availableBulkStatuses.length === 0 || busy}
             onChange={(event) => setBulkStatus(event.target.value as B2bProductStatus | "")}
             value={selectedBulkStatus}
@@ -832,7 +867,7 @@ function B2bProductPanel({
             ))}
           </select>
           <button
-            className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+            className={`${b2bButtonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
             disabled={
               selectedProducts.length === 0 ||
               !bulkStatus ||
@@ -847,18 +882,101 @@ function B2bProductPanel({
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-[#D8E1E5]">
-        <table className="min-w-[900px] w-full text-left text-sm">
+      <div aria-label="B2B 商品清單" className="mt-4 space-y-3 xl:hidden" role="list">
+        {visibleProducts.map((product) => {
+          const status = product.status;
+          return (
+            <article className="min-w-0 rounded-xl border border-[#D8E1E5] bg-white p-4" key={product.id} role="listitem">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#D8E1E5] bg-[#F4F7F8] text-xs text-[#809099]">
+                  {product.thumbnail_url ? (
+                    <Image
+                      alt=""
+                      className="h-full w-full object-cover"
+                      height={56}
+                      src={product.thumbnail_url}
+                      unoptimized
+                      width={56}
+                    />
+                  ) : (
+                    <span aria-hidden="true">—</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    aria-label={`編輯 ${product.name}`}
+                    className="inline-flex min-h-11 break-words font-bold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+                    href={`/admin/business/products/${product.id}`}
+                  >
+                    {product.name}
+                  </Link>
+                  <p className="mt-1 break-all text-xs text-[#536168]">{product.product_code ?? product.id}</p>
+                </div>
+              </div>
+              <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-[#E7EDF0] pt-3 text-sm">
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#536168]">品牌／分類</dt>
+                  <dd className="mt-1 break-words text-[#536168]">{product.brand || "未填品牌"}／{product.category}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#536168]">狀態</dt>
+                  <dd className="mt-1">
+                    <span className={`inline-flex max-w-full rounded-full border px-2.5 py-1 text-xs font-bold ${b2bStatusBadge(status)}`}>
+                      {status ? B2B_STATUS_LABELS[status] : "未設定"}
+                    </span>
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#536168]">圖片數</dt>
+                  <dd className="mt-1 text-[#536168]">{product.image_count ?? 0}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs text-[#536168]">更新時間</dt>
+                  <dd className="mt-1 break-words text-[#536168]">{formatDate(product.updated_at)}</dd>
+                </div>
+              </dl>
+              <label className="mt-4 flex min-h-11 items-center gap-2 border-t border-[#E7EDF0] pt-3 text-sm font-semibold text-[#536168]">
+                <input
+                  aria-label={`選取 ${product.name}`}
+                  checked={selectedIds.includes(product.id)}
+                  className="h-4 w-4 accent-[#005DAA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+                  onChange={(event) => toggleSelection(product.id, event.target.checked)}
+                  type="checkbox"
+                />
+                選取商品
+              </label>
+              <Link
+                aria-label={`開啟 ${product.name} 編輯頁`}
+                className={`${b2bButtonClass} mt-4 w-full border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
+                href={`/admin/business/products/${product.id}`}
+              >
+                編輯商品
+              </Link>
+            </article>
+          );
+        })}
+        {visibleProducts.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[#B8CBD4] px-4 py-10 text-center text-sm text-[#536168]" role="listitem">
+            {products.length === 0 ? "目前沒有 B2B 商品資料。" : "找不到符合搜尋或狀態條件的商品。"}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[#D8E1E5] xl:block">
+        <table aria-label="B2B 商品清單" className="min-w-[900px] w-full text-left text-sm">
           <thead className="bg-[#F4F7F8] text-xs font-bold text-[#536168]">
             <tr>
               <th className="w-12 px-4 py-3" scope="col">
-                <input
-                  aria-label="全選目前顯示商品"
-                  checked={allVisibleSelected}
-                  disabled={visibleProducts.length === 0}
-                  onChange={(event) => toggleAllVisible(event.target.checked)}
-                  type="checkbox"
-                />
+                <label className="flex min-h-11 min-w-11 items-center justify-center">
+                  <input
+                    aria-label="全選目前顯示商品"
+                    checked={allVisibleSelected}
+                    className="h-4 w-4 accent-[#005DAA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+                    disabled={visibleProducts.length === 0}
+                    onChange={(event) => toggleAllVisible(event.target.checked)}
+                    type="checkbox"
+                  />
+                </label>
               </th>
               <th className="px-4 py-3" scope="col">縮圖</th>
               <th className="px-4 py-3" scope="col">商品編號／名稱</th>
@@ -875,18 +993,15 @@ function B2bProductPanel({
               return (
                 <tr key={product.id}>
                   <td className="px-4 py-4 align-top">
-                    <input
-                      aria-label={`選取 ${product.name}`}
-                      checked={selectedIds.includes(product.id)}
-                      onChange={(event) =>
-                        setSelectedIds((current) =>
-                          event.target.checked
-                            ? [...current, product.id]
-                            : current.filter((id) => id !== product.id),
-                        )
-                      }
-                      type="checkbox"
-                    />
+                    <label className="flex min-h-11 min-w-11 items-center justify-center">
+                      <input
+                        aria-label={`選取 ${product.name}`}
+                        checked={selectedIds.includes(product.id)}
+                        className="h-4 w-4 accent-[#005DAA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+                        onChange={(event) => toggleSelection(product.id, event.target.checked)}
+                        type="checkbox"
+                      />
+                    </label>
                   </td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-[#D8E1E5] bg-[#F4F7F8] text-xs text-[#809099]">
@@ -906,16 +1021,16 @@ function B2bProductPanel({
                   </td>
                   <td className="px-4 py-4 align-top">
                     <Link
-                      className="font-bold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      className="inline-flex min-h-11 items-center px-2 font-bold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
                       href={`/admin/business/products/${product.id}`}
                     >
                       {product.name}
                     </Link>
-                    <p className="mt-1 text-xs text-[#809099]">{product.product_code ?? product.id}</p>
+                    <p className="mt-1 text-xs text-[#536168]">{product.product_code ?? product.id}</p>
                   </td>
                   <td className="px-4 py-4 align-top text-[#536168]">
                     <p>{product.brand || "未填品牌"}</p>
-                    <p className="mt-1 text-xs text-[#809099]">{product.category}</p>
+                    <p className="mt-1 text-xs text-[#536168]">{product.category}</p>
                   </td>
                   <td className="px-4 py-4 align-top">
                     <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${b2bStatusBadge(status)}`}>
@@ -926,7 +1041,7 @@ function B2bProductPanel({
                   <td className="whitespace-nowrap px-4 py-4 align-top text-[#536168]">{formatDate(product.updated_at)}</td>
                   <td className="px-4 py-4 text-right align-top">
                     <Link
-                      className="font-semibold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      className="inline-flex min-h-11 items-center px-2 font-semibold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
                       href={`/admin/business/products/${product.id}`}
                     >
                       編輯
@@ -1284,7 +1399,7 @@ function RfqPanel({
                 </p>
               </div>
               <select
-                className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] outline-none focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]"
+                className="min-h-11 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] outline-none focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]"
                 disabled={busyKey === `rfq-${rfq.id}`}
                 onChange={(event) => void onUpdateStatus(rfq.id, event.target.value as Rfq["status"])}
                 value={rfq.status}
@@ -1324,7 +1439,7 @@ function PanelShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-[#D8E1E5] bg-white p-5 shadow-[0_8px_24px_rgba(23,36,42,0.04)] sm:p-6">
+    <section className="min-w-0 rounded-2xl border border-[#D8E1E5] bg-white p-5 shadow-[0_8px_24px_rgba(23,36,42,0.04)] sm:p-6">
       <div className="mb-6 border-b border-[#E7EDF0] pb-5">
         <h2 className="text-xl font-bold text-[#17242A]">{title}</h2>
         <p className="mt-2 text-sm leading-6 text-[#536168]">{description}</p>

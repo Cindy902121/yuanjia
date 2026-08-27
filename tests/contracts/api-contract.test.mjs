@@ -310,6 +310,32 @@ test("B2B product images stay private, validated, staff-manageable, and recovera
   }
 });
 
+test("B2B admin workbench is responsive and keyboard-recoverable", () => {
+  const dashboard = routes.adminDashboard;
+  const editor = read("src/app/admin/business/products/product-editor.tsx");
+  const images = read("src/app/admin/business/products/product-image-manager.tsx");
+
+  assert.match(dashboard, /overflow-x-hidden/);
+  assert.match(dashboard, /xl:hidden/);
+  assert.match(dashboard, /hidden[^"\n]*xl:block/);
+  assert.match(dashboard, /aria-label="B2B 商品清單"/);
+  assert.match(dashboard, /const b2bButtonClass =\s*\n\s*"[^"\n]*min-h-11/);
+  assert.match(dashboard, /motion-reduce:transition-none/);
+
+  assert.match(editor, /productReloadKey/);
+  assert.match(editor, /disabled=\{loading \|\| saving \|\| Boolean\(loadError\)\}/);
+  assert.match(editor, /tabIndex=\{-1\}/);
+  assert.match(editor, /pb-20 sm:pb-6/);
+  assert.match(editor, /motion-reduce:animate-none/);
+
+  assert.match(images, /loadError/);
+  assert.match(images, /重試讀取/);
+  assert.match(images, /tabIndex=\{-1\}/);
+  assert.match(images, /className="mt-5 grid gap-3 grid-cols-2/);
+  assert.match(images, /aria-live="polite"/);
+  assert.match(images, /motion-reduce:animate-none/);
+});
+
 test("admin product, company and RFQ management routes stay server-authorized", () => {
   for (const route of [
     routes.adminProductStatus,

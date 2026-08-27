@@ -73,9 +73,9 @@ const emptyOption: NewOption = {
 };
 
 const inputClass =
-  "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB] disabled:cursor-not-allowed disabled:bg-[#F4F7F8] read-only:bg-[#F4F7F8]";
+  "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition motion-reduce:transition-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB] disabled:cursor-not-allowed disabled:bg-[#F4F7F8] read-only:bg-[#F4F7F8]";
 const buttonClass =
-  "inline-flex min-h-10 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] disabled:cursor-not-allowed disabled:opacity-50";
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   const response = await fetch(input, { ...init, cache: "no-store" });
@@ -148,12 +148,14 @@ function optionSnapshot(options: B2bSpecOption[]) {
 
 function ProductField({
   error,
+  disabled,
   isEditing,
   onChange,
   rule,
   value,
 }: {
   error?: string;
+  disabled: boolean;
   isEditing: boolean;
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   rule: (typeof B2B_PRODUCT_FIELD_RULES)[number];
@@ -167,7 +169,7 @@ function ProductField({
   const describedBy = error ? `${descriptionId} ${errorId}` : descriptionId;
 
   return (
-    <label className={isDescription ? "sm:col-span-2" : ""} htmlFor={fieldId}>
+    <label className={`min-w-0 ${isDescription ? "sm:col-span-2" : ""}`} htmlFor={fieldId}>
       <span className="text-sm font-semibold text-[#17242A]">
         {rule.label}
         {rule.required ? <span className="ml-1 text-[#B42318]" aria-hidden="true">*</span> : null}
@@ -177,6 +179,7 @@ function ProductField({
           aria-describedby={describedBy}
           aria-invalid={error ? "true" : undefined}
           className={`${inputClass} min-h-36 resize-y`}
+          disabled={disabled}
           id={fieldId}
           maxLength={rule.maxLength}
           name={rule.key}
@@ -190,6 +193,7 @@ function ProductField({
           aria-describedby={describedBy}
           aria-invalid={error ? "true" : undefined}
           className={inputClass}
+          disabled={disabled}
           id={fieldId}
           maxLength={rule.maxLength}
           name={rule.key}
@@ -218,6 +222,12 @@ export function ProductEditor({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const loadErrorRef = useRef<HTMLDivElement>(null);
+  const saveErrorRef = useRef<HTMLDivElement>(null);
+  const relatedErrorRef = useRef<HTMLDivElement>(null);
+  const tagErrorRef = useRef<HTMLParagraphElement>(null);
+  const newOptionErrorRef = useRef<HTMLParagraphElement>(null);
+  const optionsErrorRef = useRef<HTMLParagraphElement>(null);
   const ignoreNextPopRef = useRef(false);
   const [currentProductId, setCurrentProductId] = useState(productId ?? null);
   const [form, setForm] = useState<B2bForm>(emptyForm);
@@ -246,6 +256,7 @@ export function ProductEditor({
   const [newOption, setNewOption] = useState(emptyOption);
   const [newOptionError, setNewOptionError] = useState("");
   const [relatedError, setRelatedError] = useState("");
+  const [productReloadKey, setProductReloadKey] = useState(0);
   const [relatedReloadKey, setRelatedReloadKey] = useState(0);
   const [retryOrder, setRetryOrder] = useState<OptionOrder | null>(null);
 
@@ -291,6 +302,7 @@ export function ProductEditor({
         setCurrentProductId(product.id);
         setForm(nextForm);
         setSavedForm(nextForm);
+        setLoadError("");
         setStatus(isB2bProductStatus(product.status) ? product.status : "draft");
         setLastModified(product.updated_at);
       })
@@ -308,7 +320,43 @@ export function ProductEditor({
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [productId, productReloadKey]);
+
+  useEffect(() => {
+    if (loadError) {
+      loadErrorRef.current?.focus();
+    }
+  }, [loadError]);
+
+  useEffect(() => {
+    if (saveError) {
+      saveErrorRef.current?.focus();
+    }
+  }, [saveError]);
+
+  useEffect(() => {
+    if (relatedError) {
+      relatedErrorRef.current?.focus();
+    }
+  }, [relatedError]);
+
+  useEffect(() => {
+    if (tagError) {
+      tagErrorRef.current?.focus();
+    }
+  }, [tagError]);
+
+  useEffect(() => {
+    if (newOptionError) {
+      newOptionErrorRef.current?.focus();
+    }
+  }, [newOptionError]);
+
+  useEffect(() => {
+    if (optionsError) {
+      optionsErrorRef.current?.focus();
+    }
+  }, [optionsError]);
 
   useEffect(() => {
     if (!currentProductId) {
@@ -643,6 +691,12 @@ export function ProductEditor({
     router.push("/admin/business");
   }
 
+  function retryProductLoad() {
+    setLoadError("");
+    setLoading(true);
+    setProductReloadKey((current) => current + 1);
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaveError("");
@@ -692,17 +746,17 @@ export function ProductEditor({
   }
 
   return (
-    <main className="min-h-screen bg-[#F4F7F8] text-[#17242A]">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen overflow-x-hidden bg-[#F4F7F8] text-[#17242A]">
+      <div className="mx-auto min-w-0 w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <header>
           <button
-            className="text-sm font-semibold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+            className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[#005DAA] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#005DAA]"
             onClick={leaveEditor}
             type="button"
           >
             ← 返回 B2B 商品工作台
           </button>
-          <div className="mt-5 flex flex-col gap-4 border-b border-[#D8E1E5] pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mt-5 flex min-w-0 flex-col gap-4 border-b border-[#D8E1E5] pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-[#536168]">B2B 商品管理</p>
               <h1 className="mt-1 text-2xl font-bold tracking-[-0.02em] text-[#17242A] sm:text-3xl">
@@ -712,22 +766,40 @@ export function ProductEditor({
                 基本資料儲存後會留在此頁；標籤、規格選項與圖片在後續管理區段完成。
               </p>
             </div>
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm">
               <span className={`rounded-full border px-3 py-1 font-semibold ${statusClass(status)}`}>
                 {B2B_STATUS_LABELS[status]}
               </span>
-              <span className="text-[#536168]">最後修改：{formatDate(lastModified)}</span>
+              <span className="break-words text-[#536168]">最後修改：{formatDate(lastModified)}</span>
             </div>
           </div>
         </header>
 
         {loadError ? (
-          <div className="mt-6 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318]" role="alert">
-            {loadError}
+          <div
+            className="mt-6 flex flex-col gap-3 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318] sm:flex-row sm:items-center sm:justify-between"
+            ref={loadErrorRef}
+            role="alert"
+            tabIndex={-1}
+          >
+            <span>{loadError}</span>
+            <button
+              className={`${buttonClass} shrink-0 border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
+              disabled={loading}
+              onClick={retryProductLoad}
+              type="button"
+            >
+              {loading ? "讀取中…" : "重試讀取"}
+            </button>
           </div>
         ) : null}
         {saveError ? (
-          <div className="mt-6 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318]" role="alert">
+          <div
+            className="mt-6 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318]"
+            ref={saveErrorRef}
+            role="alert"
+            tabIndex={-1}
+          >
             {saveError}
           </div>
         ) : null}
@@ -737,7 +809,12 @@ export function ProductEditor({
           </div>
         ) : null}
         {relatedError ? (
-          <div className="mt-6 flex flex-col gap-3 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318] sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <div
+            className="mt-6 flex flex-col gap-3 rounded-xl border border-[#F4C7C3] bg-[#FFF1F0] px-4 py-3 text-sm text-[#B42318] sm:flex-row sm:items-center sm:justify-between"
+            ref={relatedErrorRef}
+            role="alert"
+            tabIndex={-1}
+          >
             <span>標籤與規格選項讀取失敗：{relatedError}</span>
             <button
               className={`${buttonClass} border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
@@ -753,21 +830,22 @@ export function ProductEditor({
           </div>
         ) : null}
 
-        <form className="mt-6" onSubmit={(event) => void save(event)} ref={formRef}>
-          <section aria-labelledby="basic-data-title" className="rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
+        <form className="mt-6 min-w-0 pb-20 sm:pb-6" onSubmit={(event) => void save(event)} ref={formRef}>
+          <section aria-labelledby="basic-data-title" className="min-w-0 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
             <div className="flex flex-col gap-1 border-b border-[#E7EDF0] pb-4">
               <h2 className="text-lg font-bold text-[#17242A]" id="basic-data-title">基本資料</h2>
               <p className="text-sm leading-6 text-[#536168]">標示 * 的欄位為必填；資料會依 B2B 商品規則檢查格式與長度。</p>
             </div>
             {loading ? (
               <div aria-busy="true" className="mt-6 space-y-3">
-                <div className="h-12 animate-pulse rounded-lg bg-[#F4F7F8]" />
-                <div className="h-28 animate-pulse rounded-lg bg-[#F4F7F8]" />
+                <div className="h-12 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none" />
+                <div className="h-28 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none" />
               </div>
             ) : (
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 {B2B_PRODUCT_FIELD_RULES.map((rule) => (
                   <ProductField
+                    disabled={loading || saving || Boolean(loadError)}
                     error={fieldErrors[rule.key]}
                     isEditing={isEditing}
                     key={rule.key}
@@ -780,7 +858,7 @@ export function ProductEditor({
             )}
           </section>
 
-          <section aria-labelledby="status-tags-title" className="mt-5 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
+          <section aria-labelledby="status-tags-title" className="mt-5 min-w-0 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
             <div className="flex flex-col gap-1 border-b border-[#E7EDF0] pb-4">
               <h2 className="text-lg font-bold text-[#17242A]" id="status-tags-title">狀態／標籤</h2>
               <p className="text-sm leading-6 text-[#536168]">狀態沿用工作台的審核流程；此處只能套用已啟用的 B2B 標籤。</p>
@@ -828,16 +906,16 @@ export function ProductEditor({
                 </label>
                 <div aria-label="B2B 標籤選擇" className="grid gap-2 sm:grid-cols-2" role="group">
                   {relatedLoading ? (
-                    <div aria-busy="true" className="h-24 animate-pulse rounded-lg bg-[#F4F7F8] sm:col-span-2" />
+                    <div aria-busy="true" className="h-24 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none sm:col-span-2" />
                   ) : visibleTags.length > 0 ? (
                     visibleTags.map((tag) => (
                       <label
-                        className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-[#D8E1E5] px-3 py-2 hover:border-[#005DAA]"
+                        className="flex min-h-12 min-w-0 cursor-pointer items-center gap-3 rounded-lg border border-[#D8E1E5] px-3 py-2 hover:border-[#005DAA]"
                         key={tag.id}
                       >
                         <input
                           checked={selectedTagIds.includes(tag.id)}
-                          className="h-4 w-4 accent-[#005DAA]"
+                          className="h-4 w-4 shrink-0 accent-[#005DAA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
                           disabled={tagsSaving}
                           onChange={(event) => toggleTag(tag.id, event.target.checked)}
                           type="checkbox"
@@ -854,7 +932,7 @@ export function ProductEditor({
                     </p>
                   )}
                 </div>
-                {tagError ? <p className="text-sm font-semibold text-[#B42318]" role="alert">{tagError}</p> : null}
+                {tagError ? <p className="text-sm font-semibold text-[#B42318]" ref={tagErrorRef} role="alert" tabIndex={-1}>{tagError}</p> : null}
                 {tagMessage ? <p className="text-sm font-semibold text-[#18794E]" role="status">{tagMessage}</p> : null}
                 <button
                   className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
@@ -868,7 +946,7 @@ export function ProductEditor({
             )}
           </section>
 
-          <section aria-labelledby="options-title" className="mt-5 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
+          <section aria-labelledby="options-title" className="mt-5 min-w-0 rounded-xl border border-[#D8E1E5] bg-white p-5 sm:p-7">
             <div className="flex flex-col gap-1 border-b border-[#E7EDF0] pb-4">
               <h2 className="text-lg font-bold text-[#17242A]" id="options-title">規格選項</h2>
               <p className="text-sm leading-6 text-[#536168]">商品主規格已在基本資料維護；詢價可用的規格與包裝選項在此管理。</p>
@@ -882,13 +960,13 @@ export function ProductEditor({
             ) : (
               <div className="mt-5 space-y-4">
                 {relatedLoading ? (
-                  <div aria-busy="true" className="h-32 animate-pulse rounded-lg bg-[#F4F7F8]" />
+                  <div aria-busy="true" className="h-32 animate-pulse rounded-lg bg-[#F4F7F8] motion-reduce:animate-none" />
                 ) : options.length > 0 ? (
                   <div className="space-y-3">
                     {options.map((option, index) => {
                       const rowSaving = optionsSavingId === option.id || optionsSavingId === "reorder";
                       return (
-                        <div className="rounded-lg border border-[#D8E1E5] p-4" key={option.id}>
+                        <div className="min-w-0 rounded-lg border border-[#D8E1E5] p-4" key={option.id}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-[#17242A]">規格選項 {index + 1}</p>
                             <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${option.is_active ? "border-[#B8E1CB] bg-[#F0FBF4] text-[#18794E]" : "border-[#D8E1E5] bg-[#F4F7F8] text-[#536168]"}`}>
@@ -896,11 +974,11 @@ export function ProductEditor({
                             </span>
                           </div>
                           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-sm font-semibold text-[#17242A]">option_code</span>
                               <input className={inputClass} readOnly value={option.option_code} />
                             </label>
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-sm font-semibold text-[#17242A]">規格文字</span>
                               <input
                                 className={inputClass}
@@ -910,7 +988,7 @@ export function ProductEditor({
                                 value={option.specification_text}
                               />
                             </label>
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-sm font-semibold text-[#17242A]">包裝文字</span>
                               <input
                                 className={inputClass}
@@ -966,10 +1044,10 @@ export function ProductEditor({
                     目前沒有規格選項；可從下方新增第一列。
                   </p>
                 )}
-                <div className="rounded-lg border border-dashed border-[#B8C8CF] p-4">
+                <div className="min-w-0 rounded-lg border border-dashed border-[#B8C8CF] p-4">
                   <h3 className="text-sm font-bold text-[#17242A]">新增規格選項</h3>
                   <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                    <label>
+                    <label className="min-w-0">
                       <span className="text-sm font-semibold text-[#17242A]">option_code</span>
                       <input
                         className={inputClass}
@@ -981,7 +1059,7 @@ export function ProductEditor({
                         value={newOption.option_code}
                       />
                     </label>
-                    <label>
+                    <label className="min-w-0">
                       <span className="text-sm font-semibold text-[#17242A]">規格文字</span>
                       <input
                         className={inputClass}
@@ -991,7 +1069,7 @@ export function ProductEditor({
                         value={newOption.specification_text}
                       />
                     </label>
-                    <label>
+                    <label className="min-w-0">
                       <span className="text-sm font-semibold text-[#17242A]">包裝文字</span>
                       <input
                         className={inputClass}
@@ -1002,7 +1080,7 @@ export function ProductEditor({
                       />
                     </label>
                   </div>
-                  {newOptionError ? <p className="mt-3 text-sm font-semibold text-[#B42318]" role="alert">{newOptionError}</p> : null}
+                  {newOptionError ? <p className="mt-3 text-sm font-semibold text-[#B42318]" ref={newOptionErrorRef} role="alert" tabIndex={-1}>{newOptionError}</p> : null}
                   <button
                     className={`${buttonClass} mt-4 bg-[#005DAA] text-white hover:bg-[#00457F]`}
                     disabled={optionsSavingId !== null}
@@ -1014,7 +1092,7 @@ export function ProductEditor({
                 </div>
                 {optionsError ? (
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm font-semibold text-[#B42318]" role="alert">{optionsError}</p>
+                    <p className="text-sm font-semibold text-[#B42318]" ref={optionsErrorRef} role="alert" tabIndex={-1}>{optionsError}</p>
                     {retryOrder ? (
                       <button
                         className={`${buttonClass} border border-[#F4C7C3] bg-white text-[#B42318] hover:bg-[#FFF5F4]`}
@@ -1034,13 +1112,13 @@ export function ProductEditor({
 
           <ProductImageManager key={currentProductId ?? "new-product"} productId={currentProductId} />
 
-          <div className="sticky bottom-4 z-10 mt-6 flex flex-col gap-3 rounded-xl border border-[#D8E1E5] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p aria-live="polite" className={`text-sm ${dirty ? "font-semibold text-[#C84B31]" : "text-[#536168]"}`}>
+          <div className="sticky bottom-4 z-10 mt-6 flex min-w-0 scroll-mb-24 flex-col gap-3 rounded-xl border border-[#D8E1E5] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p aria-live="polite" className={`break-words text-sm ${dirty ? "font-semibold text-[#C84B31]" : "text-[#536168]"}`}>
               {basicDirty ? "有尚未儲存的基本資料" : tagsDirty ? "有尚未套用的標籤變更" : optionsDirty || newOptionDirty ? "有尚未儲存的規格選項變更" : "目前沒有尚未儲存的變更"}
             </p>
             <button
-              className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
-              disabled={saving || loading || !basicDirty}
+              className={`${buttonClass} w-full bg-[#005DAA] text-white hover:bg-[#00457F] sm:w-auto`}
+              disabled={saving || loading || Boolean(loadError) || !basicDirty}
               type="submit"
             >
               {saving ? "儲存中…" : "儲存變更"}
