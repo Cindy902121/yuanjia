@@ -1,5 +1,5 @@
 import { apiError, isUuid, json, readJson } from "@/lib/api";
-import { getAdminContext } from "@/lib/auth-context";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Channel = "b2c" | "b2b";
@@ -8,33 +8,16 @@ function isChannel(value: string): value is Channel {
   return value === "b2c" || value === "b2b";
 }
 
-async function requireAdmin() {
-  const context = await getAdminContext();
-  if (!context.user) {
-    return { response: apiError("請先登入管理者帳號。", 401) };
-  }
-  if (context.configurationError || context.databaseError) {
-    return { response: apiError("目前無法確認管理者權限。", 503) };
-  }
-  if (!context.isAdmin) {
-    return { response: apiError("你沒有管理者權限。", 403) };
-  }
-  return {};
-}
-
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) {
-    return guard.response;
-  }
-
   const { channel, productId } = await params;
   if (!isChannel(channel) || !isUuid(productId)) {
     return apiError("產品路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const body = (await readJson(request)) as { tag_ids?: unknown } | null;
   if (!body || !Array.isArray(body.tag_ids)) {

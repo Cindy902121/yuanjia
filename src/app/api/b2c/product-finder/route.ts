@@ -5,6 +5,7 @@ import {
   B2C_FINDER_CONDITIONS,
   parseFinderConditions,
 } from "@/lib/product-finder";
+import { attachProductImages } from "@/lib/product-images";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
 const B2C_PRODUCT_FIELDS =
@@ -72,10 +73,15 @@ export async function GET(request: Request) {
       { tagTable: "b2c_tags", relationTable: "b2c_product_tags" },
       products ?? [],
     );
+    const productsWithImages = await attachProductImages(
+      supabase,
+      "b2c",
+      productsWithTags,
+    );
 
     return json({
       conditions: conditions.map(({ key }) => key),
-      products: productsWithTags,
+      products: productsWithImages,
     });
   } catch {
     return apiError("目前無法執行 B2C 需求篩選。", 503);

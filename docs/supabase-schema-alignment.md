@@ -1,91 +1,53 @@
-# Supabase schema 對齊與 B2C 商品欄位草案
+# Supabase migration 歷史整理
 
-## 現況判定
+## 結論（2026-08-27）
 
-2026-08-10 的唯讀盤點顯示，遠端專案 `ixggooilggtesdrmjeon` 已有 14 張
-`public` 資料表及示範商品資料，內容與以下兩支本機 migration 相符：
+已依 linked remote project `ixggooilggtesdrmjeon` 的唯讀查詢整理 migration。遠端 `supabase_migrations.schema_migrations` 有 9 筆紀錄；本機 `supabase/migrations/` 保留這 9 支 active migration，另新增 1 支尚待部署的 corrective migration。
 
-- `20260810054414_create_mvp_foundation.sql`
-- `20260810055532_add_demo_catalog_data.sql`
+這次沒有執行 `migration repair` 或正式 `db push`：前 9 支遠端 schema 歷史已對齊；新增的 corrective migration 只修正本機 lint 發現的 RPC 欄位歧義，待確認後再部署。
 
-但遠端沒有 migration 歷史紀錄。因此這兩支檔案不可再次執行；應先把它們標記為
-`applied`，再推送後續 migration。
-
-## 執行原則
-
-1. GitHub 先保存、審查 migration 草案。
-2. 正式 Supabase 先修復 migration 歷史，不重建既有資料表或重灌示範資料。
-3. 依檔名時間戳順序執行三支新 migration。
-4. 每一步確認結果後才進入下一步；正式套用前先備份資料庫。
-
-## migration 順序
+## Active migration 順序
 
 | 順序 | migration | 用途 |
 |---:|---|---|
-| 1 | `20260810161047_harden_public_privileges.sql` | 移除 `anon`／`authenticated` 的過寬資料表權限，保留 B2C 公開唯讀，建立封裝後的管理員判斷函式。 |
-| 2 | `20260810161048_extend_b2c_catalog.sql` | 增加商品首頁欄位、多分類、3–5 張商品圖片、證書資料及公開讀取政策。 |
-| 3 | `20260810161049_create_b2c_media_storage.sql` | 建立 `b2c-media` bucket；公開讀取，僅啟用中的管理員可異動。 |
+| 1 | `20260812150000_baseline_remote_schema.sql` | 將既有遠端 MVP schema 固定成可追蹤的 baseline。 |
+| 2 | `20260812150001_establish_mvp_security_contract.sql` | 建立 RLS、角色權限、公開 B2C 讀取與企業資料隔離。 |
+| 3 | `20260814032551_add_missing_foreign_key_indexes.sql` | 補齊外鍵查詢索引。 |
+| 4 | `20260814032613_align_b2b_demo_catalog.sql` | 對齊 B2B 示範型錄資料。 |
+| 5 | `20260817033059_enforce_b2b_client_code_format.sql` | 約束企業客戶代碼格式與前綴規則。 |
+| 6 | `20260817072826_b2b_product_spec_options.sql` | 建立 B2B 商品多規格選項。 |
+| 7 | `20260817073045_add_b2b_rfq_spec_option_fk_index.sql` | 補齊詢價規格選項外鍵索引。 |
+| 8 | `20260825024950_add_admin_catalog_media_and_management.sql` | 建立 B2C／B2B 商品圖片、Storage bucket、圖片 RLS 與 B2B 批量新增 RPC。 |
+| 9 | `20260825025003_add_admin_roles_and_b2b_status.sql` | 建立 `app_admins.role`、`b2b_products.status`、狀態同步、RLS 與 Admin 狀態 RPC。 |
+| 10 | `20260827031543_fix_admin_bulk_status_ambiguity.sql` | 限定批次狀態 RPC 的資料表欄位，修正 PostgreSQL 42702 歧義；尚未部署至 remote。 |
 
-## 第一版產品資料模型
+## 已移出 active 的歷史檔案
 
-既有 `b2c_products` 保留品牌、規格、價格、產地、保存方式、食安、品質、庫存數量與
-詳細說明，並新增：
+以下檔案都在 `supabase/migrations_archive/legacy/`，只供稽核與比對，不得重播：
 
-- `currency`：第一版固定 `TWD`，仍保留未來擴充空間。
-- `short_description`：列表或詳情頁首屏摘要。
-- `is_featured`、`featured_sort_order`：預設顯示最新商品，管理員可指定與排序精選商品。
-- `published_at`：穩定控制「最新」排序。
-- `inventory_status`：由資料庫數量產生 `in_stock`／`out_of_stock`，前台不揭露數量。
+- `20260810054414_create_mvp_foundation.sql`、`20260810055532_add_demo_catalog_data.sql`：原始 2026-08-10 foundation／demo setup。
+- `20260810161047_harden_public_privileges.sql`、`20260810161048_extend_b2c_catalog.sql`、`20260810161049_create_b2c_media_storage.sql`：本機草稿，未出現在遠端 migration history；不能用 `migration repair` 標成 applied。
+- `20260819074622_add_admin_catalog_media_and_management.sql`：舊版本機 Admin media 草稿，已由遠端實際套用的 `20260825024950` 取代。
 
-關聯表負責：
+因此，`20260810161048` 提案中的分類、認證及額外 B2C 欄位不代表目前遠端 schema；目前已落地的是 `20260825024950` 定義的商品圖片與 Storage。
 
-- `b2c_categories`、`b2c_product_categories`：正式分類，多對多；同一商品可同時屬於「魚類」與「調理食品」。
-- `b2c_product_images`：一張封面圖加多張細節圖，透過 `sort_order` 排序。
-- `b2c_certifications`、`b2c_product_certifications`：證書圖片、發證單位、效期及補充文字。
-- 既有 `b2c_tags`、`b2c_product_tags`：維持標籤與 AND 篩選用途，不和正式分類混用。
+## 已核對的遠端結果
 
-`b2c_products.category` 與 `b2c_products.image_path` 暫時保留供舊程式相容；前端切換至新關聯後，再另開 migration 移除。
+- 前 9 支 migration history 與本機 active 版本一致；`20260827031543` 是唯一 pending migration。
+- `app_admins.role`、`b2b_products.status` 與 Admin 狀態 RPC 存在。
+- `b2c_product_images`、`b2b_product_images` 及 `b2c-media`／`b2b-media` bucket 存在。
+- public tables 已啟用 RLS。
 
-## 正式套用前指令
+## 後續驗證與維護
 
-專案尚未固定 Supabase CLI 版本時，先在獨立變更中安裝並提交 lockfile：
-
-```powershell
-pnpm add -D supabase
+```bash
+supabase migration list --linked
+supabase db push --dry-run
+supabase db reset
 ```
 
-登入、連結並先確認遠端狀態：
+`db reset` 只重建本機隔離資料庫，會清除本機資料；正式環境不要用它。`db push --dry-run` 顯示無 pending migration 後，才可考慮正式 push。
 
-```powershell
-pnpm exec supabase login
-pnpm exec supabase link --project-ref ixggooilggtesdrmjeon
-pnpm exec supabase migration list
-```
+目前 `supabase db push --dry-run` 只顯示 `20260827031543_fix_admin_bulk_status_ambiguity.sql`；未取得部署指示前不執行正式 push。
 
-確認專案無誤後，僅登記已存在的兩支 migration：
-
-```powershell
-pnpm exec supabase migration repair 20260810054414 --status applied
-pnpm exec supabase migration repair 20260810055532 --status applied
-pnpm exec supabase migration list
-```
-
-先預覽差異，再套用：
-
-```powershell
-pnpm exec supabase db push --dry-run
-pnpm exec supabase db push
-```
-
-> `migration repair` 與 `db push` 都會改動遠端狀態。執行前必須再次核對 project ref、備份與 dry-run 輸出。
-
-## 驗收清單
-
-- migration list 顯示五支 migration 的本機／遠端版本一致。
-- 既有 5 筆 B2C 與 5 筆 B2B 商品沒有重複或遺失。
-- 匿名使用者只能讀取啟用中的 B2C 商品、分類、標籤、圖片與證書關聯。
-- 匿名或一般登入使用者無法讀取公司、管理員、詢價、模擬訂單與事件資料。
-- 每項既有商品都有一個主要正式分類；調味商品另屬於「調理食品」。
-- 首頁可依 `published_at` 顯示最新商品，也可依 `is_featured` 與 `featured_sort_order` 手動調整。
-- 商品詳情可取得封面／細節圖、規格、產地、保存、食安、品質、標籤與證書。
-- `app_admins` 至少建立一位啟用中的管理員後，該帳號可上傳、更新與刪除 `b2c-media` 圖片；一般帳號不可異動。
+未來新增 schema 時建立新的 migration，不修改已套用檔案。只有在「SQL 已精確套用、但 history row 缺失」時才可使用 `migration repair`；本次不需要 repair。

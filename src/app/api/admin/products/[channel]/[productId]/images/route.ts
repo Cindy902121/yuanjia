@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { apiError, isNonEmptyString, isUuid, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
   isAdminChannel,
   PRODUCT_TABLES,
@@ -80,13 +80,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   let admin;
   try {
@@ -105,13 +104,12 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const form = await request.formData().catch(() => null);
   const fileValue = form?.get("file");
@@ -141,6 +139,9 @@ export async function POST(
     }
 
     const extension = imageExtension(file!.type);
+    if (!extension) {
+      return apiError("圖片格式不正確。", 400);
+    }
     const storagePath = `products/${productId}/${randomUUID()}.${extension}`;
     const { error: uploadError } = await admin.storage
       .from(PRODUCT_IMAGE_BUCKETS[channel])
@@ -187,13 +188,12 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const body = (await readJson(request)) as { image_ids?: unknown } | null;
   if (!body || !Array.isArray(body.image_ids) || body.image_ids.length > 6 || body.image_ids.some((id) => !isUuid(id))) {

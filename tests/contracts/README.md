@@ -8,6 +8,9 @@
 pnpm test:contracts
 ```
 
+2026-08-27 本機完整 real contract 已驗證 31 pass、0 fail；測試 server、Auth
+identity 與 fixture 均限於本機隔離環境。
+
 這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
 payload、customer prefix fallback、文件／seed 契約與 P2 index migration 檢查。
 
@@ -53,9 +56,11 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 - B2C／B2B 已登入使用者進入管理頁時，會依權限分別導回 `/`／`/business`；兩個管理頁只載入並顯示各自範圍的模組。
 - B2C 商品與 B2B 型錄可分別下架、確認不出現在 active 清單，再恢復上架。
 - 管理者可讀取 B2C 展示訂單並更新為 `processing`。
-- 管理者可新增企業會員；後端產生 `Z`／`E`／`W`＋6 碼客戶代碼，回應不包含明文密碼。
+- 管理者可新增企業會員；Admin 輸入外部公司系統提供的客戶代碼，建立後不可修改，回應不包含明文密碼。
 - 新企業可用「客戶代碼＋密碼」登入；停用後登入回傳 403，恢復後可再次登入。
 - 管理者可讀取企業詢價並更新為 `processing`。
+- `business_staff` 可進入 `/admin/business`，管理 B2B 商品、圖片、標籤、規格選項、CSV 匯入與 RFQ；不可進入 `/admin` 或 B2C 管理 API。
+- B2B 商品狀態只允許 `draft → review → published → offline` 與既定回退／重新上架轉換；CSV 任一錯誤都整批拒絕並回傳列號。
 
 手動驗收時，建議依序操作：
 
@@ -110,7 +115,7 @@ psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
 
 這會建立三筆彼此獨立的測試情境：
 
-- `B2B-TEST-INACTIVE-001`：`is_active = false` 的 B2B 商品，沒有展示標籤。
+- `B2B-TEST-INACTIVE-001`：`status = offline` 的 B2B 商品，沒有展示標籤。
 - `E853699`：`is_active = false` 的公司，登入 API 應回傳 403，且不建立 session。
 - `W483038`：`is_active = true` 的第二家公司；需由 Supabase Auth／管理 API
   建立另一個測試 user 後，才把該 user UUID 綁到這家公司。Seed 不會寫入

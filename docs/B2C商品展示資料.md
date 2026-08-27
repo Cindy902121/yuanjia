@@ -9,6 +9,8 @@
 
 > 本文件的名稱、產地、規格、售價與庫存為 **MVP 展示用途**，非官網正式定價、正式庫存或完整商品清單。實際商品內容以正式商城與業務報價為準（對應 PRD 3.2「不納入 MVP」與 6.3「明確標示展示資料」原則）。
 
+> Migration 狀態以 [Supabase migration 歷史整理](supabase-schema-alignment.md) 為準；本文件的 v1.0 商品型別與案例仍保留原始設計假設。
+
 ---
 
 ## 0. 設計目的
@@ -153,7 +155,7 @@
 
 本文件依下列優先順序判斷欄位與命名，發生衝突時以「已套用資料庫 schema」為第 6～10 章型別定義的實作基準，同時保留原有衝突敘述，不自行覆寫：
 
-1. 已套用 Supabase 資料庫 schema／migration（`supabase/migrations/20260810054414_create_mvp_foundation.sql`、`20260810055532_add_demo_catalog_data.sql`；以 `supabase-review/remote-schema-audit.md`〔2026-08-10 唯讀稽核〕核對遠端實際狀態一致）
+1. 已套用 Supabase 資料庫 schema／migration（目前 active history 的 baseline／security migration；原始 foundation／demo SQL 保留於 `supabase/migrations_archive/legacy/`，以 `supabase-review/remote-schema-audit.md`〔2026-08-10 唯讀稽核〕核對遠端實際狀態）
 2. 專案 TypeScript 型別與查詢程式 — 目前專案（`C:\Users\USER\Documents\ChatGPT\元家`）僅有 `src/app/layout.tsx`、`src/app/page.tsx`（皆為 `create-next-app` 預設樣板，未修改）與 `src/lib/supabase/client.ts`（僅建立瀏覽器端 client）。**沒有任何 `ProductCard`、`ProductDetail`、商品查詢函式、View Model 型別或 analytics 事件程式碼**，因此本文件第 6～10 章是這個範圍的第一份定義依據，不存在需要對齊的既有程式命名。
 3. `PRD.md`、`FDD.md`、`元家網站_路由與權限規格.md`
 4. 本文件第 0～5 章
@@ -164,23 +166,23 @@
 
 | 編號 | 落差位置 | 內容 | 目前採用依據 | 待團隊確認事項 |
 |---|---|---|---|---|
-| C1 | 商品筆數與內容 | 本文件第 2、3 章為 12 筆展示商品；已套用資料庫種子（`20260810055532_add_demo_catalog_data.sql`）與遠端稽核僅有 5 筆（`norwegian-salmon-fillet`、`taiwan-milkfish-belly`、`argentine-red-shrimp`、`taiwan-clam`、`seasoned-mackerel`），品牌為「宅鮮配」而非「元家／顏師傅」，slug、分類、標籤皆不同 | 型別定義（第 6～8 章）與資料庫 schema 對齊；12 筆商品內容維持本文件原設計，不覆寫 | 是否要更新 migration／seed 讓資料庫符合本文件 12 筆設計，或本文件先作為未來擴充範例、元件先接資料庫現有 5 筆開發 |
+| C1 | 商品筆數與內容 | 本文件第 2、3 章為 12 筆展示商品；已套用資料庫種子（`supabase/migrations_archive/legacy/20260810055532_add_demo_catalog_data.sql`）與遠端稽核僅有 5 筆（`norwegian-salmon-fillet`、`taiwan-milkfish-belly`、`argentine-red-shrimp`、`taiwan-clam`、`seasoned-mackerel`），品牌為「宅鮮配」而非「元家／顏師傅」，slug、分類、標籤皆不同 | 型別定義（第 6～8 章）與資料庫 schema 對齊；12 筆商品內容維持本文件原設計，不覆寫 | 是否要更新 migration／seed 讓資料庫符合本文件 12 筆設計，或本文件先作為未來擴充範例、元件先接資料庫現有 5 筆開發 |
 | C2 | 「食材」標籤語意 | 本文件「食材」標籤為魚種細節（鮭魚、比目魚、蝦、干貝、花枝、雞肉）；資料庫「食材」群組標籤實際值是分類本身的複本（魚類、蝦類、貝類） | 沿用資料庫現況作為型別範例，並在型別中註明 `groupName` 是自由文字、`name` 語意由團隊決定 | 「食材」標籤要細到魚種，還是等同分類；決定後需同步調整 `b2c_tags` 種子資料 |
 | C3 | 料理方式／需求特性／加工方式標籤詞彙 | PRD 5.3.2 定義料理方式 6 選項、需求特性 5 選項，本文件沿用；資料庫僅實作料理方式 3 個（火鍋、**煎烤**〔非分開的「煎／烤」〕、氣炸）、需求特性 2 個（高蛋白、適合小孩）、加工方式 2 個（即煮、調味，缺「原味」） | 型別中 `name`／`slug` 均為 `string`，不假設固定 enum 值 | 是否擴充資料庫標籤清單以符合 PRD／本文件詞彙，或本文件詞彙依資料庫現況收斂 |
 | C4 | 「單位」＋「規格」vs 單一 `specification` | 本文件第 2、3 章展示表格把「單位」「規格」拆兩欄；資料庫 `b2c_products` 只有單一 `specification text not null` 欄位（已內含單位，如 `"200g/包"`） | 第 6 章型別只定義一個 `specification: string` 欄位，對應資料庫；不新增 `unit` 欄位 | 是否要新增 `unit` 獨立欄位（需 migration），或維持單一字串由前端整段顯示 |
 | C5 | 「認證／品質」結構化程度 | 本文件把「認證／品質」寫成類似清單的字串（如 `"HACCP、ISO 22000"`）；資料庫只有單一可為 `null` 的自由文字 `quality_info`，沒有 `certifications` 陣列或 `qualityHighlights` 結構 | 型別維持 `qualityInfo: string \| null` 單一欄位；如需陣列，前端可用「、」「，」切字串僅供顯示，不當作穩定資料結構 | 是否新增 `certifications text[]` 或另建資料表，才能做到結構化的認證清單 |
-| C6 | 商品圖片 | 需求要求「商品圖片陣列」「alt」「isPrimary」「sortOrder」；資料庫僅有單一 `image_path text nullable` 欄位，且**目前沒有任何 Storage bucket，所有商品（含資料庫既有 5 筆）的 `image_path` 皆為 `NULL`** | `images: ProductImage[]` 型別保留陣列形狀以相容未來多圖，但目前實際長度只會是 0；`alt`／`isPrimary`／`sortOrder` 由前端 View Model 推導，不是資料庫欄位 | 是否新增 `product_images` 資料表或擴充欄位以支援多圖、真人撰寫的 alt 文字與排序；目前完全沒有商品圖，先以固定佔位圖顯示 |
+| C6 | 商品圖片 | 需求要求「商品圖片陣列」「alt」「isPrimary」「sortOrder」；目前遠端已由 `20260825024950_add_admin_catalog_media_and_management.sql` 建立 `b2c_product_images` 與 `b2c-media` bucket，`b2c_products.image_path` 保留為 legacy 欄位 | `images: ProductImage[]` 型別仍保留；正式查詢應 join `b2c_product_images`，`alt`／`isPrimary`／`sortOrder` 對應資料表欄位與 mapper | 商品圖片資料與前端 mapper 尚需依目前圖片表接線；分類與認證仍未由本次 migration 建立 |
 | C7 | 品牌可否留白 | 本文件 #8 熟帆立貝標示品牌「（未填）」；資料庫 `brand text not null`（沒有 NULL，但沒有非空白 CHECK） | `brand: string`（非 `string \| null`）；「未填」情境須落地為空字串 `''`，不是資料庫 `NULL` | 屬型別澄清，不需團隊確認；僅需開發時留意 |
 | C8 | 分類（category）沒有獨立資料表 | 路由規格已定義 `/products/categories/[slug]`，需要分類的 slug；資料庫沒有 `categories` 資料表，`b2c_products.category` 只是自由文字（如 `"魚類"`），沒有對應 slug | 型別提供 `categorySlug: string \| null`，由前端暫時用固定對照表（slugify）推導，找不到對照時為 `null` | 是否新增 `categories` 資料表（含 `id`／`name`／`slug`），或改由後端在查詢時一併回傳 slug |
-| C9 | 「商品不存在」與「商品已下架」在前台無法區分 | 需求要求分別定義兩種狀態的顯示規則；`b2c_products` 的 RLS 只允許 `anon`／`authenticated` 讀到 `is_active = true` 的商品（見 `20260810054414_create_mvp_foundation.sql` policy「public can read active b2c products」），`is_active = false` 的商品用公開查詢會直接查不到，效果等同不存在 | `ProductDetailState` 的 `not_found` 分支同時涵蓋「slug 不存在」與「商品已下架」；只有走 service role／未來 Admin API 的查詢才能區分並顯示「已下架」徽章 | 屬 RLS 設計下的必然結果；如果要讓 B2C 前台顯示「已下架」而非「找不到」，需要另開一支允許讀 inactive 商品的伺服器端 API，不在本次範圍 |
+| C9 | 「商品不存在」與「商品已下架」在前台無法區分 | 需求要求分別定義兩種狀態的顯示規則；`b2c_products` 的 RLS 只允許 `anon`／`authenticated` 讀到 `is_active = true` 的商品（見 `20260812150001_establish_mvp_security_contract.sql` policy「b2c_active_products_public_read」），`is_active = false` 的商品用公開查詢會直接查不到，效果等同不存在 | `ProductDetailState` 的 `not_found` 分支同時涵蓋「slug 不存在」與「商品已下架」；只有走 service role／未來 Admin API 的查詢才能區分並顯示「已下架」徽章 | 屬型錄前台 RLS 設計下的結果；如果要讓 B2C 前台顯示「已下架」而非「找不到」，需要另開一支允許讀 inactive 商品的伺服器端 API，不在本次範圍 |
 | C10 | `analytics_events` 欄位不足以保存本次建議的事件參數 | 需求要求評估 `product_slug`、`product_name`、`category_slug`、`tag_slug`、`search_term`、`result_count`、`list_name`、`position` 等參數；已套用的 `analytics_events` 資料表欄位只有 `event_name`、`surface`、`product_reference`(uuid)、`product_category`、`product_brand`、`customer_tier_snapshot`、`channel_snapshot`、`occurred_at`，**沒有** `metadata jsonb`（FDD 4.8 原設計有此欄位，但未被實作）、也沒有上述其餘參數對應的欄位 | 第 9 章事件表格仍列出完整建議參數供前端記錄／回報，但逐一標示哪些參數今天送到伺服器也無處可存 | 是否要新增 `metadata jsonb`（呼應 FDD 4.8 原設計）或個別新增欄位；事件 API（`POST /api/analytics/events`，FDD 6.7）目前也尚未建立 |
 | C11 | 「商品不存在」「商品已下架」文案未定 | PRD／FDD 只定義「無符合商品」（篩選／搜尋空結果）字串；沒有定義單一商品 404 或下架時的頁面文案 | 第 8 章暫定「找不到這項商品」「此商品目前已下架」 | 待團隊確認正式文案 |
 
-> **檢查過程中發現的重要進度（尚未套用，不影響本節基準）**：`supabase/migrations/` 目錄下已有三個**尚未套用**（未執行 `db push`，見 `docs/supabase-schema-alignment.md` 的待辦流程）的新 migration：`20260810161047_harden_public_privileges.sql`（收斂 anon／authenticated 的資料表權限，僅保留 B2C 型錄可公開 `SELECT`）、`20260810161048_extend_b2c_catalog.sql`（新增 `b2c_categories`／`b2c_product_categories` 多對多分類、`b2c_product_images`〔含 `image_type`、`alt_text` 皆為 NOT NULL、`sort_order`、唯一封面限制〕、`b2c_certifications`／`b2c_product_certifications` 結構化認證，以及 `b2c_products.is_featured`／`featured_sort_order`／`short_description`／`published_at`／`currency` 等欄位）、`20260810161049_create_b2c_media_storage.sql`（建立公開讀取、僅限啟用中 `app_admins` 可寫入的 `b2c-media` Storage bucket）。這三個 migration 的方向**幾乎正好對應 C5、C6、C8**（結構化認證、商品圖片陣列、分類正規化）與 7.1 的 `featured` 欄位缺口，但截至本次檢查**仍是 pending 狀態、尚未套用到遠端資料庫**，且不在本次「已套用資料庫 schema」的定義範圍內，因此第 6～10 章仍以目前已套用的舊 schema 為準，**未依此改寫任何型別**。待團隊審查並套用（`migration repair` → `db push --dry-run` → 正式 `db push`）後，第 6～10 章、尤其是 C5／C6／C8 與 7.1 的 `featured` 定義，需要另外更新一版。
+> **Migration 歷史整理（2026-08-27）**：`20260810161047`／`20260810161048`／`20260810161049` 與 `20260819074622` 已移至 `supabase/migrations_archive/legacy/`，因為它們不在遠端 migration history。遠端目前採用 `20260825024950_add_admin_catalog_media_and_management.sql` 建立商品圖片與 Storage；`b2c_categories`、`b2c_certifications` 及 featured 欄位仍不是目前遠端 MVP schema 的一部分。詳見 `docs/supabase-schema-alignment.md`。
 
 ### 6.1 資料庫列型別（DB Row Types）
 
-Supabase-js 的查詢結果預設直接回傳資料庫原始欄位名稱（snake_case），不會自動轉成 camelCase。以下型別逐欄對應已套用的 `b2c_products`／`b2c_tags`／`b2c_product_tags`（見 `supabase/migrations/20260810054414_create_mvp_foundation.sql`），供查詢層（server component／route handler）使用；**元件不要直接吃這個型別**，一律先經過 6.3 的 Mapper 轉成 6.2 的 View Model。
+Supabase-js 的查詢結果預設直接回傳資料庫原始欄位名稱（snake_case），不會自動轉成 camelCase。以下型別逐欄對應已套用的 `b2c_products`／`b2c_tags`／`b2c_product_tags`（見 `supabase/migrations/20260812150000_baseline_remote_schema.sql`），供查詢層（server component／route handler）使用；**元件不要直接吃這個型別**，一律先經過 6.3 的 Mapper 轉成 6.2 的 View Model。
 
 ```ts
 /** 對應 public.b2c_products，欄位與型別逐一比對已套用 schema。 */
@@ -198,7 +200,7 @@ interface B2cProductRow {
   food_safety_info: string | null;  // 選填
   quality_info: string | null;      // 選填（對應本文件「認證／品質」，見 C5）
   mock_inventory: number;           // 必填，integer，>= 0，預設 0，不會是 null
-  image_path: string | null;        // 選填；目前全部商品皆為 null（無 Storage bucket，見 C6）
+  image_path: string | null;        // legacy 選填欄位；多圖改由 `b2c_product_images` 提供（見 C6）
   is_active: boolean;               // 必填；anon／authenticated 查詢已被 RLS 過濾成恆為 true（見 C9）
   created_at: string;               // timestamptz，ISO 字串
   updated_at: string;               // timestamptz，ISO 字串
@@ -227,7 +229,7 @@ interface B2cProductTagRow {
 ```ts
 /** 商品圖片。今天 images 陣列長度只會是 0（見 C6），型別提前設計成陣列以相容未來多圖。 */
 interface ProductImage {
-  src: string;          // 已解析好的可顯示網址；image_path 為 null 時不建立這個物件，交給元件顯示佔位圖
+  src: string;          // 已解析好的可顯示網址；沒有 legacy image_path 或圖片 row 時交給元件顯示佔位圖
   alt: string;           // 規則見 7.3／8.2
   isPrimary: boolean;    // 今天恆為 true（最多一張圖）；保留給未來多圖排序使用
   sortOrder: number;     // 今天恆為 0；保留給未來多圖排序使用
@@ -325,7 +327,7 @@ interface ProductDetailData {
 - `mapProductRowToDetailData(row: B2cProductRow, tags: B2cTagRow[]): ProductDetailData`
   - 邏輯同上，另外把 `tags` 依 `group_name` 分組成 `tagGroups`，**群組內沒有標籤就整組省略**（不要輸出 `{ groupName: "加工方式", tags: [] }`，見 8.3）
   - `images = row.image_path ? [{ src: resolveImageUrl(row.image_path), alt: buildProductAlt(row), isPrimary: true, sortOrder: 0 }] : []`
-- `resolveImageUrl(path: string): string` — 目前沒有 Storage bucket 可解析；等 Storage bucket 建立後才需要真正實作（見 C6）
+- `resolveImageUrl(path: string): string` — 依 `b2c-media` bucket 解析 legacy `image_path`；多圖實作應直接使用 `b2c_product_images.storage_path`（見 C6）
 - `buildProductAlt(row): string` — 規則見 7.3／8.2
 
 以上是規格與函式簽章建議，不是最終實作；實際程式碼由負責串接查詢的組員撰寫。
@@ -450,7 +452,7 @@ interface ProductDetailProps {
 
 ### 8.2 商品圖片陣列規格
 
-- `product.images: ProductImage[]`，型別上是陣列，但**目前實際長度只會是 0**（見 C6：`image_path` 全部是 `null`，也沒有 Storage bucket）。
+- `product.images: ProductImage[]`，型別上是陣列；本文件原始 seed 案例沒有圖片 row 時維持空陣列（見 C6）。
 - **只有一張圖時**（未來情境）：不顯示縮圖列／切換控制項，直接顯示這張圖。
 - **有多張圖時**（未來情境，目前不會發生）：顯示主圖＋縮圖列，`isPrimary: true` 的那張預設顯示；縮圖需可用鍵盤（方向鍵或 Tab＋Enter）切換，切換時呼叫 `onImageChange`。
 - **圖片不存在**（`images.length === 0`，**目前的必然情況**）：顯示固定佔位圖，`alt=""` 且 `aria-hidden="true"`（理由同 7.3）。
@@ -528,7 +530,7 @@ FDD 6.7 已列入白名單、與本次商品卡／詳情頁相關的既有事件
 |---|---|---|---|---|
 | 1 | 正常商品卡 | #1 鮭魚菲力切塊（品牌、價格、庫存、4 個標籤群組皆齊全；`image` 為 `null`，因為目前所有商品皆無圖，見 C6） | 在商品列表頁渲染此商品的 `ProductCard` | 顯示名稱、品牌、分類、價格、規格、最多 3 個標籤＋「+N」、佔位圖（非破圖） |
 | 2 | 無品牌商品卡 | #8 熟帆立貝（`brand` 為空字串） | 渲染 `ProductCard` | 不顯示品牌列，其餘欄位正常顯示，卡片高度與其他卡片一致 |
-| 3 | 無圖片商品卡 | 任一商品（本批 12 筆與資料庫現有 5 筆的 `image_path` 皆為 `null`，這是目前的常態而非特例） | 渲染 `ProductCard` | 顯示固定佔位圖，`alt=""` 且 `aria-hidden`，不顯示錯誤或「無圖片」文字 |
+| 3 | 無圖片商品卡 | 任一沒有 `b2c_product_images` row 的商品（legacy `image_path` 為 `null`） | 渲染 `ProductCard` | 顯示固定佔位圖，`alt=""` 且 `aria-hidden`，不顯示錯誤或「無圖片」文字 |
 | 4 | 多標籤商品卡 | #1 鮭魚菲力切塊（鮭魚、煎／烤、氣炸、少刺／無刺、高蛋白、原味，共 6 個標籤） | 渲染 `ProductCard` | 最多顯示 3 個標籤＋「+3」，完整標籤清單只在詳情頁才看得到 |
 | 5 | 缺貨商品卡 | #12 顏師傅龍蝦風味沙拉（`mockInventory = 0`） | 渲染 `ProductCard` | 顯示「缺貨」徽章；卡片仍可點擊進入詳情頁 |
 | 6 | 正常商品詳情 | #5 藍鑽蝦仁（食安、認證、標籤皆齊全） | 進入 `/products/blue-diamond-shrimp-peeled`，`state.status = "ready"` | 顯示完整規格、產地、保存方式、食品安全、認證／品質、所有標籤群組 |

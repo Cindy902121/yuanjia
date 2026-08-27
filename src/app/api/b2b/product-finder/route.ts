@@ -12,7 +12,7 @@ import {
 import { attachProductImages } from "@/lib/product-images";
 
 const B2B_PRODUCT_FIELDS =
-  "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path";
+  "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description";
 
 export async function GET(request: Request) {
   const context = await getB2bContext();
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     let query = context.supabase
       .from("b2b_products")
       .select(B2B_PRODUCT_FIELDS)
-      .eq("is_active", true)
+      .eq("status", "published")
       .order("name");
 
     if (productIds) {

@@ -20,7 +20,13 @@ type EventBody = {
 export async function POST(request: Request) {
   const body = (await readJson(request)) as EventBody | null;
 
-  if (!body || !isAnalyticsEventName(body.event_name)) {
+  if (
+    !body ||
+    typeof body !== "object" ||
+    Array.isArray(body) ||
+    Object.keys(body).some((key) => key !== "event_name" && key !== "product_id") ||
+    !isAnalyticsEventName(body.event_name)
+  ) {
     return apiError("事件名稱不在允許範圍內。", 400);
   }
 
