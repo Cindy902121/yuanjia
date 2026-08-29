@@ -1,8 +1,8 @@
 # Supabase migration archive
 
 `supabase/migrations/` is the only active migration directory. As of
-2026-08-27 it contains the linked remote project's nine recorded versions and
-one pending corrective migration; do not replay files from this directory.
+2026-08-29 it contains the linked remote project's ten recorded versions and
+no pending corrective migration; do not replay files from this directory.
 
 `legacy/` contains SQL that was either part of the original baseline or a
 local draft that never became part of the remote migration history. It is kept
@@ -19,8 +19,7 @@ The remote Admin catalog/media migration is
 `20260825024950_add_admin_catalog_media_and_management.sql`; the older
 `20260819074622` file is its superseded local draft. The remote Admin role
 and B2B status migration is `20260825025003_add_admin_roles_and_b2b_status.sql`.
-`20260827031543_fix_admin_bulk_status_ambiguity.sql` is a new local corrective
-migration; dry-run it before deployment and do not treat it as remote-applied.
+`20260827031543_fix_admin_bulk_status_ambiguity.sql` is recorded as applied on the linked remote project; future migrations still require a dry-run before deployment.
 
 Do not use `migration repair` for any archived file. Repair is only valid
 when the exact SQL has already been applied and the history row alone is
