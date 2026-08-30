@@ -10,6 +10,11 @@
 > 本文件的名稱、產地、規格、售價與庫存為 **MVP 展示用途**，非官網正式定價、正式庫存或完整商品清單。實際商品內容以正式商城與業務報價為準（對應 PRD 3.2「不納入 MVP」與 6.3「明確標示展示資料」原則）。
 
 > Migration 狀態以 [Supabase migration 歷史整理](supabase-schema-alignment.md) 為準；本文件的 v1.0 商品型別與案例仍保留原始設計假設。
+>
+> **本期延後決策（2026-08-29）**：B2C 擴充 schema（分類／認證關聯表、`unit`、
+> `metadata` 與 12 筆展示資料的完整 backfill）先不套用至 remote MVP；本文件的 12 筆
+> 案例保留作為未來需求與元件驗收參考，現行實作以 remote 既有 5 筆與 active schema
+> 為準。完整決策與 revisit triggers 見 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
 
 ---
 
@@ -178,7 +183,7 @@
 | C10 | `analytics_events` 欄位不足以保存本次建議的事件參數 | 需求要求評估 `product_slug`、`product_name`、`category_slug`、`tag_slug`、`search_term`、`result_count`、`list_name`、`position` 等參數；已套用的 `analytics_events` 資料表欄位只有 `event_name`、`surface`、`product_reference`(uuid)、`product_category`、`product_brand`、`customer_tier_snapshot`、`channel_snapshot`、`occurred_at`，**沒有** `metadata jsonb`（FDD 4.8 原設計有此欄位，但未被實作）、也沒有上述其餘參數對應的欄位 | 第 9 章事件表格仍列出完整建議參數供前端記錄／回報，但逐一標示哪些參數今天送到伺服器也無處可存 | 是否要新增 `metadata jsonb`（呼應 FDD 4.8 原設計）或個別新增欄位；事件 API（`POST /api/analytics/events`，FDD 6.7）目前也尚未建立 |
 | C11 | 「商品不存在」「商品已下架」文案未定 | PRD／FDD 只定義「無符合商品」（篩選／搜尋空結果）字串；沒有定義單一商品 404 或下架時的頁面文案 | 第 8 章暫定「找不到這項商品」「此商品目前已下架」 | 待團隊確認正式文案 |
 
-> **Migration 歷史整理（2026-08-27）**：`20260810161047`／`20260810161048`／`20260810161049` 與 `20260819074622` 已移至 `supabase/migrations_archive/legacy/`，因為它們不在遠端 migration history。遠端目前採用 `20260825024950_add_admin_catalog_media_and_management.sql` 建立商品圖片與 Storage；`b2c_categories`、`b2c_certifications` 及 featured 欄位仍不是目前遠端 MVP schema 的一部分。詳見 `docs/supabase-schema-alignment.md`。
+> **Migration 歷史整理（2026-08-29）**：`20260810161047`／`20260810161048`／`20260810161049` 與 `20260819074622` 已移至 `supabase/migrations_archive/legacy/`，因為它們不在遠端 migration history。遠端目前採用 `20260825024950_add_admin_catalog_media_and_management.sql` 建立商品圖片與 Storage；`b2c_categories`、`b2c_certifications` 及 featured 欄位仍不是目前遠端 MVP schema 的一部分。詳見 `docs/supabase-schema-alignment.md`。
 
 ### 6.1 資料庫列型別（DB Row Types）
 
@@ -524,7 +529,7 @@ FDD 6.7 已列入白名單、與本次商品卡／詳情頁相關的既有事件
 
 ## 10. 元件狀態與驗收案例
 
-以下案例預設本文件第 2、3 章的 12 筆展示商品已實際寫入資料庫（對應 C1 的解法之一）；若團隊決定暫不擴充 migration，執行者需自行把案例中的商品換成資料庫現有的 5 筆之一，邏輯不變。
+以下案例原本預設本文件第 2、3 章的 12 筆展示商品已實際寫入資料庫；目前依 ADR-0001 延後 schema 擴充，執行者應以資料庫現有的 5 筆商品替換案例中的示範品項，邏輯不變。12 筆資料仍是未來 schema／seed 擴充時的驗收參考。
 
 | # | 案例 | 前置資料 | 操作步驟 | 預期結果 |
 |---|---|---|---|---|

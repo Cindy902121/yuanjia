@@ -38,6 +38,8 @@ const adminBulkStatusFix = adminBulkStatusFixFile
 const databasePlan = read("docs/database-plan.md");
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));
 const securityMigration = migrationFiles.find((file) => file.includes("20260812150001_establish_mvp_security_contract"));
+const securityMigrationSource = securityMigration ? read(`supabase/migrations/${securityMigration}`) : "";
+const activeMigrationSource = migrationFiles.map((file) => read(`supabase/migrations/${file}`)).join("\n");
 
 test("documentation and API schema use normalized remote table names", () => {
   for (const table of [
@@ -129,6 +131,77 @@ test(
     assert.match(security, /b2c_orders/);
   },
 );
+
+test("server-only tables keep RLS, no client policy, and privileged server access", () => {
+  assert.ok(securityMigration, "the security migration should define the privilege boundary");
+
+  const revokedClientPrivileges = securityMigrationSource.match(
+    /revoke all on table ([\s\S]*?)\nfrom anon, authenticated;/,
+  );
+  const serviceRolePrivileges = securityMigrationSource.match(
+    /grant all on table ([\s\S]*?)\nto service_role;/,
+  );
+  assert.ok(revokedClientPrivileges, "anon/authenticated table privileges should be revoked");
+  assert.ok(serviceRolePrivileges, "service_role table privileges should be explicit");
+
+  const serverOnlyContracts = [
+    {
+      table: "customer_prefix_rules",
+      sources: [
+        read("src/lib/customer-rules.ts"),
+        read("src/app/api/admin/companies/route.ts"),
+        read("src/app/api/admin/customer-prefix-rules/route.ts"),
+        read("src/app/api/admin/customer-prefix-rules/[ruleId]/route.ts"),
+      ],
+    },
+    {
+      table: "app_admins",
+      sources: [
+        read("src/app/api/auth/login/route.ts"),
+        read("src/lib/auth-context.ts"),
+        read("src/lib/b2b/catalog.ts"),
+        read("src/app/api/admin/staff/route.ts"),
+      ],
+    },
+    { table: "b2c_orders", sources: [read("src/app/api/b2c/mock-orders/route.ts")] },
+    { table: "b2c_order_items", sources: [read("src/app/api/b2c/mock-orders/route.ts")] },
+    {
+      table: "analytics_events",
+      sources: [
+        read("src/app/api/analytics/events/route.ts"),
+        read("src/app/api/admin/analytics/summary/route.ts"),
+      ],
+    },
+  ];
+  for (const { table } of serverOnlyContracts) {
+    assert.match(
+      securityMigrationSource,
+      new RegExp(`alter table public\\.${table} enable row level security`),
+    );
+    assert.match(revokedClientPrivileges[1], new RegExp(`public\\.${table}\\b`));
+    assert.match(serviceRolePrivileges[1], new RegExp(`public\\.${table}\\b`));
+    assert.doesNotMatch(
+      activeMigrationSource,
+      new RegExp(
+        `grant\\s+[^;]*on table[^;]*public\\.${table}[^;]*to\\s+(?:anon|authenticated)\\b`,
+        "is",
+      ),
+    );
+    assert.doesNotMatch(
+      activeMigrationSource,
+      new RegExp(
+        `create\\s+policy\\s+(?:"[^"]+"|[^\\s]+)\\s+on\\s+public\\.${table}\\b`,
+        "i",
+      ),
+    );
+  }
+
+  for (const { table, sources } of serverOnlyContracts) {
+    const source = sources.join("\n");
+    assert.match(source, /createAdminClient/);
+    assert.match(source, new RegExp(`\\.from\\("${table}"\\)`));
+  }
+});
 
 test("Auth identity is outside seed ownership", () => {
   const companyInsert = seed.match(/insert into public\.companies \(([^)]+)\)/);

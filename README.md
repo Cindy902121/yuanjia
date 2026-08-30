@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Project checks
+
+From the repository root:
+
+```bash
+pnpm lint
+pnpm test:contracts:static
+```
+
+The real contract runner needs an isolated local Supabase/Auth fixture and is
+therefore intentionally not part of CI. See
+[contract test operations](tests/contracts/README.md),
+[Auth and RLS security runbook](docs/security-auth-and-rls.md), and the
+[manual leaked-password protection wizard](scripts/enable-leaked-password-protection.sh).
