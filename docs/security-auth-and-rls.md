@@ -1,6 +1,6 @@
 # Supabase Auth 與 RLS 安全契約
 
-最後核對：2026-08-29
+最後核對：2026-08-30
 Supabase project ref：`ixggooilggtesdrmjeon`
 
 本文件把 hosted Auth 的手動設定、資料庫 RLS 邊界與驗證方式放在同一處。Hosted
@@ -11,19 +11,24 @@ Auth 設定不屬於 SQL migration；因此 repository 能提供操作流程與�
 
 ### 目前狀態
 
-- [ ] Hosted project 的 leaked-password protection 尚未完成切換。2026-08-29 的
-  Supabase security advisor 仍回報 `auth_leaked_password_protection` warning：
-  `Leaked Password Protection Disabled`。
+- [x] 本專題目前使用 Supabase 免費方案；已接受該方案不提供
+  leaked-password protection 的限制。2026-08-29 的 Supabase security advisor
+  仍回報 `auth_leaked_password_protection` warning：
+  `Leaked Password Protection Disabled`，這是本階段預期的已知限制，不列為
+  MVP release blocker。
 - [x] Repository 已提供 [手動設定 wizard](../scripts/enable-leaked-password-protection.sh)
-  與本節操作／驗證 runbook。
-- [ ] Dashboard 開關完成後，必須重新執行 security advisor；預期不再出現上述
-  warning。RLS no-policy 的 5 個 `INFO` 仍是本專案刻意的 server-only 設計，見第 2 節。
+  與本節操作／驗證 runbook，供未來升級到支援此功能的方案時使用。
+- [x] 本期不執行 Dashboard 開關，也不以一次登入成功取代安全設定驗證；RLS
+  no-policy 的 5 個 `INFO` 仍是本專案刻意的 server-only 設計，見第 2 節。
 
 Supabase Auth 會使用 Have I Been Pwned 的 Pwned Passwords API，拒絕已知外洩的
 密碼；此功能在 Pro plan 以上提供。參考 [Supabase Password security
 documentation](https://supabase.com/docs/guides/auth/password-security)。
 
-### Hosted project 操作
+### Hosted project 操作（方案升級後的選用步驟）
+
+> 目前免費方案的 MVP 不執行以下步驟；只有升級到支援 leaked-password
+> protection 的方案後，才需要依此流程啟用並重新驗證。
 
 1. 執行 `bash scripts/enable-leaked-password-protection.sh`，或直接開啟
    [project Auth settings](https://supabase.com/dashboard/project/ixggooilggtesdrmjeon/auth/providers)。
@@ -99,5 +104,6 @@ documentation](https://supabase.com/docs/guides/database/postgres/row-level-secu
   false，`service_role` 具完整 table privilege。
 - Static contract：server-only tables 的 RLS、revoke、service grant、無 client
   policy／grant 與實際 `createAdminClient()` seam 均已鎖定。
-- Hosted Auth：仍待 project owner 完成 Dashboard 開關；完成後應重新記錄 advisor
-  結果與日期。
+- Hosted Auth：免費方案限制已接受；`auth_leaked_password_protection` WARN
+  預期存在，不列為本階段 release blocker。若未來升級方案，再依本文件啟用
+  Dashboard 設定並重新記錄 advisor 結果與日期。

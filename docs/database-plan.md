@@ -2,7 +2,8 @@
 
 > 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；本機
 > HTTP／seed／Admin real contract 34/34（15 個 API 靜態、11 個資料庫／文件靜態、
-> 8 個整合案例）已於 2026-08-29 重新執行通過；原 31/31 記錄已核對並更新。
+> 8 個整合案例）已於 2026-08-29 重新執行通過；另依 2026-08-30 驗收回報，
+> hosted／staging 真實整合測試已通過；原 31/31 記錄已核對並更新。
 > 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
 > `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
@@ -139,14 +140,15 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - [x] `customer_prefix_rules`、`app_admins`、`b2c_orders`、`b2c_order_items`、
   `analytics_events` 維持 RLS + 無 client policy／table grant，僅由 server-side
   `createAdminClient()` 存取；契約與證據見 [Auth／RLS 安全契約](security-auth-and-rls.md)。
-- [ ] Hosted Supabase Auth 的 leaked-password protection 待由 project owner 在
-  Auth settings 開啟；操作與驗證步驟見 [Auth／RLS 安全契約](security-auth-and-rls.md)。
+- [x] Hosted Supabase Auth 的 leaked-password protection 受目前免費方案限制；本
+  學生專題 MVP 已接受 `auth_leaked_password_protection` WARN，不列為 release
+  blocker。若未來升級方案，操作與驗證步驟見 [Auth／RLS 安全契約](security-auth-and-rls.md)。
 - [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
 - [x] B2B 多規格選項由獨立 migration 建表，展示選項由 `supabase/seed.sql` 可重跑建立。
 - [x] 後台商品、角色、圖片、規格選項、標籤與 B2B CSV 批量新增 API 已建立；B2C／B2B Storage 權限與圖片 metadata migration 已建立。
 - [x] C API 與 B 的登入／前端整合已完成；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，本機 HTTP／seed／Admin real contract 34/34 已於 2026-08-29 重新執行通過。
-- [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；
-  real contract 仍只在隔離本機環境執行。
+- [x] 依 2026-08-30 驗收回報，hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
+- [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；CI 維持只跑靜態檢查，不連接測試資料庫；hosted／staging 驗收另依隔離環境執行。
 - [x] B2C schema 擴充延後至另一次有明確資料模型與 backfill／rollback 計畫的工作，
   決策記錄於 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
 

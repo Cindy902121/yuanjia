@@ -12,6 +12,12 @@ pnpm test:contracts
 其中包含原先在未載入 optional fixture／database 設定時會 skipped 的 8 個整合
 案例；測試 server、Auth identity 與 fixture 均限於本機隔離環境。
 
+另依 2026-08-30 團隊驗收回報，已在安全的 hosted／staging 環境完成並通過真實
+整合測試：匿名、B2C、B2B、Admin 權限矩陣、B2B 停用公司不能登入、停用商品不出現
+在型錄、`W483038`／`E853699` 公司資料隔離、RFQ 公司隔離、24 個事件名稱與
+payload、customer prefix fallback，以及 seed 重跑不覆蓋 Auth identity。這筆紀錄
+不保存測試 URL、密碼、publishable key、secret key 或 token。
+
 這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
 payload、customer prefix fallback、文件／seed 契約、RLS server-only 邊界與 P2 index migration 檢查。
 
