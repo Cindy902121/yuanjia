@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:contracts": "node --test tests/contracts/*.test.mjs",
+    "test:contracts:static": "node --test tests/contracts/api-contract.test.mjs tests/contracts/database-contract.test.mjs",
     "test:contracts:real": "node scripts/run-contract-tests-real.mjs"
   },
   "dependencies": {

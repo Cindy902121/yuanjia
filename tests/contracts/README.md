@@ -8,15 +8,34 @@
 pnpm test:contracts
 ```
 
-2026-08-27 本機完整 real contract 已驗證 31 pass、0 fail；測試 server、Auth
-identity 與 fixture 均限於本機隔離環境。
+2026-08-29 重新執行本機完整 real contract，結果為 34 pass、0 fail、0 skipped。
+其中包含原先在未載入 optional fixture／database 設定時會 skipped 的 8 個整合
+案例；測試 server、Auth identity 與 fixture 均限於本機隔離環境。
+
+另依 2026-08-30 團隊驗收回報，已在安全的 hosted／staging 環境完成並通過真實
+整合測試：匿名、B2C、B2B、Admin 權限矩陣、B2B 停用公司不能登入、停用商品不出現
+在型錄、`W483038`／`E853699` 公司資料隔離、RFQ 公司隔離、24 個事件名稱與
+payload、customer prefix fallback，以及 seed 重跑不覆蓋 Auth identity。這筆紀錄
+不保存測試 URL、密碼、publishable key、secret key 或 token。
 
 這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
-payload、customer prefix fallback、文件／seed 契約與 P2 index migration 檢查。
+payload、customer prefix fallback、文件／seed 契約、RLS server-only 邊界與 P2 index migration 檢查。
 
-目前分支是從 GitHub `main` 建立；schema normalization PR 尚未合併時，RLS／SQL
-migration 的延伸案例會顯示為 skipped，並明確標示等待 baseline/security migration
-落到 main。
+目前分支已包含 baseline／security migration，因此 RLS／SQL migration 的延伸案例
+已納入靜態驗證。若未載入 real runner 的測試環境，整合案例仍會依缺少的帳號、
+fixture 或隔離資料庫條件顯示為 skipped；`pnpm test:contracts:real` 會載入被 Git
+ignore 的 `.env.local`／`.env.test.local` 後實際執行這些案例。
+
+## CI 品質閘門
+
+`.github/workflows/ci.yml` 會在每次 push 與 pull request 執行 `pnpm lint` 與
+`pnpm test:contracts:static`。靜態契約只讀取 repository 內的 migration、route、
+seed 與文件，不需要 Supabase URL、key、Auth identity 或測試 fixture；需要隔離環境
+的 `pnpm test:contracts:real` 保留給本機明確執行，不在 CI 連接資料庫。
+
+`database-contract.test.mjs` 會鎖定五張 server-only table 必須維持 RLS、不得有
+`anon`／`authenticated` policy 或 table grant，並且所有現有 access seam 都透過
+`createAdminClient()`。
 
 ## 隔離整合驗證（可選）
 

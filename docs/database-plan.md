@@ -1,8 +1,11 @@
 # 資料庫設計與契約
 
 > 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；本機
-> HTTP／seed／Admin real contract 31/31 已於 2026-08-27 通過。
-> 遠端 Supabase 已套用目前 11 支 active migrations；展示資料由可重跑的
+> HTTP／seed／Admin real contract 34/34（15 個 API 靜態、11 個資料庫／文件靜態、
+> 8 個整合案例）已於 2026-08-29 重新執行通過；另依 2026-08-30 驗收回報，
+> hosted／staging 真實整合測試已通過；原 31/31 記錄已核對並更新。
+> 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
+> `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
 > 不是尚未建立的草案。
 
@@ -82,7 +85,7 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 - [x] 前綴規則包含前綴、級距、通路與啟用狀態。
 - [x] 後台可維護代表性商品、套用既有標籤、查看詢價與模擬訂單。
-- [x] 事件資料不包含姓名、電話、Email、完整客戶代碼或 company_id。
+- [x] 事件報表／CSV 不包含姓名、電話、Email、完整客戶代碼或 company_id；原始 B2B 事件僅由 server-side 安全契約保存必要識別欄位。
 - [x] 分析篩選項：日期、級距、通路、產品、分類與品牌。
 
 #### C1. 前綴規則與客戶分類
@@ -137,11 +140,21 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 - [x] 資料表欄位、資料型別、外鍵與 trigger 已建立。
 - [x] 所有 public table 已啟用 RLS；公開 B2C 讀取、B2B 公司讀取、同公司 RFQ 讀取與 server-only 寫入邊界已建立。
+- [x] `customer_prefix_rules`、`app_admins`、`b2c_orders`、`b2c_order_items`、
+  `analytics_events` 維持 RLS + 無 client policy／table grant，僅由 server-side
+  `createAdminClient()` 存取；契約與證據見 [Auth／RLS 安全契約](security-auth-and-rls.md)。
+- [x] Hosted Supabase Auth 的 leaked-password protection 受目前免費方案限制；本
+  學生專題 MVP 已接受 `auth_leaked_password_protection` WARN，不列為 release
+  blocker。若未來升級方案，操作與驗證步驟見 [Auth／RLS 安全契約](security-auth-and-rls.md)。
 - [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
 - [x] B2B 多規格選項由獨立 migration 建表，展示選項由 `supabase/seed.sql` 可重跑建立。
 - [x] 後台商品、角色、圖片、規格選項、標籤與 B2B CSV 批量新增 API 已建立；B2C／B2B Storage 權限與圖片 metadata migration 已建立。
-- [x] C API 與 B 的登入／前端整合已完成；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，本機 HTTP／seed／Admin real contract 31/31 已通過。
-- [x] 共識版 B2B 行為分析 migration、事件追蹤、聚合 summary／CSV API、匯出稽核與 Admin 報表 UI 已建立；migration 已在本地與正式 Supabase 套用，並通過本地 lint／advisor 與遠端 migration／cron 驗證。
+- [x] C API 與 B 的登入／前端整合已完成；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，本機 HTTP／seed／Admin real contract 34/34 已於 2026-08-29 重新執行通過。
+- [x] 依 2026-08-30 驗收回報，hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
+- [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；CI 維持只跑靜態檢查，不連接測試資料庫；hosted／staging 驗收另依隔離環境執行。
+- [x] B2C schema 擴充延後至另一次有明確資料模型與 backfill／rollback 計畫的工作，
+  決策記錄於 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
+- [x] 共識版 B2B 行為分析 migration、事件追蹤、聚合 summary／CSV API、匯出稽核與 Admin 報表 UI 已建立並納入本機版本控制；本次 Git 同步未執行 migration repair 或正式 `db push`。
 
 ### B2B 客戶代碼規則
 
@@ -153,7 +166,9 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 ### 後續整合備註
 
-- PR #1 的 B2C 擴充 schema 已合併至 GitHub，但目前不直接套用至遠端；其中新增的分類、圖片與認證資料表超出目前 PRD／FDD 的 MVP 資料模型，待 A／B 確認需求後另行拆分。
+- PR #1 的 B2C 擴充 schema 已合併至 GitHub，但目前不直接套用至遠端；其中新增的分類、
+  認證與額外欄位超出目前 PRD／FDD 的 MVP 資料模型，本期依 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)
+  延後，待 A／B 另行確認需求後拆分。
 - 測試只使用本機 Supabase 與本機 Next server；測試用 Auth identity 與 fixture 不進入 Git，也不指向正式資料庫。
 
 ### 驗證收尾（2026-08-27）

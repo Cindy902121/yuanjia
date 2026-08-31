@@ -15,6 +15,15 @@ export interface MediaItem {
   sourceUrl: string;
   /** 沒有 image 的項目維持純文字呈現。 */
   image?: { src: string; alt: string };
+  /**
+   * 2026-08-25 新增。有值代表這篇報導有另外做深度詳情頁
+   * （/media/[slug]，內容見 src/lib/content/media-detail.ts），清單頁的
+   * 連結會改成連到站內詳情頁，不是直接連到外部原文。**不是每篇都需要
+   * 填**——原文本身資訊量夠豐富（有具體數據、引言、分析框架）才值得展開，
+   * 像這篇以外的其他報導原文本身較單薄，展開反而會變成湊字數，維持連到
+   * 外部原文即可，不用為了「全部一致」硬補一份薄弱的詳情內容。
+   */
+  slug?: string;
 }
 
 export const MEDIA_ITEMS: MediaItem[] = [
@@ -32,6 +41,7 @@ export const MEDIA_ITEMS: MediaItem[] = [
     title: "從兩座101高的減量奇蹟，看元家海鮮如何用「永續」捍衛你的餐桌？",
     summary: "報導元家推動「保麗龍轉紙箱」包材改革，首年減少的保麗龍箱堆疊起來相當於兩座台北 101 的高度，作為供應鏈永續行動的具體案例。",
     sourceUrl: "https://www.xinmedia.com/article/305125",
+    slug: "sustainability-msc-asc-packaging",
   },
   {
     date: "2026-01-27",
@@ -61,6 +71,7 @@ export const MEDIA_ITEMS: MediaItem[] = [
     title: "島語、饗賓、好市多...水產供應商－元家企業年掌握近2萬噸貨源，三大基石撐起冷凍海鮮龍頭",
     summary: "分析元家如何以供應鏈韌性、倉儲管理與出貨效率三大基石，穩居台灣冷凍海鮮供應商龍頭地位。",
     sourceUrl: "https://www.businesstoday.com.tw/article/category/183016/post/202510080004/",
+    slug: "2wan-dun-supply-chain",
   },
   {
     date: "2025-08-07",
@@ -85,6 +96,7 @@ export const MEDIA_ITEMS: MediaItem[] = [
     summary: "報導元家在倉儲管理與檢驗團隊上的投入，以及取得的多項國際食品安全認證。",
     sourceUrl: "https://www.foodnext.net/news/newssafe/paper/5739965854",
     image: { src: "/media-certifications.jpg", alt: "元家取得的多項國際食品安全認證證書照片" },
+    slug: "food-safety-warehouse-management",
   },
   {
     date: "2023-11-24",
