@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import CatalogInquiryWorkspace from "./catalog-inquiry-workspace";
+import B2bCatalogTracker from "./catalog-tracker";
 import BusinessHeader from "./business-header";
 import CatalogJourneyPrototype from "./catalog-journey-prototype";
 import CatalogProcurementPrototype from "./catalog-procurement-prototype";
@@ -127,6 +128,13 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
       style={{ fontFamily: '"Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif' }}
     >
       <BusinessHeader companyName={access.companyName} />
+      <B2bCatalogTracker
+        brand={brand}
+        category={category}
+        hasKeyword={Boolean(keyword)}
+        resultCount={products.length}
+        selectedTags={selectedTags}
+      />
 
       <section aria-labelledby="business-banner-title" className="border-b border-[#193C49] bg-[#102C37]">
         <h1 className="sr-only" id="business-banner-title">企業型錄｜全球冷凍水產食材供應服務</h1>

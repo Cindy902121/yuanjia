@@ -2,9 +2,9 @@
 
 ## 結論（2026-08-27）
 
-已依 linked remote project `ixggooilggtesdrmjeon` 的唯讀查詢整理 migration。遠端 `supabase_migrations.schema_migrations` 有 9 筆紀錄；本機 `supabase/migrations/` 保留這 9 支 active migration，另新增 1 支尚待部署的 corrective migration。
+已依 linked remote project `ixggooilggtesdrmjeon` 的唯讀查詢整理 migration。遠端 `supabase_migrations.schema_migrations` 有 10 筆紀錄；本機 `supabase/migrations/` 的 10 支 active migration 已全部對齊。
 
-這次沒有執行 `migration repair` 或正式 `db push`：前 9 支遠端 schema 歷史已對齊；新增的 corrective migration 只修正本機 lint 發現的 RPC 欄位歧義，待確認後再部署。
+這次沒有執行 `migration repair`；前 9 支遠端 schema 歷史已對齊，corrective migration 已正式 `db push`，只修正本機 lint 發現的 RPC 欄位歧義。
 
 ## Active migration 順序
 
@@ -19,7 +19,7 @@
 | 7 | `20260817073045_add_b2b_rfq_spec_option_fk_index.sql` | 補齊詢價規格選項外鍵索引。 |
 | 8 | `20260825024950_add_admin_catalog_media_and_management.sql` | 建立 B2C／B2B 商品圖片、Storage bucket、圖片 RLS 與 B2B 批量新增 RPC。 |
 | 9 | `20260825025003_add_admin_roles_and_b2b_status.sql` | 建立 `app_admins.role`、`b2b_products.status`、狀態同步、RLS 與 Admin 狀態 RPC。 |
-| 10 | `20260827031543_fix_admin_bulk_status_ambiguity.sql` | 限定批次狀態 RPC 的資料表欄位，修正 PostgreSQL 42702 歧義；尚未部署至 remote。 |
+| 10 | `20260827031543_fix_admin_bulk_status_ambiguity.sql` | 限定批次狀態 RPC 的資料表欄位，修正 PostgreSQL 42702 歧義；已部署至 remote。 |
 
 ## 已移出 active 的歷史檔案
 
@@ -33,7 +33,7 @@
 
 ## 已核對的遠端結果
 
-- 前 9 支 migration history 與本機 active 版本一致；`20260827031543` 是唯一 pending migration。
+- 10 支 migration history 與本機 active 版本一致；沒有 pending migration。
 - `app_admins.role`、`b2b_products.status` 與 Admin 狀態 RPC 存在。
 - `b2c_product_images`、`b2b_product_images` 及 `b2c-media`／`b2b-media` bucket 存在。
 - public tables 已啟用 RLS。
@@ -48,6 +48,6 @@ supabase db reset
 
 `db reset` 只重建本機隔離資料庫，會清除本機資料；正式環境不要用它。`db push --dry-run` 顯示無 pending migration 後，才可考慮正式 push。
 
-目前 `supabase db push --dry-run` 只顯示 `20260827031543_fix_admin_bulk_status_ambiguity.sql`；未取得部署指示前不執行正式 push。
+目前 `supabase db push --dry-run` 回報 `upToDate: true`；`20260827031543_fix_admin_bulk_status_ambiguity.sql` 已完成正式部署。
 
 未來新增 schema 時建立新的 migration，不修改已套用檔案。只有在「SQL 已精確套用、但 history row 缺失」時才可使用 `migration repair`；本次不需要 repair。

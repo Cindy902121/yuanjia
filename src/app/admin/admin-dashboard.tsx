@@ -6,9 +6,11 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
 import { B2bCsvImportPanel, CustomerPrefixRulePanel } from "./admin-catalog-tools";
+import AnalyticsReportPanel from "./analytics-report-panel";
 
 type AdminTab =
   | "overview"
+  | "analytics"
   | "b2c-products"
   | "b2c-orders"
   | "b2b-products"
@@ -101,6 +103,7 @@ type ApiPayload = { error?: string };
 
 const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
   { id: "overview", label: "總覽", group: "工作台" },
+  { id: "analytics", label: "分析報表", group: "分析" },
   { id: "b2c-products", label: "B2C 商品", group: "B2C" },
   { id: "b2c-orders", label: "B2C 訂單", group: "B2C" },
   { id: "b2b-products", label: "B2B 型錄", group: "B2B" },
@@ -111,7 +114,7 @@ const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
 ];
 
 const tabsByScope: Record<AdminScope, AdminTab[]> = {
-  admin: ["overview", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff", "customer-prefix-rules"],
+  admin: ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff", "customer-prefix-rules"],
   business: ["b2b-products", "b2b-rfqs"],
 };
 
@@ -456,7 +459,7 @@ export function AdminDashboard({
             <p className="text-xs font-bold tracking-[0.22em] text-[#005DAA]">YUANJIA ADMIN</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17242A]">管理後台</h1>
             <p className="mt-2 text-sm leading-6 text-[#536168]">
-              集中管理 B2C 商品、展示訂單、B2B 型錄與企業會員權限。
+              集中管理 B2C 商品、展示訂單、B2B 型錄、企業會員權限與 B2B 使用分析。
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -546,6 +549,7 @@ export function AdminDashboard({
                     onSelectTab={selectTab}
                   />
                 ) : null}
+                {activeTab === "analytics" ? <AnalyticsReportPanel /> : null}
                 {activeTab === "b2c-products" ? (
                   <ProductPanel
                     channel="b2c"

@@ -524,16 +524,32 @@ test(
 );
 
 test(
-  "all 24 event names accept the documented minimal payload on the correct surface",
+  "all 24 event names accept the documented payload on the correct surface",
   { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
   async () => {
     const b2bCookies = await login(credentials.b2b);
+    const productsResponse = await request("/api/b2b/products", { headers: { cookie: b2bCookies } });
+    const productsPayload = await json(productsResponse);
+    const productId = productsPayload.products?.[0]?.id;
+    const rfqId = [...createdRows.rfqIds][0];
+    assert.ok(productId && rfqId, "the event contract needs a B2B product and RFQ fixture");
+    const b2bEventData = {
+      b2b_search_filter: { filter_type: "category", selected_option_ids: ["b2b-fish"], result_count: 1 },
+      b2b_product_finder_answer: { question_key: "tag", option_id: "b2b-fish" },
+      b2b_product_finder_result_click: { product_id: productId },
+      b2b_rfq_add: { product_id: productId },
+      b2b_rfq_submit: { rfq_id: rfqId },
+    };
     for (const eventName of EVENT_NAMES) {
       const isB2b = eventName.startsWith("b2b_");
       const response = await request("/api/analytics/events", {
         method: "POST",
         headers: isB2b ? { cookie: b2bCookies } : undefined,
-        body: JSON.stringify({ event_name: eventName }),
+        body: JSON.stringify({
+          event_name: eventName,
+          ...(isB2b && b2bEventData[eventName] ? { event_data: b2bEventData[eventName] } : {}),
+          ...(eventName === "b2b_product_view" ? { product_id: productId } : {}),
+        }),
       });
       await recordEvent(response, eventName);
     }
