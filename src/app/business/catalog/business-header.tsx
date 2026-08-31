@@ -20,6 +20,7 @@ export default function BusinessHeader({ companyName }: BusinessHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [inquiryCount, setInquiryCount] = useState(0);
+  const [brandOpen, setBrandOpen] = useState(false);
   const [newsOpen, setNewsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -74,10 +75,30 @@ export default function BusinessHeader({ companyName }: BusinessHeaderProps) {
         </div>
 
         <nav aria-label="企業導覽" className="order-3 flex w-full flex-wrap items-center gap-x-6 gap-y-1 border-t border-[#2B2B2B]/10 pt-2 text-sm lg:order-none lg:w-auto lg:flex-nowrap lg:gap-x-7 lg:border-t-0 lg:pt-0">
-          {[{ href: "/business/about", label: "品牌故事" }].map((item) => {
-            const active = item.href === "/business" ? pathname === "/business" : pathname.startsWith(item.href);
-            return <Link className={`relative shrink-0 py-2 tracking-[0.1em] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:transition-colors after:duration-200 ${active ? "font-medium text-[#3E5C6B] after:bg-[#3E5C6B]" : "text-[#4A4A4A] after:bg-transparent hover:text-[#3E5C6B] hover:after:bg-[#3E5C6B]"}`} href={item.href} key={item.href}>{item.label}</Link>;
-          })}
+          <div className="relative shrink-0" onMouseEnter={() => setBrandOpen(true)} onMouseLeave={() => setBrandOpen(false)}>
+            <button
+              aria-controls="business-brand-menu"
+              aria-expanded={brandOpen}
+              className={`relative inline-flex min-h-10 items-center gap-1 py-2 tracking-[0.1em] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:transition-colors after:duration-200 ${pathname.startsWith("/business/about") ? "font-medium text-[#3E5C6B] after:bg-[#3E5C6B]" : "text-[#4A4A4A] after:bg-transparent hover:text-[#3E5C6B] hover:after:bg-[#3E5C6B]"}`}
+              onClick={() => setBrandOpen((current) => !current)}
+              onFocus={() => setBrandOpen(true)}
+              type="button"
+            >
+              品牌故事
+              <svg aria-hidden="true" className={`size-3 transition-transform duration-200 ${brandOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 12 8"><path d="m1 1.5 5 5 5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
+            </button>
+            {brandOpen ? (
+              <div className="absolute left-0 top-full z-50 w-40 pt-2" id="business-brand-menu">
+                <div className="border border-[#2B2B2B]/15 bg-[#FAF9F6] p-2 shadow-[0_8px_24px_rgba(43,43,43,0.1)]">
+                  {[{ href: "/business/about/company", label: "企業介紹" }, { href: "/business/about/strengths", label: "企業優勢" }, { href: "/business/about/milestones", label: "發展歷程" }, { href: "/business/about/supply-service", label: "供應與服務" }, { href: "/business/about/quality-safety", label: "品質與食安" }, { href: "/business/about/sustainability", label: "永續責任" }].map((item) => (
+                    <Link className="block px-3 py-2 text-sm text-[#4A4A4A] transition-colors duration-200 hover:bg-[#F0F3F1] hover:text-[#3E5C6B]" href={item.href} key={item.href} onClick={() => setBrandOpen(false)}>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
           <div className="relative shrink-0" onMouseEnter={() => setNewsOpen(true)} onMouseLeave={() => setNewsOpen(false)}>
             <button
               aria-controls="business-news-menu"
