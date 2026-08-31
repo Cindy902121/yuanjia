@@ -11,17 +11,36 @@ pnpm test:contracts
 這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
 payload、customer prefix fallback、文件／seed 契約與 P2 index migration 檢查。
 
-目前分支是從 GitHub `main` 建立；schema normalization PR 尚未合併時，RLS／SQL
-migration 的延伸案例會顯示為 skipped，並明確標示等待 baseline/security migration
-落到 main。
+目前 active migration chain 已包含 baseline／security migration；RLS／SQL migration
+的靜態延伸案例會直接驗證 repository 內的版本。需要實際 Supabase、Auth 或
+隔離資料庫的案例，才會依環境設定顯示為 skipped。
 
 ## 隔離整合驗證（可選）
 
+### 重建本機隔離環境
+
+本機 Supabase 的 Postgres 在 `127.0.0.1:54322`，Next 測試 server 預設在
+`127.0.0.1:3100`。`db reset --local` 會清除本機資料與 Auth identity；每次
+reset 後請依序執行：
+
+```bash
+supabase start --yes
+supabase db reset --local --yes
+docker exec -i supabase_db_supabase psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.b2b-test-fixtures.sql
+node scripts/provision-contract-test-identities.mjs
+node scripts/provision-b2b-isolation-fixture.mjs
+pnpm test:contracts:real
+```
+
+兩個 provisioning script 只接受本機 Supabase URL；測試帳密留在被 Git ignore 的
+`.env.test.local`，不會寫入 seed 或 repository。
+
 ### 真實 Supabase 的本機執行
 
-遠端專案的 URL／publishable key 放在 `.env.local`；測試用的 server secret
-與展示帳號放在不入 Git 的 `.env.test.local`。必要欄位如下（Admin 使用遠端
-實際 Email，例如 `admin@example.com`，不是登入頁上的角色名稱）：
+本機 Supabase 的 URL／publishable key 放在 `.env.local`；測試用的 server secret
+與展示帳號放在不入 Git 的 `.env.test.local`。必要欄位如下（Admin 使用
+實際 Email，例如 `admin@example.com`，不是登入頁上的角色名稱；本機測試可使用
+任意已建立的本機 Email）：
 
 ```env
 SUPABASE_SECRET_KEY=…
@@ -31,6 +50,8 @@ CONTRACT_TEST_B2B_IDENTIFIER=Z232113
 CONTRACT_TEST_B2B_PASSWORD=…
 CONTRACT_TEST_ADMIN_EMAIL=admin@example.com
 CONTRACT_TEST_ADMIN_PASSWORD=…
+CONTRACT_TEST_BUSINESS_STAFF_EMAIL=business-staff@example.com
+CONTRACT_TEST_BUSINESS_STAFF_PASSWORD=…
 ```
 
 執行：
@@ -51,7 +72,8 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 
 - 管理者可開啟 `/admin` 與 `/admin/business`；未登入會導向登入頁。
 - B2C／B2B 已登入使用者進入管理頁時，會依權限分別導回 `/`／`/business`；兩個管理頁只載入並顯示各自範圍的模組。
-- B2C 商品與 B2B 型錄可分別下架、確認不出現在 active 清單，再恢復上架。
+- B2C 新商品預設下架；未設定封面圖不能上架，啟用商品不能直接刪除唯一封面圖。
+- B2B 型錄可依 `draft`／`review`／`published`／`offline` 狀態轉換，並確認 active 清單篩選。
 - 管理者可讀取 B2C 展示訂單並更新為 `processing`。
 - 管理者可新增企業會員；後端產生 `Z`／`E`／`W`＋6 碼客戶代碼，回應不包含明文密碼。
 - 新企業可用「客戶代碼＋密碼」登入；停用後登入回傳 403，恢復後可再次登入。
@@ -60,7 +82,7 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 手動驗收時，建議依序操作：
 
 1. 以 Admin Email 登入 `/login`，確認導向 `/admin`。
-2. 在 `/admin` 的「B2C 商品」與 `/admin/business` 的「B2B 型錄」各選一筆商品下架，重新整理確認狀態，再上架。
+2. 在 `/admin` 的「B2C 商品」新增一筆商品，確認預設下架；上傳封面後再上架。在 `/admin/business` 的「B2B 型錄」操作狀態轉換，重新整理確認狀態。
 3. 在「B2C 訂單」把一筆展示訂單改為「處理中」，確認重新整理後仍保留狀態。
 4. 在「企業會員」新增帳號，記錄一次性顯示的客戶代碼與初始密碼；以該代碼登入驗證。
 5. 停用該企業並重新登入確認被拒絕，再啟用確認恢復。
