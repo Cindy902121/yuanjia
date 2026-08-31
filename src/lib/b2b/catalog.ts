@@ -24,7 +24,6 @@ export type B2BProduct = {
   category: string;
   description: string;
   id: string;
-  imagePath: string | null;
   name: string;
   origin: string;
   packaging: string | null;
@@ -49,7 +48,6 @@ type ProductRow = {
   category: string;
   description: string;
   id: string;
-  image_path: string | null;
   name: string;
   origin: string;
   packaging: string | null;
@@ -71,7 +69,6 @@ function toProduct(row: ProductRow): B2BProduct {
     category: row.category,
     description: row.description,
     id: row.id,
-    imagePath: row.image_path,
     name: row.name,
     origin: row.origin,
     packaging: row.packaging,
@@ -116,9 +113,9 @@ export async function getB2BCatalogData(): Promise<B2BCatalogData> {
   const { data, error } = await adminClient
     .from("b2b_products")
     .select(
-      "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, b2b_product_tags(b2b_tags(id, group_name, slug, name, is_active))",
+      "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, b2b_product_tags(b2b_tags(id, group_name, slug, name, is_active))",
     )
-    .eq("is_active", true)
+    .eq("status", "published")
     .order("product_code");
 
   if (error) {
@@ -153,7 +150,7 @@ export async function getB2BAccess() {
 
   const adminClient = createAdminClient();
   const [{ data: admin, error: adminError }, { data: company, error: companyError }] = await Promise.all([
-    adminClient.from("app_admins").select("is_active").eq("user_id", userId).maybeSingle(),
+    adminClient.from("app_admins").select("is_active, role").eq("user_id", userId).maybeSingle(),
     adminClient
       .from("companies")
       .select("id, is_active, name")
@@ -166,7 +163,9 @@ export async function getB2BAccess() {
   }
 
   if (admin?.is_active) {
-    return { role: "admin" as const };
+    return admin.role === "business_staff"
+      ? { role: "business_staff" as const }
+      : { role: "admin" as const };
   }
 
   if (!company?.is_active) {

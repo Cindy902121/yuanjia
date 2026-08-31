@@ -1,5 +1,5 @@
 import { apiError, isUuid, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBusinessAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const RFQ_STATUSES = ["new", "processing", "closed"] as const;
@@ -13,7 +13,7 @@ function isRfqStatus(value: unknown): value is RfqStatus {
 }
 
 export async function GET(request: Request) {
-  const guard = await requireAdmin();
+  const guard = await requireBusinessAdmin();
   if (guard.response) {
     return guard.response;
   }
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin();
+  const guard = await requireBusinessAdmin();
   if (guard.response) {
     return guard.response;
   }

@@ -1,7 +1,7 @@
 import { apiError } from "./api";
 import { getAdminContext } from "./auth-context";
 
-export async function requireAdmin() {
+async function requireAdminRole(allowedRoles: readonly ("admin" | "business_staff")[]) {
   const context = await getAdminContext();
 
   if (!context.user) {
@@ -10,9 +10,17 @@ export async function requireAdmin() {
   if (context.configurationError || context.databaseError) {
     return { response: apiError("目前無法確認管理者權限。", 503) };
   }
-  if (!context.isAdmin) {
+  if (!context.role || !allowedRoles.includes(context.role)) {
     return { response: apiError("你沒有管理者權限。", 403) };
   }
 
   return { context };
+}
+
+export function requireAdmin() {
+  return requireAdminRole(["admin"]);
+}
+
+export function requireBusinessAdmin() {
+  return requireAdminRole(["admin", "business_staff"]);
 }

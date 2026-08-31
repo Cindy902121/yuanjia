@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { isNonEmptyString, parsePositiveInteger } from "@/lib/api";
+import { isNonEmptyString } from "@/lib/api";
 
 export type AdminChannel = "b2c" | "b2b";
+export const B2B_PRODUCT_STATUSES = ["draft", "review", "published", "offline"] as const;
+export type B2bProductStatus = (typeof B2B_PRODUCT_STATUSES)[number];
 
 export const ADMIN_PRODUCT_FIELDS: Record<AdminChannel, string> = {
-  b2c: "id, slug, name, brand, category, specification, price, currency, short_description, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
-  b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, is_active, created_at, updated_at",
+  b2c: "id, slug, name, brand, category, specification, price, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
+  b2b: "id, product_code, name, brand, category, specification, packaging, origin, storage_method, description, image_path, status, is_active, created_at, updated_at",
 };
 
 export const PRODUCT_TABLES: Record<AdminChannel, "b2c_products" | "b2b_products"> = {
@@ -27,8 +29,32 @@ export const PRODUCT_TAG_TABLES: Record<
   b2b: "b2b_product_tags",
 };
 
+type ProductInputResult =
+  | { error: string; payload?: never }
+  | { payload: Record<string, unknown>; error?: never };
+
 export function isAdminChannel(value: string): value is AdminChannel {
   return value === "b2c" || value === "b2b";
+}
+
+export function isB2bProductStatus(value: unknown): value is B2bProductStatus {
+  return (
+    typeof value === "string" &&
+    (B2B_PRODUCT_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function isValidB2bProductStatusTransition(
+  current: B2bProductStatus,
+  next: B2bProductStatus,
+) {
+  return (
+    current === next ||
+    (current === "draft" && next === "review") ||
+    (current === "review" && (next === "draft" || next === "published")) ||
+    (current === "published" && next === "offline") ||
+    (current === "offline" && next === "published")
+  );
 }
 
 function parseText(
@@ -47,11 +73,22 @@ function parseText(
 }
 
 function parseMoney(value: unknown) {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) {
+    return null;
+  }
   const amount = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(amount) || amount < 0 || Math.round(amount * 100) !== amount * 100) {
     return null;
   }
   return amount;
+}
+
+function parseNonNegativeInteger(value: unknown) {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) {
+    return null;
+  }
+  const number = typeof value === "number" ? value : Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
 }
 
 function parseProductCode(value: unknown) {
@@ -72,7 +109,7 @@ export function parseProductInput(
   body: unknown,
   channel: AdminChannel,
   mode: "create" | "update",
-) {
+): ProductInputResult {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { error: "商品資料格式不正確。" };
   }
@@ -124,14 +161,6 @@ export function parseProductInput(
     payload[field] = result.value;
   }
 
-  if (channel === "b2c" && (mode === "create" || input.short_description !== undefined)) {
-    const result = parseText(input.short_description, "商品摘要", 160, true);
-    if (result.error) {
-      return { error: result.error };
-    }
-    payload.short_description = result.value;
-  }
-
   if (channel === "b2b" && (mode === "create" || input.packaging !== undefined)) {
     const result = parseText(input.packaging, "包裝", 500, false);
     if (result.error) {
@@ -151,11 +180,11 @@ export function parseProductInput(
 
     if (mode === "create" || input.mock_inventory !== undefined) {
       const inventory =
-        input.mock_inventory === undefined ? 0 : parsePositiveInteger(input.mock_inventory);
-      if (inventory === null && Number(input.mock_inventory) !== 0) {
+        input.mock_inventory === undefined ? 0 : parseNonNegativeInteger(input.mock_inventory);
+      if (inventory === null) {
         return { error: "模擬庫存必須是 0 以上的整數。" };
       }
-      payload.mock_inventory = inventory ?? 0;
+      payload.mock_inventory = inventory;
     }
 
     for (const [field, label, maxLength] of [
@@ -172,7 +201,22 @@ export function parseProductInput(
     }
   }
 
-  if (input.is_active !== undefined) {
+  if (channel === "b2b") {
+    if (input.status !== undefined) {
+      if (!isB2bProductStatus(input.status)) {
+        return { error: "B2B 商品狀態格式不正確。" };
+      }
+      payload.status = input.status;
+    } else if (input.is_active !== undefined) {
+      if (typeof input.is_active !== "boolean") {
+        return { error: "商品啟用狀態格式不正確。" };
+      }
+      // 相容既有管理 API；新 UI 使用 status。
+      payload.status = input.is_active ? "published" : "offline";
+    } else if (mode === "create") {
+      payload.status = "draft";
+    }
+  } else if (input.is_active !== undefined) {
     if (typeof input.is_active !== "boolean") {
       return { error: "商品啟用狀態格式不正確。" };
     }
@@ -193,7 +237,10 @@ export function parseTagIds(value: unknown) {
   }
 
   const tagIds = [...new Set(value)];
-  if (tagIds.some((tagId) => typeof tagId !== "string" || !/^[0-9a-f-]{36}$/i.test(tagId)) || tagIds.length > 100) {
+  if (
+    tagIds.some((tagId) => typeof tagId !== "string" || !/^[0-9a-f-]{36}$/i.test(tagId)) ||
+    tagIds.length > 100
+  ) {
     return { error: "標籤資料不正確。" };
   }
   return { value: tagIds as string[] };

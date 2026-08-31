@@ -97,17 +97,17 @@ set name = excluded.name,
 
 insert into public.b2b_products (
   product_code, name, brand, category, specification, packaging, origin,
-  storage_method, description, is_active
+  storage_method, description, status
 )
 values
-  ('B2B-FISH-001', '智利鮭魚切片', '元家', '魚類', '200g/片', '20片/箱', '智利', '冷凍 -18°C 以下', '餐飲與零售展示用鮭魚切片。', true),
-  ('B2B-FISH-002', '午仔魚整尾', '元家', '魚類', '450-550g/尾', '10尾/箱', '台灣', '冷凍 -18°C 以下', '展示用整尾魚品項。', true),
-  ('B2B-SHRIMP-001', '白蝦原料', '元家', '蝦蟹類', '31/40 規格', '10kg/箱', '厄瓜多', '冷凍 -18°C 以下', '團膳與餐飲展示用原料。', true),
-  ('B2B-SHELL-001', '熟凍扇貝', '元家', '貝類', '20/30 規格', '5kg/箱', '日本', '冷凍 -18°C 以下', '零售展示用熟凍扇貝。', true),
-  ('B2B-FISH-003', '鯖魚菲力', '元家', '魚類', '120-150g/片', '10kg/箱', '挪威', '冷凍 -18°C 以下', '餐飲展示用鯖魚菲力。', true),
-  ('B2B-SOFT-001', '透抽圈', '元家', '軟體類', '3-5cm/圈', '5kg/箱', '台灣', '冷凍 -18°C 以下', '餐飲展示用軟體類切塊品項。', true),
-  ('B2B-MEAT-001', '去骨雞腿肉切塊', '元家', '肉類', '2kg/包', '10kg/箱', '台灣', '冷凍 -18°C 以下', '團膳展示用肉類切塊品項。', true),
-  ('B2B-PREP-001', '調理海鮮丸', '元家', '調理食品', '30g/顆', '5kg/箱', '台灣', '冷凍 -18°C 以下', '餐飲展示用調理食品。', true)
+  ('B2B-FISH-001', '智利鮭魚切片', '元家', '魚類', '200g/片', '20片/箱', '智利', '冷凍 -18°C 以下', '餐飲與零售展示用鮭魚切片。', 'published'),
+  ('B2B-FISH-002', '午仔魚整尾', '元家', '魚類', '450-550g/尾', '10尾/箱', '台灣', '冷凍 -18°C 以下', '展示用整尾魚品項。', 'published'),
+  ('B2B-SHRIMP-001', '白蝦原料', '元家', '蝦蟹類', '31/40 規格', '10kg/箱', '厄瓜多', '冷凍 -18°C 以下', '團膳與餐飲展示用原料。', 'published'),
+  ('B2B-SHELL-001', '熟凍扇貝', '元家', '貝類', '20/30 規格', '5kg/箱', '日本', '冷凍 -18°C 以下', '零售展示用熟凍扇貝。', 'published'),
+  ('B2B-FISH-003', '鯖魚菲力', '元家', '魚類', '120-150g/片', '10kg/箱', '挪威', '冷凍 -18°C 以下', '餐飲展示用鯖魚菲力。', 'published'),
+  ('B2B-SOFT-001', '透抽圈', '元家', '軟體類', '3-5cm/圈', '5kg/箱', '台灣', '冷凍 -18°C 以下', '餐飲展示用軟體類切塊品項。', 'published'),
+  ('B2B-MEAT-001', '去骨雞腿肉切塊', '元家', '肉類', '2kg/包', '10kg/箱', '台灣', '冷凍 -18°C 以下', '團膳展示用肉類切塊品項。', 'published'),
+  ('B2B-PREP-001', '調理海鮮丸', '元家', '調理食品', '30g/顆', '5kg/箱', '台灣', '冷凍 -18°C 以下', '餐飲展示用調理食品。', 'published')
 on conflict (product_code) do update
 set name = excluded.name,
     brand = excluded.brand,
@@ -117,7 +117,7 @@ set name = excluded.name,
     origin = excluded.origin,
     storage_method = excluded.storage_method,
     description = excluded.description,
-    is_active = excluded.is_active;
+    status = excluded.status;
 
 -- B2B 規格選項以 option_code 作為穩定業務鍵，避免寫死 UUID。
 -- 「其他規格／其他包裝」是詢價時的客戶輸入，不建立固定 seed row。

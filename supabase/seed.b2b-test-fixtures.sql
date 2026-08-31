@@ -22,7 +22,7 @@ set name = excluded.name,
 -- 這筆商品不掛任何展示標籤，且永遠維持停用；公開／B2B 型錄查詢不會回傳它。
 insert into public.b2b_products (
   product_code, name, brand, category, specification, packaging, origin,
-  storage_method, description, is_active
+  storage_method, description, status
 )
 values (
   'B2B-TEST-INACTIVE-001',
@@ -34,7 +34,7 @@ values (
   '測試來源',
   '冷凍測試',
   '僅供停用商品權限驗收，不屬於正常展示商品。',
-  false
+  'offline'
 )
 on conflict (product_code) do update
 set name = excluded.name,
@@ -45,6 +45,6 @@ set name = excluded.name,
     origin = excluded.origin,
     storage_method = excluded.storage_method,
     description = excluded.description,
-    is_active = false;
+    status = 'offline';
 
 commit;

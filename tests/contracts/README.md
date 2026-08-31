@@ -8,12 +8,34 @@
 pnpm test:contracts
 ```
 
-這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
-payload、customer prefix fallback、文件／seed 契約與 P2 index migration 檢查。
+2026-08-29 重新執行本機完整 real contract，結果為 34 pass、0 fail、0 skipped。
+其中包含原先在未載入 optional fixture／database 設定時會 skipped 的 8 個整合
+案例；測試 server、Auth identity 與 fixture 均限於本機隔離環境。
 
-目前分支是從 GitHub `main` 建立；schema normalization PR 尚未合併時，RLS／SQL
-migration 的延伸案例會顯示為 skipped，並明確標示等待 baseline/security migration
-落到 main。
+另依 2026-08-30 團隊驗收回報，已在安全的 hosted／staging 環境完成並通過真實
+整合測試：匿名、B2C、B2B、Admin 權限矩陣、B2B 停用公司不能登入、停用商品不出現
+在型錄、`W483038`／`E853699` 公司資料隔離、RFQ 公司隔離、24 個事件名稱與
+payload、customer prefix fallback，以及 seed 重跑不覆蓋 Auth identity。這筆紀錄
+不保存測試 URL、密碼、publishable key、secret key 或 token。
+
+這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
+payload、customer prefix fallback、文件／seed 契約、RLS server-only 邊界與 P2 index migration 檢查。
+
+目前分支已包含 baseline／security migration，因此 RLS／SQL migration 的延伸案例
+已納入靜態驗證。若未載入 real runner 的測試環境，整合案例仍會依缺少的帳號、
+fixture 或隔離資料庫條件顯示為 skipped；`pnpm test:contracts:real` 會載入被 Git
+ignore 的 `.env.local`／`.env.test.local` 後實際執行這些案例。
+
+## CI 品質閘門
+
+`.github/workflows/ci.yml` 會在每次 push 與 pull request 執行 `pnpm lint` 與
+`pnpm test:contracts:static`。靜態契約只讀取 repository 內的 migration、route、
+seed 與文件，不需要 Supabase URL、key、Auth identity 或測試 fixture；需要隔離環境
+的 `pnpm test:contracts:real` 保留給本機明確執行，不在 CI 連接資料庫。
+
+`database-contract.test.mjs` 會鎖定五張 server-only table 必須維持 RLS、不得有
+`anon`／`authenticated` policy 或 table grant，並且所有現有 access seam 都透過
+`createAdminClient()`。
 
 ## 隔離整合驗證（可選）
 
@@ -53,9 +75,11 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 - B2C／B2B 已登入使用者進入管理頁時，會依權限分別導回 `/`／`/business`；兩個管理頁只載入並顯示各自範圍的模組。
 - B2C 商品與 B2B 型錄可分別下架、確認不出現在 active 清單，再恢復上架。
 - 管理者可讀取 B2C 展示訂單並更新為 `processing`。
-- 管理者可新增企業會員；後端產生 `Z`／`E`／`W`＋6 碼客戶代碼，回應不包含明文密碼。
+- 管理者可新增企業會員；Admin 輸入外部公司系統提供的客戶代碼，建立後不可修改，回應不包含明文密碼。
 - 新企業可用「客戶代碼＋密碼」登入；停用後登入回傳 403，恢復後可再次登入。
 - 管理者可讀取企業詢價並更新為 `processing`。
+- `business_staff` 可進入 `/admin/business`，管理 B2B 商品、圖片、標籤、規格選項、CSV 匯入與 RFQ；不可進入 `/admin` 或 B2C 管理 API。
+- B2B 商品狀態只允許 `draft → review → published → offline` 與既定回退／重新上架轉換；CSV 任一錯誤都整批拒絕並回傳列號。
 
 手動驗收時，建議依序操作：
 
@@ -110,7 +134,7 @@ psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
 
 這會建立三筆彼此獨立的測試情境：
 
-- `B2B-TEST-INACTIVE-001`：`is_active = false` 的 B2B 商品，沒有展示標籤。
+- `B2B-TEST-INACTIVE-001`：`status = offline` 的 B2B 商品，沒有展示標籤。
 - `E853699`：`is_active = false` 的公司，登入 API 應回傳 403，且不建立 session。
 - `W483038`：`is_active = true` 的第二家公司；需由 Supabase Auth／管理 API
   建立另一個測試 user 後，才把該 user UUID 綁到這家公司。Seed 不會寫入

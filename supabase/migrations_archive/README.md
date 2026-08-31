@@ -1,12 +1,26 @@
-# Archived migrations
+# Supabase migration archive
 
-The two migrations in `legacy/` were the original 2026-08-10 MVP setup.
-They are retained for audit only and must not be replayed by Supabase CLI.
+`supabase/migrations/` is the only active migration directory. As of
+2026-08-29 it contains the linked remote project's ten recorded versions and
+no pending corrective migration; do not replay files from this directory.
 
-The remote database's actual schema was captured in
-`../migrations/20260812150000_baseline_remote_schema.sql` and that baseline
-was marked as applied on the Yuanjia production project before the security
-migration `20260812150001_establish_mvp_security_contract.sql` was deployed.
+`legacy/` contains SQL that was either part of the original baseline or a
+local draft that never became part of the remote migration history. It is kept
+for audit and diff context only:
 
-Use `supabase/migrations/` as the sole active migration history from this
-point forward.
+- `20260810054414_create_mvp_foundation.sql`
+- `20260810055532_add_demo_catalog_data.sql`
+- `20260810161047_harden_public_privileges.sql`
+- `20260810161048_extend_b2c_catalog.sql`
+- `20260810161049_create_b2c_media_storage.sql`
+- `20260819074622_add_admin_catalog_media_and_management.sql`
+
+The remote Admin catalog/media migration is
+`20260825024950_add_admin_catalog_media_and_management.sql`; the older
+`20260819074622` file is its superseded local draft. The remote Admin role
+and B2B status migration is `20260825025003_add_admin_roles_and_b2b_status.sql`.
+`20260827031543_fix_admin_bulk_status_ambiguity.sql` is recorded as applied on the linked remote project; future migrations still require a dry-run before deployment.
+
+Do not use `migration repair` for any archived file. Repair is only valid
+when the exact SQL has already been applied and the history row alone is
+missing.

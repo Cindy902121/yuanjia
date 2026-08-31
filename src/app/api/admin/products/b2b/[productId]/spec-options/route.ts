@@ -1,5 +1,5 @@
 import { apiError, isNonEmptyString, isUuid, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBusinessAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const OPTION_FIELDS =
@@ -36,7 +36,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const guard = await requireBusinessAdmin();
   if (guard.response) {
     return guard.response;
   }
@@ -69,7 +69,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ productId: string }> },
 ) {
-  const guard = await requireAdmin();
+  const guard = await requireBusinessAdmin();
   if (guard.response) {
     return guard.response;
   }

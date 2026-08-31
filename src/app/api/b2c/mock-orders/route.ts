@@ -46,7 +46,7 @@ async function getAdminOnly() {
   if (context.configurationError || context.databaseError) {
     return { response: apiError("目前無法確認管理者權限。", 503) };
   }
-  if (!context.isAdmin) {
+  if (context.role !== "admin") {
     return { response: apiError("你沒有管理者權限。", 403) };
   }
 
