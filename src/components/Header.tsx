@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/lib/actions/auth";
 import { CartDrawer } from "@/components/CartDrawer";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 /**
  * 全站導覽列，掛在 root layout，所有頁面都會顯示（見 8/11–8/12 任務「首頁基本區塊與導覽」）。
@@ -140,14 +141,9 @@ export async function Header() {
                 </button>
               </form>
             </>
-          ) : (
-            <Link
-              href="/login"
-              className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
-            >
-              會員登入
-            </Link>
-          )}
+          ) : null}
+
+          <AuthModal isLoggedIn={isLoggedIn} />
 
           <CartDrawer />
         </div>

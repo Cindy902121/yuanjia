@@ -17,7 +17,7 @@ SUPABASE_SECRET_KEY=
 1. B2C／Admin 仍可在 Supabase Auth 建立已確認的 Email 帳號；Admin user UUID 需存在於 `app_admins` 且 `is_active = true`。
 2. B2B 一般流程使用網站 `/admin` →「企業會員」→「新增企業會員」。輸入企業名稱、Z／E／W 前綴與 8–72 字元初始密碼後，由伺服器建立 Auth user 與 `companies` 綁定。
 3. B2B 對外只使用客戶代碼＋公司共用密碼；Auth Email 是內部技術 identity，不顯示在 B2B 登入畫面。
-4. 目前驗收代碼為 `Z232113`、`E853699`、`W483038`；三筆都必須有唯一且已確認的 `auth_user_id`，並設定 `is_active = true` 才能登入。
+4. 目前展示驗收代碼為 `Z232113`、`E232114`、`W232115`；三筆都必須有唯一且已確認的 `auth_user_id`，並設定 `is_active = true` 才能登入。`E853699` 與 `W483038` 僅供隔離測試 fixture 使用。
 
 ### Supabase Dashboard 手動建帳例外
 

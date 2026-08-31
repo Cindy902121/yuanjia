@@ -41,6 +41,12 @@ const credentials = {
   b2b: process.env.CONTRACT_TEST_B2B_IDENTIFIER && process.env.CONTRACT_TEST_B2B_PASSWORD
     ? { identifier: process.env.CONTRACT_TEST_B2B_IDENTIFIER, password: process.env.CONTRACT_TEST_B2B_PASSWORD }
     : null,
+  b2bE: process.env.CONTRACT_TEST_B2B_E_IDENTIFIER && process.env.CONTRACT_TEST_B2B_E_PASSWORD
+    ? { identifier: process.env.CONTRACT_TEST_B2B_E_IDENTIFIER, password: process.env.CONTRACT_TEST_B2B_E_PASSWORD }
+    : null,
+  b2bW: process.env.CONTRACT_TEST_B2B_W_IDENTIFIER && process.env.CONTRACT_TEST_B2B_W_PASSWORD
+    ? { identifier: process.env.CONTRACT_TEST_B2B_W_IDENTIFIER, password: process.env.CONTRACT_TEST_B2B_W_PASSWORD }
+    : null,
   admin: process.env.CONTRACT_TEST_ADMIN_EMAIL && process.env.CONTRACT_TEST_ADMIN_PASSWORD
     ? { identifier: process.env.CONTRACT_TEST_ADMIN_EMAIL, password: process.env.CONTRACT_TEST_ADMIN_PASSWORD }
     : null,
@@ -54,6 +60,9 @@ const credentials = {
 
 const inactiveB2bIdentifier = process.env.CONTRACT_TEST_B2B_INACTIVE_IDENTIFIER;
 const integrationReady = Boolean(baseUrl && credentials.b2c && credentials.b2b && credentials.admin);
+const tierIntegrationReady = Boolean(
+  integrationReady && credentials.b2bE && credentials.b2bW,
+);
 
 const createdRows = {
   eventIds: new Set(),
@@ -63,6 +72,7 @@ const createdRows = {
   optionIds: new Set(),
   productIds: new Set(),
   b2cProductIds: new Set(),
+  authUserIds: new Set(),
 };
 
 async function request(path, options = {}) {
@@ -131,6 +141,11 @@ async function cleanupCreatedRows() {
     process.env.SUPABASE_SECRET_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
+
+  for (const authUserId of createdRows.authUserIds) {
+    const { error } = await admin.auth.admin.deleteUser(authUserId);
+    assert.ifError(error);
+  }
 
   const eventIds = [...createdRows.eventIds];
   if (eventIds.length > 0) {
@@ -269,6 +284,83 @@ async function setCustomerPrefixRuleActive(prefix, isActive) {
 }
 
 test.after(cleanupCreatedRows);
+
+test(
+  "B2B showcase identities cover all customer tiers",
+  { skip: tierIntegrationReady ? false : "set the Z/E/W B2B demo credentials to run" },
+  async () => {
+    for (const [tier, account] of [
+      ["Z", credentials.b2b],
+      ["E", credentials.b2bE],
+      ["W", credentials.b2bW],
+    ]) {
+      const response = await request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(account),
+      });
+      assert.equal(response.status, 200, `${tier} tier login should succeed`);
+      const payload = await json(response);
+      assert.equal(payload.role, "b2b");
+      assert.equal(payload.redirectTo, "/business/catalog");
+    }
+  },
+);
+
+test(
+  "B2C Auth validates registration and reports a missing reset Email",
+  { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
+  async () => {
+    const registerResponse = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: `invalid-${Date.now()}@local.test`,
+        password: "short",
+        passwordConfirmation: "short",
+      }),
+    });
+    assert.equal(registerResponse.status, 400);
+
+    const resetResponse = await request("/api/auth/password-reset", {
+      method: "POST",
+      body: JSON.stringify({ email: `missing-${Date.now()}@local.test` }),
+    });
+    assert.equal(resetResponse.status, 404);
+    assert.equal((await json(resetResponse)).error, "Email 不存在。");
+
+    const existingResetResponse = await request("/api/auth/password-reset", {
+      method: "POST",
+      body: JSON.stringify({ email: credentials.b2c.identifier, next: "/products" }),
+    });
+    assert.equal(existingResetResponse.status, 200);
+    assert.match((await json(existingResetResponse)).message, /重設密碼信/);
+
+    const registeredEmail = `contract-auth-${Date.now()}@local.test`;
+    const registrationResponse = await request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: registeredEmail,
+        password: "ContractAuth-123!",
+        passwordConfirmation: "ContractAuth-123!",
+        next: "/products",
+      }),
+    });
+    assert.equal(registrationResponse.status, 201);
+    const registration = await json(registrationResponse);
+    assert.equal(registration.authenticated, false);
+    assert.match(registration.message, /完成驗證/);
+
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SECRET_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    assert.ifError(usersError);
+    const registeredUser = users.users.find((user) => user.email === registeredEmail);
+    assert.ok(registeredUser?.id, "registration should create a Supabase Auth identity");
+    createdRows.authUserIds.add(registeredUser.id);
+  },
+);
 
 test(
   "running API permission matrix covers anonymous, B2C, B2B and Admin",

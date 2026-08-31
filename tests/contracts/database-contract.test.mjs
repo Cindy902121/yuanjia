@@ -15,6 +15,8 @@ function read(relativePath) {
 const seed = read("supabase/seed.sql");
 const b2bTestFixtures = read("supabase/seed.b2b-test-fixtures.sql");
 const b2bTestCleanup = read("supabase/cleanup.b2b-test-fixtures.sql");
+const contractIdentityProvisioning = read("scripts/provision-contract-test-identities.mjs");
+const envExample = read(".env.example");
 const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814032613_align_b2b_demo_catalog.sql");
 const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes("b2b_product_spec_options"));
 const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
@@ -181,6 +183,22 @@ test("B2B authorization fixtures are isolated, repeatable and safely removable",
   assert.match(b2bTestCleanup, /W483038/);
   assert.match(b2bTestCleanup, /auth_user_id is null/);
   assert.match(b2bTestCleanup, /not exists/);
+});
+
+test("local contract identities cover all B2B customer tiers", () => {
+  for (const [, clientCode, envPrefix] of [
+    ["Z", "Z232113", "CONTRACT_TEST_B2B"],
+    ["E", "E232114", "CONTRACT_TEST_B2B_E"],
+    ["W", "W232115", "CONTRACT_TEST_B2B_W"],
+  ]) {
+    assert.match(seed, new RegExp(`\\('${clientCode}',`));
+    assert.match(contractIdentityProvisioning, new RegExp(`${envPrefix}_EMAIL`));
+    assert.match(contractIdentityProvisioning, new RegExp(`${envPrefix}_PASSWORD`));
+    assert.match(contractIdentityProvisioning, new RegExp(`${envPrefix}_IDENTIFIER`));
+    assert.match(envExample, new RegExp(`${envPrefix}_IDENTIFIER`));
+  }
+  assert.match(contractIdentityProvisioning, /businessStaff/);
+  assert.match(contractIdentityProvisioning, /role: "business_staff"/);
 });
 
 test("B2B demo seed matches the approved group names and category coverage", () => {

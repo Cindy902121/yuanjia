@@ -77,6 +77,52 @@ test("C API route set is present without replacing B Auth", () => {
   assert.doesNotMatch(loginRoute, /from "@\/lib\/api"/);
 });
 
+test("B2C Auth supports registration, recovery, OAuth boundaries, and the floating entry", () => {
+  const authPaths = [
+    "src/app/api/auth/register/route.ts",
+    "src/app/api/auth/password-reset/route.ts",
+    "src/app/auth/callback/route.ts",
+    "src/components/auth/auth-panel.tsx",
+    "src/components/auth/auth-modal.tsx",
+  ];
+
+  for (const path of authPaths) {
+    assert.ok(existsSync(join(ROOT, path)), `${path} should exist`);
+  }
+
+  const register = read(authPaths[0]);
+  const reset = read(authPaths[1]);
+  const callback = read(authPaths[2]);
+  const panel = read(authPaths[3]);
+  const modal = read(authPaths[4]);
+  const supabaseConfig = read("supabase/config.toml");
+
+  assert.match(register, /auth\.signUp/);
+  assert.match(register, /emailRedirectTo/);
+  assert.match(register, /PASSWORD_MIN_LENGTH/);
+  assert.match(reset, /listUsers/);
+  assert.match(reset, /Email 不存在/);
+  assert.match(reset, /resetPasswordForEmail/);
+  assert.match(callback, /exchangeCodeForSession/);
+  assert.match(callback, /mode === "confirm" \? "confirmed" : mode/);
+  assert.match(callback, /mode === "google"/);
+  assert.match(callback, /app_admins/);
+  assert.match(callback, /companies/);
+  assert.match(callback, /google-b2c-only/);
+  assert.match(supabaseConfig, /enable_confirmations = true/);
+  assert.match(supabaseConfig, /\[auth\.external\.google\]/);
+  assert.match(supabaseConfig, /auth\/callback/);
+  assert.match(panel, /\/api\/auth\/register/);
+  assert.match(panel, /\/api\/auth\/password-reset/);
+  assert.match(panel, /signInWithOAuth/);
+  assert.match(panel, /updateUser/);
+  assert.match(panel, /註冊會員/);
+  assert.match(panel, /忘記密碼/);
+  assert.match(modal, /usePathname/);
+  assert.match(modal, /aria-modal/);
+  assert.match(modal, /Escape/);
+});
+
 test("the API permission matrix remains explicit", () => {
   const matrix = [
     ["/api/b2c/products", "GET", "anonymous", "allow"],

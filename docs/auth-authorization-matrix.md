@@ -6,7 +6,7 @@
 
 | 身分 | 登入資料 | 登入成功後 |
 | --- | --- | --- |
-| B2C 會員 | Email + 密碼 | 留在 B2C 流程 |
+| B2C 會員 | Email + 密碼或 Google | 留在 B2C 流程 |
 | B2B 公司使用者 | 客戶代碼（Z/E/W＋6 碼數字）+ 公司共用密碼 | `/business/catalog` |
 | Admin | Email + 密碼 | `/admin` |
 | 未登入訪客 | 不需登入 | 可瀏覽公開 B2C 網站 |
@@ -25,6 +25,8 @@
 
 - 前台導覽不顯示 Admin、後台或管理者登入入口。
 - Admin 透過同一個 `/login` 使用 Email + 密碼登入。
+- B2C 頁面的 Header「登入」開啟浮動登入視窗，包含 Email 登入、Google 登入、註冊會員與忘記密碼；成功後留在目前頁面。
+- `/login` 仍保留給 B2B 客戶代碼、Admin 與 business_staff 的直接登入；Google 不出現在企業客戶模式。
 - 伺服器確認使用者存在於啟用的 `app_admins` 後，才導向 `/admin`。
 - `/admin` 設定 `noindex`；直接輸入網址的未授權使用者必須被拒絕。
 

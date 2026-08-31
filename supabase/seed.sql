@@ -6,8 +6,8 @@
 -- 這份 seed 採非破壞性重跑策略：不刪除資料庫中額外存在的 row 或舊關聯；
 -- 每次執行只會補齊／更新下方展示鍵，並維持同一組展示資料可重複套用。
 --
--- B2B 展示客戶代碼範例：Z232113（20 萬以下）。
--- 另外兩組測試代碼 E853699／W483038 由 optional fixture 提供。
+-- B2B 展示客戶代碼：Z232113（20 萬以下）、E232114（50 萬以下）、
+-- W232115（其他）。E853699／W483038 由 optional fixture 提供隔離案例。
 -- 目前展示集包含 5 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、10／15 個標籤，
 -- 以及 15／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
 -- 軟體類、肉類與調理食品。
@@ -15,9 +15,12 @@
 begin;
 
 -- Auth identity 必須透過 Supabase Auth／Dashboard／管理 API 建立；這裡只保留
--- 一個可供本地測試的公司資料列。若已有 auth_user_id，upsert 不會改動它。
+-- 可供本地測試的公司資料列。若已有 auth_user_id，upsert 不會改動它。
 insert into public.companies (client_code, name, is_active)
-values ('Z232113', '王品餐飲測試企業', true)
+values
+  ('Z232113', '王品餐飲測試企業｜Z 級距', true),
+  ('E232114', '元家餐飲測試企業｜E 級距', true),
+  ('W232115', '海味通路測試企業｜W 級距', true)
 on conflict (client_code) do update
 set name = excluded.name,
     is_active = true;

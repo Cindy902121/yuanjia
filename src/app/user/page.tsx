@@ -8,7 +8,7 @@ import { editorialButtonSolid } from "@/lib/editorial/styles";
 /**
  * /user 頁面（2026-08-19，PRD B2C 伸展項目，8/17-8/22 團隊任務清單列為選做）。
  *
- * PRD 3.2／AUTH-02 明確排除「正式 B2C 會員註冊」——沒有真正的個人會員資料、
+ * 目前 B2C 註冊只建立 Supabase Auth identity，仍沒有真正的個人會員資料、
  * 訂單歷史查詢 API（目前 B2C 只有 `POST /api/b2c/mock-orders` 建立展示訂單，
  * 沒有對應的 GET 依使用者查詢自己訂單的端點），所以這裡**沒有**假造一個
  * 「訂單歷史」列表騙自己有這個功能——沒有真實資料來源的功能，寧可誠實地不做，

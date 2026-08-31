@@ -15,6 +15,9 @@ payload、customer prefix fallback、文件／seed 契約與 P2 index migration 
 的靜態延伸案例會直接驗證 repository 內的版本。需要實際 Supabase、Auth 或
 隔離資料庫的案例，才會依環境設定顯示為 skipped。
 
+B2C Auth 的註冊、Email 驗證、密碼重設與 Google OAuth 設定請參考
+[`docs/b2c-auth-setup.md`](../../docs/b2c-auth-setup.md)。
+
 ## 隔離整合驗證（可選）
 
 ### 重建本機隔離環境
@@ -47,7 +50,14 @@ SUPABASE_SECRET_KEY=…
 CONTRACT_TEST_B2C_EMAIL=demo@yens.com.tw
 CONTRACT_TEST_B2C_PASSWORD=…
 CONTRACT_TEST_B2B_IDENTIFIER=Z232113
+CONTRACT_TEST_B2B_EMAIL=b2b-z232113@local.test
 CONTRACT_TEST_B2B_PASSWORD=…
+CONTRACT_TEST_B2B_E_IDENTIFIER=E232114
+CONTRACT_TEST_B2B_E_EMAIL=b2b-e232114@local.test
+CONTRACT_TEST_B2B_E_PASSWORD=…
+CONTRACT_TEST_B2B_W_IDENTIFIER=W232115
+CONTRACT_TEST_B2B_W_EMAIL=b2b-w232115@local.test
+CONTRACT_TEST_B2B_W_PASSWORD=…
 CONTRACT_TEST_ADMIN_EMAIL=admin@example.com
 CONTRACT_TEST_ADMIN_PASSWORD=…
 CONTRACT_TEST_BUSINESS_STAFF_EMAIL=business-staff@example.com
@@ -100,7 +110,14 @@ export CONTRACT_TEST_BASE_URL=http://127.0.0.1:3000
 export CONTRACT_TEST_B2C_EMAIL='…'
 export CONTRACT_TEST_B2C_PASSWORD='…'
 export CONTRACT_TEST_B2B_IDENTIFIER='…'
+export CONTRACT_TEST_B2B_EMAIL='…'
 export CONTRACT_TEST_B2B_PASSWORD='…'
+export CONTRACT_TEST_B2B_E_IDENTIFIER='E232114'
+export CONTRACT_TEST_B2B_E_EMAIL='…'
+export CONTRACT_TEST_B2B_E_PASSWORD='…'
+export CONTRACT_TEST_B2B_W_IDENTIFIER='W232115'
+export CONTRACT_TEST_B2B_W_EMAIL='…'
+export CONTRACT_TEST_B2B_W_PASSWORD='…'
 export CONTRACT_TEST_ADMIN_EMAIL='…'
 export CONTRACT_TEST_ADMIN_PASSWORD='…'
 pnpm test:contracts
