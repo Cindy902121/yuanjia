@@ -18,6 +18,12 @@ export type FaqAnswerBlock =
   | { type: "note"; text: string };
 
 export interface FaqItem {
+  /**
+   * 穩定 id，給需要「引用某一題」的其他頁面用（例如 /media/[slug] 詳情頁
+   * 想在文章末尾附上跟這篇報導相關的公司問答），2026-08-25 新增。不是每題
+   * 都需要，只有被其他頁面引用的題目才需要填。
+   */
+  id?: string;
   question: string;
   subQuestions?: string[];
   /** 給 FAQPage JSON-LD 用的純文字摘要，不需要跟畫面排版一致，只要語意正確。 */
@@ -156,4 +162,171 @@ export const FAQ_ITEMS: FaqItem[] = [
       },
     ],
   },
+  /**
+   * 2026-08-25 新增，原本寫在 /news 文章裡的「公司介紹型」FAQ（跟上面 7 題
+   * 「消費者使用面」FAQ 性質不同），使用者確認要併入 /faq，並讓
+   * /media/[slug]（今周刊供應鏈報導詳情頁）用 `id` 引用這幾題，不要兩邊
+   * 各自維護一份文字。這 4 題內容改寫自今周刊 2025/10/08（第 1503 期）
+   * 報導，來源見 src/lib/content/media-items.ts 的 `2wan-dun-supply-chain`
+   * 項目。
+   */
+  {
+    id: "about-yuanjia",
+    question: "元家企業是做什麼的？",
+    jsonLdAnswer:
+      "元家企業是台灣規模最大的冷凍水產供應商，成立超過 40 年，每年自 35 國進口逾 18,000 公噸海鮮，供應好市多、家樂福等量販通路與島語、饗賓、漢來美食等餐飲品牌，服務客戶數超過 4,000 家。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家企業是台灣規模最大的冷凍水產供應商，成立超過 40 年，每年自 35 國進口逾 18,000 公噸海鮮，供應好市多、家樂福等量販通路與島語、饗賓、漢來美食等餐飲品牌，服務客戶數超過 4,000 家。",
+      },
+    ],
+  },
+  {
+    id: "top-import-volume",
+    question: "元家企業有哪些海鮮的進口量是全台第一？",
+    jsonLdAnswer:
+      "根據今周刊報導，元家在大比目魚、白蝦、干貝、圓鱈與帝王蟹五項海鮮品類的進口量，皆為全台第一。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "根據今周刊報導，元家在大比目魚、白蝦、干貝、圓鱈與帝王蟹五項海鮮品類的進口量，皆為全台第一。",
+      },
+    ],
+  },
+  {
+    id: "2-hour-shipping",
+    question: "元家企業為什麼能做到「2 小時出貨」？",
+    jsonLdAnswer:
+      "元家透過 ERP 系統即時協調接單、庫存與出貨流程，並配合 40 輛自有物流車隊配送，加上海鮮料號細分至 2,000 多個品項、倉儲依出貨頻率分類擺放，讓接單到出貨僅需 2 小時。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家透過 ERP 系統即時協調接單、庫存與出貨流程，並配合 40 輛自有物流車隊配送，加上海鮮料號細分至 2,000 多個品項、倉儲依出貨頻率分類擺放，讓接單到出貨僅需 2 小時。",
+      },
+    ],
+  },
+  {
+    id: "supply-risk-mitigation",
+    question: "元家企業如何因應海鮮供應鏈的斷貨風險？",
+    jsonLdAnswer:
+      "元家累積數百家海外供應商，同一種海鮮備有多個產地來源，即使單一產區因天災、疫病或政治因素受影響，也能從其他來源調度，降低斷貨風險。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家累積數百家海外供應商，同一種海鮮備有多個產地來源，即使單一產區因天災、疫病或政治因素受影響，也能從其他來源調度，降低斷貨風險。",
+      },
+    ],
+  },
+  /**
+   * 2026-08-25 新增，改寫自欣傳媒 2026/02/12 報導（永續行動），來源見
+   * src/lib/content/media-items.ts 的 `sustainability-msc-asc-packaging`
+   * 項目。跟上面 4 題一樣，供 /media/[slug] 詳情頁用 `id` 引用。
+   */
+  {
+    id: "msc-vs-asc-label",
+    question: "MSC認證跟ASC認證要怎麼分辨？",
+    jsonLdAnswer:
+      "MSC（海洋管理委員會）認證是藍色標章，代表野生捕撈來源符合永續漁業標準；ASC（水產養殖管理委員會）認證是綠色標章，代表養殖過程符合環境與社會責任標準，消費者可以直接從商品包裝上的標章顏色分辨兩者。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "MSC（海洋管理委員會）認證是藍色標章，代表野生捕撈來源符合永續漁業標準；ASC（水產養殖管理委員會）認證是綠色標章，代表養殖過程符合環境與社會責任標準，消費者可以直接從商品包裝上的標章顏色分辨兩者。",
+      },
+    ],
+  },
+  {
+    id: "sustainable-seafood-cost",
+    question: "選購永續認證海鮮會比較貴嗎？",
+    jsonLdAnswer:
+      "根據元家企業執行長顏志杰的說法，消費者只需要多花約一成預算，就能透過選購支持永續認證的海鮮商品，並非外界想像的「永續等於昂貴」。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "根據元家企業執行長顏志杰的說法，消費者只需要多花約一成預算，就能透過選購支持永續認證的海鮮商品，並非外界想像的「永續等於昂貴」。",
+      },
+    ],
+  },
+  {
+    id: "yuanjia-sustainability-actions",
+    question: "元家企業做了哪些具體的永續行動？",
+    jsonLdAnswer:
+      "元家推動包材從保麗龍轉換為紙箱（首年減量相當於兩座台北101高度）、提前下架魩仔魚品項、導入MSC與ASC雙認證，並投入數百萬升級近50年廠房的電力與冷凍系統。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家推動包材從保麗龍轉換為紙箱（首年減量相當於兩座台北101高度）、提前下架魩仔魚品項、導入MSC與ASC雙認證，並投入數百萬升級近50年廠房的電力與冷凍系統。",
+      },
+    ],
+  },
+  {
+    id: "juvenile-fish-sustainability",
+    question: "「魩仔魚」為什麼跟海洋永續有關？",
+    jsonLdAnswer:
+      "魩仔魚是多種魚類的幼魚統稱，過度捕撈幼魚會影響魚類族群的世代繁衍與漁業資源永續，元家在法規要求之前就主動下架相關品項，是永續行動中比較具體的商品面決策。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "魩仔魚是多種魚類的幼魚統稱，過度捕撈幼魚會影響魚類族群的世代繁衍與漁業資源永續，元家在法規要求之前就主動下架相關品項，是永續行動中比較具體的商品面決策。",
+      },
+    ],
+  },
+  /**
+   * 2026-08-25 新增，改寫自食聞 2024/07/02 報導（食安與倉儲管理），來源見
+   * src/lib/content/media-items.ts 的 `food-safety-warehouse-management`
+   * 項目。
+   */
+  {
+    id: "yuanjia-certifications",
+    question: "元家企業取得了哪些食安認證？",
+    jsonLdAnswer:
+      "元家取得HACCP、ISO22000、歐盟EEC認證核准、HALAL清真認證、FSSC22000等多項國際食品安全認證。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家取得HACCP、ISO22000、歐盟EEC認證核准、HALAL清真認證、FSSC22000等多項國際食品安全認證。",
+      },
+    ],
+  },
+  {
+    id: "expiry-management-vs-fifo",
+    question: "「效期管理」為什麼比「先進先出」更重要？",
+    jsonLdAnswer:
+      "因為即使是同一批進口或遠洋水產，實際捕撈時間也可能不同，如果只依入庫順序（先進先出）出貨，效期較短的漁獲可能被延後出貨而影響新鮮度，因此需要額外依實際捕撈時間分開控管效期。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "因為即使是同一批進口或遠洋水產，實際捕撈時間也可能不同，如果只依入庫順序（先進先出）出貨，效期較短的漁獲可能被延後出貨而影響新鮮度，因此需要額外依實際捕撈時間分開控管效期。",
+      },
+    ],
+  },
+  {
+    id: "bap-certification-blue-diamond-shrimp",
+    question: "藍鑽蝦的BAP認證代表什麼？",
+    jsonLdAnswer:
+      "BAP（Best Aquaculture Practices，最佳水產養殖規範）是國際水產養殖認證標準，元家的藍鑽蝦取得四星認證（該認證的最高等級之一），代表養殖過程符合無添加、環境與品質等多項規範。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "BAP（Best Aquaculture Practices，最佳水產養殖規範）是國際水產養殖認證標準，元家的藍鑽蝦取得四星認證（該認證的最高等級之一），代表養殖過程符合無添加、環境與品質等多項規範。",
+      },
+    ],
+  },
+  {
+    id: "quality-assurance-team-size",
+    question: "元家的品保團隊規模有多大？",
+    jsonLdAnswer:
+      "元家在工廠與物流中心配置約20位專職品保人員，公司表示這個規模大於同業，用意是提高檢驗頻率、降低食安風險。",
+    answer: [
+      {
+        type: "paragraph",
+        text: "元家在工廠與物流中心配置約20位專職品保人員，公司表示這個規模大於同業，用意是提高檢驗頻率、降低食安風險。",
+      },
+    ],
+  },
 ];
+
+/** 依 id 取得單一 FAQ 項目；找不到時回傳 undefined，呼叫端自行決定要不要顯示。 */
+export function getFaqItemById(id: string): FaqItem | undefined {
+  return FAQ_ITEMS.find((item) => item.id === id);
+}

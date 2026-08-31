@@ -59,9 +59,22 @@ interface RawProductRow {
 
 const TAG_TABLES = { tagTable: "b2c_tags", relationTable: "b2c_product_tags" } as const;
 
+/**
+ * 2026-08-25（SEO／AEO／GEO 內容深度補強，順手修正）：原本上限是 60 字，是
+ * 舊版商品 description（一句話、通常不到 20 字）年代訂的，那時候幾乎不會被
+ * 截斷。這次把 description 加長到有實質內容（產地、口感、料理建議）之後，
+ * 60 字會把句子從中間切斷、結尾接一個「…」，這串文字同時也是 meta
+ * description／OG description／Product JSON-LD 的內容，句子被腰斬對 SEO
+ * 不是好事（Google 建議 meta description 是完整、有意義的句子，不是斷在
+ * 句中）。改成 100 字——目前 5 筆商品的完整 description 都在 100 字以內，
+ * 實際上不會再被截斷；之後如果有商品的 description 寫得更長，還是有這個
+ * 上限兜底，不會整段塞進卡片／meta 裡。商品卡片顯示用的是 CSS
+ * `line-clamp-2`（見 EditorialProductGrid／ProductList），視覺上最終還是
+ * 只顯示兩行，不受這個上限本身影響。
+ */
 function toShortDescription(description: string): string {
   const trimmed = description.trim();
-  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+  return trimmed.length > 100 ? `${trimmed.slice(0, 100)}…` : trimmed;
 }
 
 function mapRow(row: RawProductRow): ProductDetailData {

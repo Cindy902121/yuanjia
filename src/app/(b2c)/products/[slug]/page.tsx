@@ -153,10 +153,16 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
           </nav>
         </FadeInSection>
 
-        {/* 主要商品資訊：篩選欄／圖片／文字（含標籤、規格、加入購物車）三欄。 */}
+        {/* 主要商品資訊：篩選欄／圖片／文字（含標籤、規格、加入購物車）三欄。
+            2026-08-25（響應式稽核發現）：手機版原本是「篩選欄→圖片→文字」的
+            堆疊順序，使用者點進商品詳情頁想看的是這個商品，卻要先滑過整組
+            分類／標籤導覽連結才看得到商品照片。這裡用 CSS `order` 把手機版
+            視覺順序改成「圖片→文字→篩選欄」，篩選欄變成頁面最後、比較像是
+            「延伸瀏覽」的位置；桌機版三欄並排維持原樣不變（`lg:order-*`
+            蓋回原本 1/2/3 順序）。DOM／Tab 順序完全沒動，只有視覺排序。 */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[200px_1fr_1fr] lg:gap-14">
           {/* 篩選欄：導覽用連結，不是這個頁面自己的篩選狀態。 */}
-          <FadeInSection className="flex flex-row flex-wrap gap-8 lg:sticky lg:top-28 lg:flex-col lg:gap-8 lg:self-start">
+          <FadeInSection className="order-3 flex flex-row flex-wrap gap-8 lg:order-1 lg:sticky lg:top-28 lg:flex-col lg:gap-8 lg:self-start">
             <SidebarLinkGroup label="分類">
               {categories.map((category) => (
                 <SidebarLink key={category.slug} href={`/products?category=${category.slug}`}>
@@ -175,7 +181,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
             ))}
           </FadeInSection>
 
-          <FadeInSection className="ep-hover-zoom relative aspect-square">
+          <FadeInSection className="order-1 ep-hover-zoom relative aspect-square lg:order-2">
             {product.coverImage ? (
               <Image src={product.coverImage.url} alt={product.coverImage.alt} fill sizes="(min-width: 1024px) 35vw, 100vw" className="object-cover" />
             ) : (
@@ -185,7 +191,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
             )}
           </FadeInSection>
 
-          <FadeInSection className="flex flex-col gap-6">
+          <FadeInSection className="order-2 flex flex-col gap-6 lg:order-3">
             {product.brand ? (
               <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
                 {product.brand}
