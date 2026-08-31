@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { B2CHelpWidget } from "@/components/B2CHelpWidget";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 /**
  * B2C route group layout（2026-08-25，回應 B 回報「/business/catalog 同時顯示
@@ -34,10 +35,17 @@ import { B2CHelpWidget } from "@/components/B2CHelpWidget";
  * `flex-1 flex flex-col`／`min-h-full` 是為了維持原本「內容不夠長時 Footer
  * 仍貼齊視窗底部」的排版邏輯，跟原本 `<body>` 的 flex 設定等價，只是往下移了
  * 一層。
+ *
+ * 2026-08-27：加上 `<GoogleAnalytics />`（PRD §7.3「B2C 公開頁面安裝 GA4
+ * 基礎追蹤」，見 src/components/GoogleAnalytics.tsx 檔頭說明）。放在這個
+ * route group layout 而不是 root layout，理由跟 Header／Footer 一樣——
+ * `/business/*`、`/admin`、`/login` 都不在這個群組裡，架構上就不會載入
+ * GA4，符合 PRD 要求的「B2B 事件不送 GA4」，不需要另外寫路徑判斷。
  */
 export default function B2CLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+      <GoogleAnalytics />
       <Header />
       {children}
       <Footer />
