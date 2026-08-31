@@ -1,7 +1,8 @@
 import { apiError, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
   ADMIN_PRODUCT_FIELDS,
+  isB2bProductStatus,
   isAdminChannel,
   parseProductInput,
   PRODUCT_TABLES,
@@ -12,19 +13,20 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ channel: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) {
-    return guard.response;
-  }
-
   const { channel } = await params;
   if (!isAdminChannel(channel)) {
     return apiError("商品通路不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const url = new URL(request.url);
   const includeInactive = url.searchParams.get("include_inactive") === "true";
   const search = url.searchParams.get("q")?.trim();
+  const status = url.searchParams.get("status")?.trim();
+  if (channel === "b2b" && status && !isB2bProductStatus(status)) {
+    return apiError("B2B 商品狀態不正確。", 400);
+  }
   const admin = createAdminClient();
   let query = admin
     .from(PRODUCT_TABLES[channel])
@@ -32,7 +34,13 @@ export async function GET(
     .order("updated_at", { ascending: false })
     .limit(500);
 
-  if (!includeInactive) {
+  if (channel === "b2b") {
+    if (status) {
+      query = query.eq("status", status);
+    } else if (!includeInactive) {
+      query = query.eq("status", "published");
+    }
+  } else if (!includeInactive) {
     query = query.eq("is_active", true);
   }
   if (search) {
@@ -48,31 +56,46 @@ export async function GET(
     return apiError("目前無法讀取管理商品。", 503);
   }
 
-  return json({ channel, products: products ?? [] });
+  const productRows = (products ?? []) as unknown as Array<Record<string, unknown> & { id: string }>;
+  if (channel === "b2b" && productRows.length > 0) {
+    const { data: images, error: imageError } = await admin
+      .from("b2b_product_images")
+      .select("product_id")
+      .in("product_id", productRows.map((product) => product.id));
+    if (imageError) {
+      return apiError("目前無法整理商品圖片數量。", 503);
+    }
+    const imageCounts = new Map<string, number>();
+    for (const image of images ?? []) {
+      imageCounts.set(image.product_id, (imageCounts.get(image.product_id) ?? 0) + 1);
+    }
+    return json({
+      channel,
+      products: productRows.map((product) => ({
+        ...product,
+        image_count: imageCounts.get(product.id) ?? 0,
+      })),
+    });
+  }
+
+  return json({ channel, products: productRows });
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ channel: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) {
-    return guard.response;
-  }
-
   const { channel } = await params;
   if (!isAdminChannel(channel)) {
     return apiError("商品通路不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const body = await readJson(request);
   const parsed = parseProductInput(body, channel, "create");
-  if (!("payload" in parsed)) {
-    return apiError(parsed.error, 400);
-  }
-  const payload = parsed.payload;
-  if (!payload) {
-    return apiError("商品資料格式不正確。", 400);
+  if (!parsed.payload) {
+    return apiError(parsed.error ?? "商品資料格式不正確。", 400);
   }
 
   let admin;
@@ -84,7 +107,7 @@ export async function POST(
 
   const { data: product, error } = await admin
     .from(PRODUCT_TABLES[channel])
-    .insert(payload)
+    .insert(parsed.payload)
     .select(ADMIN_PRODUCT_FIELDS[channel])
     .single();
 

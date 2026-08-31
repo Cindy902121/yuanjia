@@ -64,6 +64,11 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 文字、不可點擊——現在頁面做好了（見 src/app/business/lead/page.tsx，PRD
  * 5.4／6.7 正式規格頁面，不是伸展項目），改成真的 `<Link>`，拿掉「即將推出」
  * 字樣。
+ *
+ * 2026-08-25：「關於元家」下拉選單加上「最新消息」（`/news`），跟原本就在
+ * 的「媒體報導」並列。同日重新分工過一次：媒體報導是別人報導我們的清單
+ * （含深度詳情頁 `/media/[slug]`），最新消息專門留給元家自己發布的第一手
+ * 消息（新品、優惠、公告），見 src/lib/content/news-items.ts 檔頭說明。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -112,6 +117,9 @@ export async function Header() {
                 </Link>
                 <Link href="/media" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
                   媒體報導
+                </Link>
+                <Link href="/news" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                  最新消息
                 </Link>
               </div>
             </div>

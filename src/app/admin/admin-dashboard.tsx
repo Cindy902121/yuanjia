@@ -3,13 +3,19 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
+import type { B2bProductStatus } from "@/lib/admin-catalog";
+
+import { B2bCsvImportPanel, CustomerPrefixRulePanel } from "./admin-catalog-tools";
+
 type AdminTab =
   | "overview"
   | "b2c-products"
   | "b2c-orders"
   | "b2b-products"
   | "b2b-companies"
-  | "b2b-rfqs";
+  | "b2b-rfqs"
+  | "admin-staff"
+  | "customer-prefix-rules";
 type AdminScope = "admin" | "business";
 
 type Channel = "b2c" | "b2b";
@@ -24,6 +30,8 @@ type Product = {
   price?: number | string;
   mock_inventory?: number;
   is_active: boolean;
+  status?: B2bProductStatus;
+  image_count?: number;
   updated_at: string;
 };
 
@@ -74,9 +82,17 @@ type Rfq = {
   items: RfqItem[];
 };
 
+type Staff = {
+  user_id: string;
+  email: string | null;
+  role: "admin" | "business_staff";
+  is_active: boolean;
+  created_at: string;
+};
+
 type CompanyForm = {
   name: string;
-  prefix: "Z" | "E" | "W";
+  clientCode: string;
   password: string;
   passwordAgain: string;
 };
@@ -90,17 +106,13 @@ const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
   { id: "b2b-products", label: "B2B 型錄", group: "B2B" },
   { id: "b2b-companies", label: "企業會員", group: "B2B" },
   { id: "b2b-rfqs", label: "企業詢價", group: "B2B" },
+  { id: "admin-staff", label: "管理帳號", group: "管理" },
+  { id: "customer-prefix-rules", label: "客戶代碼規則", group: "管理" },
 ];
 
 const tabsByScope: Record<AdminScope, AdminTab[]> = {
-  admin: ["overview", "b2c-products", "b2c-orders", "b2b-companies"],
+  admin: ["overview", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff", "customer-prefix-rules"],
   business: ["b2b-products", "b2b-rfqs"],
-};
-
-const tierDescriptions = {
-  Z: "月營業額 20 萬以下",
-  E: "月營業額 50 萬以下",
-  W: "其他",
 };
 
 const statusLabels = {
@@ -109,6 +121,10 @@ const statusLabels = {
   completed: "已完成",
   new: "新詢價",
   closed: "已結案",
+  draft: "草稿",
+  review: "待審核",
+  published: "已發布",
+  offline: "已下架",
 };
 
 const inputClass =
@@ -166,14 +182,17 @@ export function AdminDashboard({
   const [orders, setOrders] = useState<Order[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [rfqs, setRfqs] = useState<Rfq[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [credentialNotice, setCredentialNotice] = useState("");
+  const [staffUserId, setStaffUserId] = useState("");
+  const [staffRole, setStaffRole] = useState<Staff["role"]>("business_staff");
   const [companyForm, setCompanyForm] = useState<CompanyForm>({
     name: "",
-    prefix: "Z",
+    clientCode: "",
     password: "",
     passwordAgain: "",
   });
@@ -204,6 +223,11 @@ export function AdminDashboard({
     setRfqs(payload.rfqs ?? []);
   }, []);
 
+  const loadStaff = useCallback(async () => {
+    const payload = await requestJson<{ staff: Staff[] }>("/api/admin/staff");
+    setStaff(payload.staff ?? []);
+  }, []);
+
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -215,6 +239,9 @@ export function AdminDashboard({
               loadProducts("b2c"),
               loadOrders(),
               loadCompanies(),
+              loadProducts("b2b"),
+              loadRfqs(),
+              loadStaff(),
             ],
       );
     } catch (loadError) {
@@ -222,7 +249,7 @@ export function AdminDashboard({
     } finally {
       setIsLoading(false);
     }
-  }, [loadCompanies, loadOrders, loadProducts, loadRfqs, scope]);
+  }, [loadCompanies, loadOrders, loadProducts, loadRfqs, loadStaff, scope]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -335,6 +362,52 @@ export function AdminDashboard({
     }
   }
 
+  async function addStaff(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusyKey("add-staff");
+    setError("");
+    setNotice("");
+    try {
+      await requestJson("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: staffUserId.trim(), role: staffRole }),
+      });
+      await loadStaff();
+      setStaffUserId("");
+      setNotice("管理帳號已加入。");
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "管理帳號加入失敗。");
+    } finally {
+      setBusyKey("");
+    }
+  }
+
+  async function updateStaff(member: Staff, updates: Partial<Pick<Staff, "role" | "is_active">>) {
+    const nextLabel = updates.role && updates.role !== member.role
+      ? `改為${updates.role === "admin" ? " admin" : " business_staff"}`
+      : updates.is_active === false
+        ? "停用"
+        : "更新";
+    if (!window.confirm(`確定要${nextLabel}「${member.email ?? member.user_id}」嗎？`)) return;
+
+    setBusyKey(`staff-${member.user_id}`);
+    setError("");
+    try {
+      await requestJson("/api/admin/staff", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: member.user_id, ...updates }),
+      });
+      await loadStaff();
+      setNotice("管理帳號已更新。");
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "管理帳號更新失敗。");
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   async function createCompany(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (companyForm.password !== companyForm.passwordAgain) {
@@ -354,14 +427,14 @@ export function AdminDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: companyForm.name,
-          prefix: companyForm.prefix,
+          client_code: companyForm.clientCode,
           password: companyForm.password,
         }),
       });
       await loadCompanies();
       setCompanyForm({
         name: "",
-        prefix: "Z",
+        clientCode: "",
         password: "",
         passwordAgain: "",
       });
@@ -482,13 +555,13 @@ export function AdminDashboard({
                   />
                 ) : null}
                 {activeTab === "b2b-products" ? (
-                  <ProductPanel
-                    channel="b2b"
+                  <B2bProductPanel
                     busyKey={busyKey}
-                    onToggle={toggleProduct}
+                    onReload={() => loadProducts("b2b")}
                     products={b2bProducts}
                   />
                 ) : null}
+                {activeTab === "customer-prefix-rules" ? <CustomerPrefixRulePanel /> : null}
                 {activeTab === "b2c-orders" ? (
                   <OrderPanel
                     busyKey={busyKey}
@@ -512,6 +585,19 @@ export function AdminDashboard({
                     busyKey={busyKey}
                     onUpdateStatus={updateRfqStatus}
                     rfqs={rfqs}
+                  />
+                ) : null}
+                {activeTab === "admin-staff" ? (
+                  <StaffPanel
+                    busyKey={busyKey}
+                    onAdd={addStaff}
+                    onRoleChange={(member, role) => void updateStaff(member, { role })}
+                    onToggle={(member) => void updateStaff(member, { is_active: !member.is_active })}
+                    role={staffRole}
+                    setRole={setStaffRole}
+                    setUserId={setStaffUserId}
+                    staff={staff}
+                    userId={staffUserId}
                   />
                 ) : null}
               </>
@@ -560,7 +646,7 @@ function Overview({
         <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">操作原則</p>
         <h2 className="mt-2 text-xl font-bold text-[#17242A]">上架狀態會立即影響前台型錄</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#536168]">
-          商品上下架與企業停用都由伺服器驗證管理者權限後寫入資料庫。B2B 客戶代碼由後端產生，登入頁只接受 Z、E、W 加 6 碼數字，避免管理人員手動輸入造成重複或格式不一致。
+          商品上下架與企業停用都由伺服器驗證管理者權限後寫入資料庫。B2B 客戶代碼由外部公司系統提供，建立企業會員時由 Admin 輸入完整代碼；登入頁只接受 Z、E、W 加 6 碼數字。
         </p>
       </section>
 
@@ -571,7 +657,7 @@ function Overview({
           onClick={() => onSelectTab("b2c-products")}
         />
         <QuickAction
-          description="建立企業登入帳號並在同一頁取得新客戶代碼。"
+          description="輸入外部公司系統提供的客戶代碼並建立企業登入帳號。"
           label="新增企業會員"
           onClick={() => onSelectTab("b2b-companies")}
         />
@@ -689,6 +775,241 @@ function ProductPanel({
                   目前沒有商品資料。
                 </td>
               </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </PanelShell>
+  );
+}
+
+const B2B_STATUS_OPTIONS: B2bProductStatus[] = [
+  "draft",
+  "review",
+  "published",
+  "offline",
+];
+
+function b2bStatusClass(status: B2bProductStatus) {
+  if (status === "published") return "border-[#B8E1CB] bg-[#F0FBF4] text-[#18794E]";
+  if (status === "offline") return "border-[#E5D2D0] bg-[#FFF5F4] text-[#A43B34]";
+  if (status === "review") return "border-[#F1D8A5] bg-[#FFF9E9] text-[#8A5A00]";
+  return "border-[#C5D8E9] bg-[#EEF7FD] text-[#00457F]";
+}
+
+function B2bProductPanel({
+  products,
+  busyKey,
+  onReload,
+}: {
+  products: Product[];
+  busyKey: string;
+  onReload: () => Promise<void>;
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | B2bProductStatus>("all");
+  const [bulkStatus, setBulkStatus] = useState<B2bProductStatus>("review");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [localBusy, setLocalBusy] = useState("");
+  const [message, setMessage] = useState("");
+
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    return products.filter((product) => {
+      const status = product.status ?? (product.is_active ? "published" : "offline");
+      const matchesStatus = statusFilter === "all" || status === statusFilter;
+      const searchable = [
+        product.product_code,
+        product.name,
+        product.brand,
+        product.category,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return matchesStatus && (!normalizedSearch || searchable.includes(normalizedSearch));
+    });
+  }, [products, search, statusFilter]);
+
+  async function updateStatus(product: Product, nextStatus: B2bProductStatus) {
+    const currentStatus = product.status ?? (product.is_active ? "published" : "offline");
+    if (currentStatus === nextStatus) return;
+    if (
+      (nextStatus === "published" || nextStatus === "offline") &&
+      !window.confirm(`確定要將「${product.name}」設為${statusLabels[nextStatus]}嗎？`)
+    ) {
+      return;
+    }
+
+    setLocalBusy(product.id);
+    setMessage("");
+    try {
+      await requestJson(`/api/admin/products/b2b/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      await onReload();
+      setMessage(`「${product.name}」已更新為${statusLabels[nextStatus]}。`);
+    } catch (actionError) {
+      setMessage(actionError instanceof Error ? actionError.message : "商品狀態更新失敗。");
+    } finally {
+      setLocalBusy("");
+    }
+  }
+
+  async function updateBulkStatus() {
+    if (selected.length === 0) return;
+    if (!window.confirm(`確定要更新選取的 ${selected.length} 筆商品嗎？`)) return;
+    setLocalBusy("bulk");
+    setMessage("");
+    try {
+      await requestJson("/api/admin/products/b2b/bulk-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_ids: selected, status: bulkStatus }),
+      });
+      setSelected([]);
+      await onReload();
+      setMessage(`已批次更新為${statusLabels[bulkStatus]}。`);
+    } catch (actionError) {
+      setMessage(actionError instanceof Error ? actionError.message : "批次狀態更新失敗。");
+    } finally {
+      setLocalBusy("");
+    }
+  }
+
+  return (
+    <PanelShell
+      description="管理 B2B 商品資料、工作狀態與圖片；下架商品保留資料，不提供硬刪除。"
+      title="B2B 商品型錄管理"
+    >
+      <B2bCsvImportPanel onImported={onReload} />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+          <label className="text-sm font-semibold text-[#536168]">
+            搜尋商品
+            <input
+              className={inputClass}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="代碼、名稱、品牌或分類"
+              value={search}
+            />
+          </label>
+          <label className="text-sm font-semibold text-[#536168]">
+            狀態
+            <select
+              className={inputClass}
+              onChange={(event) => setStatusFilter(event.target.value as "all" | B2bProductStatus)}
+              value={statusFilter}
+            >
+              <option value="all">全部狀態</option>
+              {B2B_STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>{statusLabels[status]}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <Link
+          className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+          href="/admin/business/products/new"
+        >
+          新增 B2B 商品
+        </Link>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[#D8E1E5] bg-[#F8FBFC] p-3">
+        <span className="text-sm text-[#536168]">已選 {selected.length} 筆</span>
+        <select
+          aria-label="批次狀態"
+          className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm"
+          onChange={(event) => setBulkStatus(event.target.value as B2bProductStatus)}
+          value={bulkStatus}
+        >
+          {B2B_STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>{statusLabels[status]}</option>
+          ))}
+        </select>
+        <button
+          className={`${buttonClass} bg-[#17242A] text-white hover:bg-[#31434B]`}
+          disabled={selected.length === 0 || localBusy === "bulk" || Boolean(busyKey)}
+          onClick={() => void updateBulkStatus()}
+          type="button"
+        >
+          {localBusy === "bulk" ? "處理中…" : "批次更新狀態"}
+        </button>
+        {message ? <span className="text-sm text-[#536168]" role="status">{message}</span> : null}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#536168]">
+        <span>共 {filteredProducts.length} 筆，已發布 {products.filter((product) => (product.status ?? (product.is_active ? "published" : "offline")) === "published").length} 筆</span>
+        <span>批次操作只允許合法狀態轉換。</span>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-[#D8E1E5]">
+        <table className="min-w-[980px] w-full text-left text-sm">
+          <thead className="bg-[#F4F7F8] text-xs font-bold text-[#536168]">
+            <tr>
+              <th className="w-12 px-4 py-3"><span className="sr-only">選取</span></th>
+              <th className="px-4 py-3">商品</th>
+              <th className="px-4 py-3">品牌／分類</th>
+              <th className="px-4 py-3">圖片</th>
+              <th className="px-4 py-3">狀態</th>
+              <th className="px-4 py-3">更新時間</th>
+              <th className="px-4 py-3 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#E7EDF0] bg-white">
+            {filteredProducts.map((product) => {
+              const status = product.status ?? (product.is_active ? "published" : "offline");
+              const isBusy = localBusy === product.id;
+              return (
+                <tr key={product.id}>
+                  <td className="px-4 py-4 align-top">
+                    <input
+                      aria-label={`選取 ${product.name}`}
+                      checked={selected.includes(product.id)}
+                      onChange={(event) => setSelected((current) => event.target.checked ? [...current, product.id] : current.filter((id) => id !== product.id))}
+                      type="checkbox"
+                    />
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <Link className="font-bold text-[#005DAA] hover:underline" href={`/admin/business/products/${product.id}`}>
+                      {product.name}
+                    </Link>
+                    <p className="mt-1 text-xs text-[#809099]">{product.product_code ?? product.id}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top text-[#536168]">
+                    <p>{product.brand || "未填品牌"}</p>
+                    <p className="mt-1 text-xs text-[#809099]">{product.category}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top text-[#536168]">
+                    {product.image_count ? `${product.image_count} 張` : "尚無圖片"}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <select
+                      aria-label={`${product.name} 狀態`}
+                      className={`rounded-lg border px-2.5 py-2 text-xs font-bold ${b2bStatusClass(status)}`}
+                      disabled={isBusy}
+                      onChange={(event) => void updateStatus(product, event.target.value as B2bProductStatus)}
+                      value={status}
+                    >
+                      {B2B_STATUS_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{statusLabels[option]}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-4 align-top text-xs text-[#536168]">{formatDate(product.updated_at)}</td>
+                  <td className="px-4 py-4 text-right align-top">
+                    <Link className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`} href={`/admin/business/products/${product.id}`}>
+                      編輯
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredProducts.length === 0 ? (
+              <tr><td className="px-4 py-10 text-center text-[#809099]" colSpan={7}>目前沒有符合條件的商品。</td></tr>
             ) : null}
           </tbody>
         </table>
@@ -818,17 +1139,18 @@ function CompanyPanel({
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-prefix">客戶代碼級距</label>
-            <select
+            <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-client-code">外部客戶代碼</label>
+            <input
               className={inputClass}
-              id="company-prefix"
-              onChange={(event) => onFormChange({ ...form, prefix: event.target.value as CompanyForm["prefix"] })}
-              value={form.prefix}
-            >
-              {Object.entries(tierDescriptions).map(([prefix, label]) => (
-                <option key={prefix} value={prefix}>{prefix}｜{label}</option>
-              ))}
-            </select>
+              id="company-client-code"
+              maxLength={7}
+              onChange={(event) => onFormChange({ ...form, clientCode: event.target.value.toUpperCase() })}
+              pattern="[ZEW][0-9]{6}"
+              placeholder="例如 Z232113"
+              required
+              value={form.clientCode}
+            />
+            <p className="mt-1 text-xs text-[#809099]">由外部公司系統提供，格式為 1 碼 Z／E／W 加 6 碼數字；建立後不可修改。</p>
           </div>
           <div>
             <label className="text-sm font-semibold text-[#17242A]" htmlFor="company-password">初始密碼</label>
@@ -858,7 +1180,7 @@ function CompanyPanel({
             />
           </div>
           <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#E7EDF0] pt-4">
-            <p className="text-sm leading-6 text-[#536168]">送出後後端會自動產生 1 碼前綴＋6 碼亂數客戶代碼，請將代碼與初始密碼交付給企業窗口。</p>
+            <p className="text-sm leading-6 text-[#536168]">送出後會使用輸入的完整客戶代碼，請將代碼與初始密碼交付給企業窗口。</p>
             <button
               className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
               disabled={busyKey === "create-company"}
@@ -912,6 +1234,130 @@ function CompanyPanel({
               ))}
               {companies.length === 0 ? (
                 <tr><td className="px-4 py-10 text-center text-[#809099]" colSpan={6}>目前沒有企業會員。</td></tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </PanelShell>
+    </div>
+  );
+}
+
+function StaffPanel({
+  staff,
+  busyKey,
+  userId,
+  role,
+  setUserId,
+  setRole,
+  onAdd,
+  onToggle,
+  onRoleChange,
+}: {
+  staff: Staff[];
+  busyKey: string;
+  userId: string;
+  role: Staff["role"];
+  setUserId: (value: string) => void;
+  setRole: (value: Staff["role"]) => void;
+  onAdd: (event: FormEvent<HTMLFormElement>) => void;
+  onToggle: (member: Staff) => void;
+  onRoleChange: (member: Staff, role: Staff["role"]) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <PanelShell
+        description="輸入已存在的 Supabase Auth 使用者 UUID，將其加入管理成員。admin 可進入所有管理範圍；business_staff 僅能管理 B2B 商品與企業詢價。"
+        title="新增管理成員"
+      >
+        <form className="flex flex-col gap-4 md:flex-row md:items-end" onSubmit={onAdd}>
+          <label className="flex-1 text-sm font-semibold text-[#17242A]" htmlFor="staff-user-id">
+            Auth 使用者 UUID
+            <input
+              className={inputClass}
+              id="staff-user-id"
+              onChange={(event) => setUserId(event.target.value)}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              required
+              value={userId}
+            />
+          </label>
+          <label className="text-sm font-semibold text-[#17242A]" htmlFor="staff-role">
+            角色
+            <select
+              className={inputClass}
+              id="staff-role"
+              onChange={(event) => setRole(event.target.value as Staff["role"])}
+              value={role}
+            >
+              <option value="business_staff">business_staff</option>
+              <option value="admin">admin</option>
+            </select>
+          </label>
+          <button
+            className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
+            disabled={busyKey === "add-staff"}
+            type="submit"
+          >
+            {busyKey === "add-staff" ? "加入中…" : "加入管理成員"}
+          </button>
+        </form>
+      </PanelShell>
+
+      <PanelShell
+        description="停用會立即阻止該帳號進入管理 API；角色變更同樣由伺服器再次驗證。"
+        title="管理成員清單"
+      >
+        <div className="overflow-x-auto rounded-xl border border-[#D8E1E5]">
+          <table className="min-w-[820px] w-full text-left text-sm">
+            <thead className="bg-[#F4F7F8] text-xs font-bold text-[#536168]">
+              <tr>
+                <th className="px-4 py-3">帳號</th>
+                <th className="px-4 py-3">角色</th>
+                <th className="px-4 py-3">建立時間</th>
+                <th className="px-4 py-3">狀態</th>
+                <th className="px-4 py-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E7EDF0] bg-white">
+              {staff.map((member) => (
+                <tr key={member.user_id}>
+                  <td className="px-4 py-4 align-top">
+                    <p className="font-semibold text-[#17242A]">{member.email ?? "未設定 Email"}</p>
+                    <p className="mt-1 break-all font-mono text-xs text-[#809099]">{member.user_id}</p>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <select
+                      aria-label={`${member.email ?? member.user_id} 角色`}
+                      className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm"
+                      disabled={busyKey === `staff-${member.user_id}`}
+                      onChange={(event) => onRoleChange(member, event.target.value as Staff["role"])}
+                      value={member.role}
+                    >
+                      <option value="business_staff">business_staff</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-4 align-top text-[#536168]">{formatDate(member.created_at)}</td>
+                  <td className="px-4 py-4 align-top">
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusBadge(member.is_active)}`}>
+                      {member.is_active ? "啟用中" : "已停用"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-right align-top">
+                    <button
+                      className={`${buttonClass} ${member.is_active ? "border border-[#E5D2D0] bg-white text-[#A43B34] hover:bg-[#FFF5F4]" : "bg-[#005DAA] text-white hover:bg-[#00457F]"}`}
+                      disabled={busyKey === `staff-${member.user_id}`}
+                      onClick={() => onToggle(member)}
+                      type="button"
+                    >
+                      {busyKey === `staff-${member.user_id}` ? "處理中…" : member.is_active ? "停用" : "啟用"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {staff.length === 0 ? (
+                <tr><td className="px-4 py-10 text-center text-[#809099]" colSpan={5}>目前沒有管理成員。</td></tr>
               ) : null}
             </tbody>
           </table>

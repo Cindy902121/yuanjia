@@ -70,6 +70,10 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
     redirect("/admin");
   }
 
+  if (access.role === "business_staff") {
+    redirect("/admin/business");
+  }
+
   if (access.role === "b2c") {
     redirect("/");
   }

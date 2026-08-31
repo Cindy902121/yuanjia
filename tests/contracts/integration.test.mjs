@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import test from "node:test";
@@ -195,6 +196,70 @@ async function setCustomerPrefixRuleActive(prefix, isActive) {
   return data.is_active;
 }
 
+function runWithInput(command, args, input) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+        return;
+      }
+
+      const error = new Error(`${command} exited with code ${code}: ${stderr}`);
+      error.code = code;
+      error.stdout = stdout;
+      error.stderr = stderr;
+      reject(error);
+    });
+
+    child.stdin.end(input);
+  });
+}
+
+async function runDatabaseCommand(databaseUrl, args) {
+  try {
+    return await execFileAsync("psql", [databaseUrl, "-At", "-v", "ON_ERROR_STOP=1", ...args]);
+  } catch (error) {
+    const hostname = new URL(databaseUrl).hostname;
+    if (error.code !== "ENOENT" || !["127.0.0.1", "localhost"].includes(hostname)) {
+      throw error;
+    }
+
+    const dockerArgs = [
+      "exec",
+      "-i",
+      process.env.CONTRACT_TEST_DB_CONTAINER ?? "supabase_db_supabase",
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-At",
+      "-v",
+      "ON_ERROR_STOP=1",
+    ];
+    const fileIndex = args.indexOf("-f");
+    if (fileIndex >= 0) {
+      const sql = await readFile(args[fileIndex + 1]);
+      dockerArgs.push("-f", "-", ...args.slice(0, fileIndex));
+      return runWithInput("docker", dockerArgs, sql);
+    }
+
+    dockerArgs.push(...args);
+    return runWithInput("docker", dockerArgs);
+  }
+}
+
 test.after(cleanupCreatedRows);
 
 test(
@@ -319,7 +384,16 @@ test(
     const b2bProduct = b2bProductsPayload.products?.[0];
     assert.ok(b2bProduct?.id, "the B2B admin catalog needs a product id");
     const originalB2bStatus = b2bProduct.is_active;
+    const b2bStatus = b2bProduct.status ?? (b2bProduct.is_active ? "published" : "offline");
     try {
+      if (b2bStatus === "published") {
+        const invalidB2bTransition = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
+          method: "PATCH",
+          headers: { cookie: adminCookies },
+          body: JSON.stringify({ status: "draft" }),
+        });
+        assert.equal(invalidB2bTransition.status, 409);
+      }
       const disableB2b = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
         method: "PATCH",
         headers: { cookie: adminCookies },
@@ -368,12 +442,13 @@ test(
     );
 
     const generatedPassword = `AdminApi${Date.now()}!`;
+    const createdCompanyCode = `Z${String(Date.now() % 1_000_000).padStart(6, "0")}`;
     const companyResponse = await request("/api/admin/companies", {
       method: "POST",
       headers: { cookie: adminCookies },
       body: JSON.stringify({
         name: `管理 API 驗收 ${Date.now()}`,
-        prefix: "Z",
+        client_code: createdCompanyCode,
         password: generatedPassword,
       }),
     });
@@ -381,10 +456,9 @@ test(
     const companyPayload = await json(companyResponse);
     assert.ok(companyPayload.company?.id);
     createdRows.companyIds.add(companyPayload.company.id);
-    assert.match(companyPayload.credential?.client_code ?? "", /^[ZEW][0-9]{6}$/);
+    assert.equal(companyPayload.credential?.client_code, createdCompanyCode);
     assert.equal(companyPayload.credential?.password, undefined);
 
-    const createdCompanyCode = companyPayload.credential.client_code;
     const createdCompanyCookies = await login({
       identifier: createdCompanyCode,
       password: generatedPassword,
@@ -631,7 +705,7 @@ test(
   async () => {
     const databaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
     const query = "select coalesce(auth_user_id::text, '<null>') from public.companies where client_code = 'Z232113';";
-    const run = async (args) => execFileAsync("psql", [databaseUrl, "-At", "-v", "ON_ERROR_STOP=1", ...args]);
+    const run = async (args) => runDatabaseCommand(databaseUrl, args);
     const before = (await run(["-c", query])).stdout.trim();
     await run(["-f", "supabase/seed.sql"]);
     await run(["-f", "supabase/seed.sql"]);

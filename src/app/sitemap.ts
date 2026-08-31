@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getAllActiveProducts, getDistinctCategories } from "@/lib/supabase/products";
+import { NEWS_ARTICLES } from "@/lib/content/news-items";
+import { MEDIA_DETAILS } from "@/lib/content/media-detail";
 import { SITE_URL } from "@/lib/seo";
 
 /**
@@ -34,6 +36,14 @@ import { SITE_URL } from "@/lib/seo";
  * 正式規格頁面，見 src/app/business/lead/page.tsx）——PRD 6.7 明確把它列在
  * 可索引頁面清單裡，靜態內容，不用查 Supabase。
  *
+ * 2026-08-25：補上 `/news`（列表頁，靜態）跟每篇文章各自的 `/news/[slug]`
+ * （見 src/lib/content/news-items.ts）——跟商品／分類／標籤同一個做法，
+ * 直接從內容資料產生，之後新增文章不用手動改這裡。
+ *
+ * 2026-08-25（同日，重新分工後）：補上 `/media/[slug]`（有深度詳情頁的
+ * 報導，見 src/lib/content/media-detail.ts）——原本規劃給 /news 的內容
+ * 搬來這裡，sitemap 條目也跟著搬。
+ *
  * 沒有帶 `lastModified`——`b2c_products` 雖然有 `updated_at` 欄位，但目前查詢層
  * （B2C_PRODUCT_FIELDS）沒有選取它，為了這個次要欄位去擴充核心商品查詢的回傳
  * 型別（ProductDetailData）不划算，`lastModified` 本來就是可選欄位，先省略。
@@ -54,6 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/business/lead`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/media`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_URL}/news`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
@@ -75,5 +86,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...productEntries, ...categoryEntries, ...tagEntries];
+  const newsEntries: MetadataRoute.Sitemap = NEWS_ARTICLES.map((article) => ({
+    url: `${SITE_URL}/news/${article.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
+  const mediaDetailEntries: MetadataRoute.Sitemap = MEDIA_DETAILS.map((detail) => ({
+    url: `${SITE_URL}/media/${detail.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }));
+
+  return [
+    ...staticEntries,
+    ...productEntries,
+    ...categoryEntries,
+    ...tagEntries,
+    ...newsEntries,
+    ...mediaDetailEntries,
+  ];
 }

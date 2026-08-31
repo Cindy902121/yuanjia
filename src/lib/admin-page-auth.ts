@@ -9,7 +9,13 @@ export async function requireAdminPage(pathname: string) {
   if (!context.user || context.configurationError || context.databaseError) {
     redirect(loginPath);
   }
-  if (context.isAdmin) {
+  if (context.role === "admin") {
+    return;
+  }
+  if (
+    context.role === "business_staff" &&
+    (pathname === "/admin/business" || pathname.startsWith("/admin/business/"))
+  ) {
     return;
   }
 

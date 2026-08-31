@@ -1,10 +1,8 @@
 import { apiError, isNonEmptyString, json, readJson } from "@/lib/api";
 import { requireAdmin } from "@/lib/admin-auth";
 import {
-  generateClientCode,
   internalB2bAuthEmail,
-  isClientCodePrefix,
-  type ClientCodePrefix,
+  isClientCode,
 } from "@/lib/client-code";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -43,14 +41,12 @@ export async function GET() {
     return apiError("目前無法讀取企業會員。", 503);
   }
 
-  const ruleByPrefix = new Map(
-    (rules ?? []).map((rule) => [rule.prefix, rule]),
-  );
-
   return json({
     companies: (companies ?? []).map((company) => {
       const prefix = company.client_code.slice(0, 1);
-      const rule = ruleByPrefix.get(prefix);
+      const rule = (rules ?? [])
+        .filter((candidate) => company.client_code.startsWith(candidate.prefix))
+        .sort((left, right) => right.prefix.length - left.prefix.length)[0];
       return {
         ...company,
         prefix,
@@ -69,19 +65,21 @@ export async function POST(request: Request) {
 
   const body = (await readJson(request)) as {
     name?: unknown;
-    prefix?: unknown;
+    client_code?: unknown;
     password?: unknown;
   } | null;
 
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const prefix = typeof body?.prefix === "string" ? body.prefix.toUpperCase() : "";
+  const clientCode = typeof body?.client_code === "string" ? body.client_code.trim().toUpperCase() : "";
+  const prefix = clientCode.slice(0, 1);
   if (!isNonEmptyString(name) || name.length > 160) {
     return apiError("請輸入 160 字以內的企業名稱。", 400);
   }
-  if (!isClientCodePrefix(prefix)) {
-    return apiError("客戶代碼前綴只能是 Z、E 或 W。", 400);
+  if (!isClientCode(clientCode)) {
+    return apiError("客戶代碼格式只能是 1 碼 Z、E 或 W 加 6 碼數字。", 400);
   }
-  if (!isPassword(body?.password)) {
+  const password = body?.password;
+  if (!isPassword(password)) {
     return apiError(
       `初始密碼需為 ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} 個字元。`,
       400,
@@ -95,20 +93,9 @@ export async function POST(request: Request) {
     return apiError("Supabase 伺服器連線尚未設定完成。", 503);
   }
 
-  const { data: prefixRule, error: prefixRuleError } = await admin
-    .from("customer_prefix_rules")
-    .select("tier_label, channel_label")
-    .eq("prefix", prefix)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (prefixRuleError) {
-    return apiError("目前無法確認客戶代碼規則。", 503);
-  }
-
-  const clientCode = generateClientCode(prefix as ClientCodePrefix);
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email: internalB2bAuthEmail(clientCode),
-    password: body.password,
+    password,
     email_confirm: true,
   });
 
@@ -130,7 +117,7 @@ export async function POST(request: Request) {
   if (companyError || !company) {
     await admin.auth.admin.deleteUser(authUser.user.id);
     if (companyError?.code === "23505") {
-      return apiError("客戶代碼產生衝突，請重新送出。", 409);
+      return apiError("客戶代碼已存在，請確認後重新送出。", 409);
     }
     return apiError("目前無法保存企業會員資料。", 503);
   }
@@ -140,8 +127,8 @@ export async function POST(request: Request) {
       company: {
         ...company,
         prefix,
-        tier_label: prefixRule?.tier_label ?? "unclassified",
-        channel_label: prefixRule?.channel_label ?? "unclassified",
+        tier_label: "unclassified",
+        channel_label: "unclassified",
       },
       credential: {
         client_code: clientCode,

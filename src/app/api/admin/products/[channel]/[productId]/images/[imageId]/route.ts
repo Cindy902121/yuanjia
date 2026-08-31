@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { apiError, isNonEmptyString, isUuid, json, readJson } from "@/lib/api";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import { isAdminChannel } from "@/lib/admin-catalog";
 import {
   attachProductImages,
@@ -85,17 +85,59 @@ async function validateRoleLimit(
   return null;
 }
 
+async function reorderImage(
+  admin: ReturnType<typeof createAdminClient>,
+  channel: "b2c" | "b2b",
+  productId: string,
+  imageId: string,
+  requestedOrder: number,
+) {
+  const { data, error } = await admin
+    .from(PRODUCT_IMAGE_TABLES[channel])
+    .select("id, sort_order")
+    .eq("product_id", productId)
+    .order("sort_order")
+    .order("id");
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as Array<{ id: string; sort_order: number }>;
+  const target = rows.find((row) => row.id === imageId);
+  if (!target) throw new Error("商品圖片不存在。");
+  const rest = rows.filter((row) => row.id !== imageId);
+  const targetIndex = Math.min(requestedOrder, rest.length);
+  const ordered = [
+    ...rest.slice(0, targetIndex),
+    target,
+    ...rest.slice(targetIndex),
+  ];
+
+  // ponytail: two-phase updates avoid unique sort_order collisions; use a transaction RPC if concurrent reordering matters.
+  for (const [index, row] of ordered.entries()) {
+    const { error: temporaryError } = await admin
+      .from(PRODUCT_IMAGE_TABLES[channel])
+      .update({ sort_order: 1000000000 + index })
+      .eq("id", row.id);
+    if (temporaryError) throw new Error(temporaryError.message);
+  }
+  for (const [index, row] of ordered.entries()) {
+    const { error: finalError } = await admin
+      .from(PRODUCT_IMAGE_TABLES[channel])
+      .update({ sort_order: index })
+      .eq("id", row.id);
+    if (finalError) throw new Error(finalError.message);
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string; imageId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId, imageId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId) || !isUuid(imageId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const body = (await readJson(request)) as {
     image_role?: unknown;
@@ -122,11 +164,11 @@ export async function PATCH(
     if (body.sort_order !== undefined && sortOrder === null) {
       return apiError("圖片排序必須是 0 到 10000 的整數。", 400);
     }
+    const requestedSortOrder = sortOrder === null ? undefined : sortOrder;
     const roleError = await validateRoleLimit(admin, channel, image, nextRole);
     if (roleError) return apiError(roleError, 409);
 
     const updates: Record<string, unknown> = { image_role: nextRole, alt_text: altText };
-    if (sortOrder !== undefined) updates.sort_order = sortOrder;
     const { data: updated, error } = await admin
       .from(PRODUCT_IMAGE_TABLES[channel])
       .update(updates)
@@ -138,6 +180,9 @@ export async function PATCH(
       return apiError("目前無法更新商品圖片。", 503);
     }
     if (!updated) return apiError("找不到指定商品圖片。", 404);
+    if (typeof requestedSortOrder === "number") {
+      await reorderImage(admin, channel, productId, imageId, requestedSortOrder);
+    }
 
     return json({
       channel,
@@ -153,13 +198,12 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ channel: string; productId: string; imageId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId, imageId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId) || !isUuid(imageId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   const form = await request.formData().catch(() => null);
   const fileValue = form?.get("file");
@@ -221,6 +265,7 @@ export async function PUT(
       product_id: productId,
       image: await imageResponse(admin, channel, productId, imageId),
       storage_cleanup: cleanupError ? "failed" : "ok",
+      storage_cleanup_path: cleanupError ? image.storage_path : null,
     });
   } catch {
     return apiError("目前無法替換商品圖片。", 503);
@@ -231,13 +276,12 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ channel: string; productId: string; imageId: string }> },
 ) {
-  const guard = await requireAdmin();
-  if (guard.response) return guard.response;
-
   const { channel, productId, imageId } = await params;
   if (!isAdminChannel(channel) || !isUuid(productId) || !isUuid(imageId)) {
     return apiError("商品圖片路徑不正確。", 400);
   }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
 
   let admin;
   try {
