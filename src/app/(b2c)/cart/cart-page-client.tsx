@@ -16,6 +16,14 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * src/lib/editorial/styles.ts 的直角方框（跟商品詳情頁同一套），CTA 改用
  * `editorialButtonSolid`（常駐填滿墨色，強調這是頁面最主要的下一步動作，
  * hover 才變點綴色，取代原本的海洋藍實色按鈕）。
+ *
+ * 2026-09-02（9/2 B2C QA 排程「驗證購物車」發現）：REMOVE 按鈕補上
+ * `aria-label={移除 ${item.name}}`——原本只有文字「REMOVE」，購物車裡有兩件
+ * 以上商品時，畫面上會有多顆文字完全一樣的按鈕，螢幕閱讀器使用者 Tab 過去
+ * 只會聽到重複的「REMOVE, button」，沒辦法分辨是要移除哪一項；同購物車的
+ * 增減數量按鈕（見下方）本來就有 `減少／增加 {name} 數量` 這種帶商品名稱的
+ * aria-label，也是 CartDrawer.tsx 移除按鈕原本就有的寫法，這裡補齊讓兩處
+ * 一致。
  */
 export function CartPageClient() {
   const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
@@ -104,6 +112,7 @@ export function CartPageClient() {
             <button
               type="button"
               onClick={() => removeItem(item.productId)}
+              aria-label={`移除 ${item.name}`}
               className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] transition-colors hover:text-[#B42318]"
             >
               REMOVE

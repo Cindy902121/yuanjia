@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialAddToCartWithQuantity } from "@/components/editorial/AddToCartWithQuantity";
+import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
 
 /**
@@ -214,17 +215,25 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
 
             <EditorialAddToCartWithQuantity product={product} />
 
-            {/* 標籤：可點選連結，補滿加入購物車下面的留白。 */}
+            {/* 標籤：可點選連結，補滿加入購物車下面的留白。
+                2026-09-02（9/2 B2C QA 排程「確認 B2C 事件可正常送出」發現：
+                `b2c_tag_click`（FDD §6.7 白名單事件）從有 TrackedTagLink 這個
+                元件開始就沒有任何地方真的在用它——這裡本來是普通 <Link>，跟
+                左側篩選欄那些「導覽用」的分類／標籤連結（見上面 SidebarLink）
+                刻意不送事件不一樣：這裡的標籤 pill 是「使用者主動點一個標籤
+                去探索相關商品」，語意上就是白名單設計 b2c_tag_click 想量測的
+                動作，改用 TrackedTagLink 補上這個從未真正送出過的事件，行為
+                （導覽到 /products/tags/[slug]）完全不變，只多送一個事件。 */}
             {product.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {product.tags.map((tag) => (
-                  <Link
+                  <TrackedTagLink
                     key={tag.slug}
                     href={`/products/tags/${tag.slug}`}
                     className="border border-[#2b2b2b]/25 px-3 py-1 text-xs text-[#4a4a4a] transition-colors hover:border-[#3E5C6B] hover:text-[#3E5C6B]"
                   >
                     {tag.name}
-                  </Link>
+                  </TrackedTagLink>
                 ))}
               </div>
             ) : null}
