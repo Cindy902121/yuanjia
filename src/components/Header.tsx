@@ -69,6 +69,15 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 的「媒體報導」並列。同日重新分工過一次：媒體報導是別人報導我們的清單
  * （含深度詳情頁 `/media/[slug]`），最新消息專門留給元家自己發布的第一手
  * 消息（新品、優惠、公告），見 src/lib/content/news-items.ts 檔頭說明。
+ *
+ * 2026-09-03（9/3 B2C QA 排程「清理前台可見的...console 問題」發現）：logo
+ * 拿掉 `priority`——這顆圖只有 116×40（CSS 顯示更小，`h-8 sm:h-9`），從來
+ * 不會是任何頁面的 LCP（Largest Contentful Paint）候選元素，`priority` 卻讓
+ * 它在每一頁都多送一個 `<link rel="preload">`，瀏覽器 console 因此一直出現
+ * 「resource preloaded but not used」的警告（無害，但每頁都有，清理範圍內）。
+ * `priority` 應該留給真的是 LCP 候選的圖片，例如首頁／About／企業合作頁的
+ * `hero-seafood.jpg`（`fill sizes="100vw"` 滿版大圖，見各自 page.tsx）——那些
+ * 已經是正確用法，不需要跟著拿掉。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -90,7 +99,6 @@ export async function Header() {
             alt="元家"
             width={116}
             height={40}
-            priority
             style={{ width: "auto" }}
             className="h-8 sm:h-9"
           />
