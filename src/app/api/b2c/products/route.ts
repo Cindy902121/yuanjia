@@ -1,15 +1,23 @@
 import { apiError, json, parseCsv } from "@/lib/api";
 import { attachProductTags, findProductIdsByTags } from "@/lib/catalog";
 import { attachProductImages } from "@/lib/product-images";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getB2bContext } from "@/lib/auth-context";
 
 const B2C_PRODUCT_FIELDS =
   "id, slug, name, brand, category, specification, price, origin, storage_method, food_safety_info, quality_info, description, image_path, mock_inventory";
 
 export async function GET(request: Request) {
   try {
+    const context = await getB2bContext();
+    if (context.databaseError) {
+      return apiError("目前無法確認使用者權限。", 503);
+    }
+    if (context.company) {
+      return apiError("企業 session 不可讀取 B2C 商品。", 403);
+    }
+
     const url = new URL(request.url);
-    const supabase = await createServerClient();
+    const supabase = context.supabase;
     const tagSlugs = parseCsv(
       url.searchParams.get("tags") ?? url.searchParams.get("tag"),
     );

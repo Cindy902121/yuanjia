@@ -8,9 +8,11 @@
 --
 -- B2B 展示客戶代碼範例：Z232113（20 萬以下）。
 -- 另外兩組測試代碼 E853699／W483038 由 optional fixture 提供。
--- 目前展示集包含 5 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、10／15 個標籤，
--- 以及 15／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
--- 軟體類、肉類與調理食品。
+-- 目前展示集包含 6 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、16／15 個標籤，
+-- 以及 26／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
+-- 軟體類、肉類與調理食品。B2C 已補齊 docs/fixed-questionnaire-gap.md
+-- 記錄的固定問卷缺口：清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好
+-- 標籤，以及「其他海鮮」分類（新增台灣鮮甜小卷示範商品）。
 
 begin;
 
@@ -40,8 +42,14 @@ values
   ('料理方式', 'hot-pot', '火鍋', true),
   ('料理方式', 'pan-fry', '煎烤', true),
   ('料理方式', 'air-fry', '氣炸', true),
+  ('料理方式', 'steam', '清蒸', true),
+  ('料理方式', 'soup', '煮湯', true),
+  ('料理方式', 'raw', '生食', true),
   ('需求特性', 'high-protein', '高蛋白', true),
   ('需求特性', 'kid-friendly', '適合小孩', true),
+  ('需求特性', 'easy-cook', '方便料理', true),
+  ('需求特性', 'boneless', '少刺／無刺', true),
+  ('需求特性', 'right-portion', '份量剛好', true),
   ('加工方式', 'ready-to-cook', '即煮', true),
   ('加工方式', 'seasoned', '調味', true)
 on conflict (slug) do update
@@ -76,11 +84,12 @@ insert into public.b2c_products (
   description, food_safety_info, quality_info, mock_inventory, is_active
 )
 values
-  ('norwegian-salmon-fillet', '挪威鮭魚菲力', '宅鮮配', '魚類', '200g/包', 239, '挪威', '冷凍 -18°C 以下', '油脂豐富，適合煎烤與氣炸。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true),
-  ('taiwan-milkfish-belly', '台灣虱目魚肚', '宅鮮配', '魚類', '180g/包', 169, '台灣', '冷凍 -18°C 以下', '肉質細緻，適合香煎與煮湯。', '低溫冷鏈配送。', '展示用品質資訊。', 25, true),
+  ('norwegian-salmon-fillet', '挪威鮭魚菲力', '宅鮮配', '魚類', '200g/包', 239, '挪威', '冷凍 -18°C 以下', '油脂豐富，急凍鎖鮮達生食級規格，適合生魚片、煎烤與氣炸。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true),
+  ('taiwan-milkfish-belly', '台灣虱目魚肚', '宅鮮配', '魚類', '180g/包', 169, '台灣', '冷凍 -18°C 以下', '肉質細緻、少刺好入口，適合清蒸、香煎與煮湯。', '低溫冷鏈配送。', '展示用品質資訊。', 25, true),
   ('argentine-red-shrimp', '阿根廷天使紅蝦', '宅鮮配', '蝦類', '500g/盒', 329, '阿根廷', '冷凍 -18°C 以下', '鮮甜飽滿，適合火鍋與燒烤。', '低溫冷鏈配送。', '展示用品質資訊。', 15, true),
   ('taiwan-clam', '台灣鮮甜蛤蜊', '宅鮮配', '貝類', '500g/包', 139, '台灣', '冷凍 -18°C 以下', '適合煮湯與義大利麵。', '低溫冷鏈配送。', '展示用品質資訊。', 30, true),
-  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '調味完成，快速加熱即可享用。', '低溫冷鏈配送。', '展示用品質資訊。', 18, true)
+  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '單片小包裝份量剛好、去骨少刺，調味完成，方便料理、快速加熱即可享用。', '低溫冷鏈配送。', '展示用品質資訊。', 18, true),
+  ('taiwan-squid', '台灣鮮甜小卷', '宅鮮配', '其他海鮮', '300g/盒', 189, '台灣', '冷凍 -18°C 以下', '肉質鮮甜有嚼勁，適合火鍋與快炒。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true)
 on conflict (slug) do update
 set name = excluded.name,
     brand = excluded.brand,
@@ -157,18 +166,29 @@ join public.b2c_tags tag on (product.slug, tag.slug) in (
   ('norwegian-salmon-fillet', 'fish'),
   ('norwegian-salmon-fillet', 'pan-fry'),
   ('norwegian-salmon-fillet', 'air-fry'),
+  ('norwegian-salmon-fillet', 'raw'),
+  ('norwegian-salmon-fillet', 'boneless'),
   ('norwegian-salmon-fillet', 'high-protein'),
   ('taiwan-milkfish-belly', 'fish'),
   ('taiwan-milkfish-belly', 'pan-fry'),
+  ('taiwan-milkfish-belly', 'steam'),
+  ('taiwan-milkfish-belly', 'soup'),
+  ('taiwan-milkfish-belly', 'boneless'),
   ('taiwan-milkfish-belly', 'kid-friendly'),
   ('argentine-red-shrimp', 'shrimp'),
   ('argentine-red-shrimp', 'hot-pot'),
   ('argentine-red-shrimp', 'high-protein'),
   ('taiwan-clam', 'shellfish'),
   ('taiwan-clam', 'hot-pot'),
+  ('taiwan-clam', 'soup'),
   ('seasoned-mackerel', 'fish'),
   ('seasoned-mackerel', 'seasoned'),
-  ('seasoned-mackerel', 'ready-to-cook')
+  ('seasoned-mackerel', 'ready-to-cook'),
+  ('seasoned-mackerel', 'easy-cook'),
+  ('seasoned-mackerel', 'boneless'),
+  ('seasoned-mackerel', 'right-portion'),
+  ('taiwan-squid', 'hot-pot'),
+  ('taiwan-squid', 'high-protein')
 )
 on conflict (product_id, tag_id) do nothing;
 

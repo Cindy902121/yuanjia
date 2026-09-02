@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
-import { B2bCsvImportPanel, CustomerPrefixRulePanel } from "./admin-catalog-tools";
+import { B2bCsvImportPanel } from "./admin-catalog-tools";
 import AnalyticsReportPanel from "./analytics-report-panel";
 
 type AdminTab =
@@ -16,8 +16,7 @@ type AdminTab =
   | "b2b-products"
   | "b2b-companies"
   | "b2b-rfqs"
-  | "admin-staff"
-  | "customer-prefix-rules";
+  | "admin-staff";
 type AdminScope = "admin" | "business";
 
 type Channel = "b2c" | "b2b";
@@ -110,11 +109,10 @@ const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
   { id: "b2b-companies", label: "企業會員", group: "B2B" },
   { id: "b2b-rfqs", label: "企業詢價", group: "B2B" },
   { id: "admin-staff", label: "管理帳號", group: "管理" },
-  { id: "customer-prefix-rules", label: "客戶代碼規則", group: "管理" },
 ];
 
 const tabsByScope: Record<AdminScope, AdminTab[]> = {
-  admin: ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff", "customer-prefix-rules"],
+  admin: ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff"],
   business: ["b2b-products", "b2b-rfqs"],
 };
 
@@ -565,7 +563,6 @@ export function AdminDashboard({
                     products={b2bProducts}
                   />
                 ) : null}
-                {activeTab === "customer-prefix-rules" ? <CustomerPrefixRulePanel /> : null}
                 {activeTab === "b2c-orders" ? (
                   <OrderPanel
                     busyKey={busyKey}

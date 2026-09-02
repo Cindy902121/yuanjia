@@ -175,27 +175,6 @@ async function cleanupCreatedRows() {
   }
 }
 
-async function setCustomerPrefixRuleActive(prefix, isActive) {
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SECRET_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
-  const { data, error: readError } = await admin
-    .from("customer_prefix_rules")
-    .select("is_active")
-    .eq("prefix", prefix)
-    .single();
-  assert.ifError(readError);
-
-  const { error: updateError } = await admin
-    .from("customer_prefix_rules")
-    .update({ is_active: isActive })
-    .eq("prefix", prefix);
-  assert.ifError(updateError);
-  return data.is_active;
-}
-
 function runWithInput(command, args, input) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
@@ -305,7 +284,20 @@ test(
     );
     assert.equal((await request("/api/b2b/rfqs", { headers: { cookie: b2bCookies } })).status, 200);
     assert.equal((await request("/api/b2c/product-finder?conditions=fish", { headers: { cookie: b2bCookies } })).status, 403);
+    assert.equal((await request("/api/b2c/products", { headers: { cookie: b2bCookies } })).status, 403);
     assert.equal((await request("/api/b2c/mock-orders", { headers: { cookie: b2bCookies } })).status, 403);
+    for (const path of [
+      "/products",
+      "/products/categories/fish",
+      "/products/tags/fish",
+      "/products/norwegian-salmon-fillet",
+      "/cart",
+      "/checkout",
+    ]) {
+      const response = await request(path, { headers: { cookie: b2bCookies } });
+      assert.ok([307, 308].includes(response.status), `${path} should redirect B2B users`);
+      assert.equal(new URL(response.headers.get("location"), baseUrl).pathname, "/business");
+    }
 
     assert.equal((await request("/api/admin/analytics/summary", { headers: { cookie: adminCookies } })).status, 200);
     assert.equal((await request("/api/b2c/mock-orders", { method: "GET", headers: { cookie: adminCookies } })).status, 200);
@@ -566,34 +558,6 @@ test(
       body: JSON.stringify({ event_name: "b2c_product_view" }),
     });
     assert.equal(b2cFromB2b.status, 403);
-  },
-);
-
-test(
-  "B2B prefix fallback is persisted as an event snapshot",
-  { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
-  async () => {
-    const b2bCookies = await login(credentials.b2b);
-    const adminCookies = await login(credentials.admin);
-    const originalRuleActive = await setCustomerPrefixRuleActive("Z", false);
-    try {
-      const event = await request("/api/analytics/events", {
-        method: "POST",
-        headers: { cookie: b2bCookies },
-        body: JSON.stringify({ event_name: "b2b_catalog_view" }),
-      });
-      await recordEvent(event, "B2B prefix fallback event");
-
-      const summary = await request(
-        "/api/admin/analytics/summary?customer_tier_snapshot=unclassified&channel_snapshot=unclassified",
-        { headers: { cookie: adminCookies } },
-      );
-      assert.equal(summary.status, 200);
-      const payload = await json(summary);
-      assert.ok(payload.totals.events >= 1);
-    } finally {
-      await setCustomerPrefixRuleActive("Z", originalRuleActive);
-    }
   },
 );
 

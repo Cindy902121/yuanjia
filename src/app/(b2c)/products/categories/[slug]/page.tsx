@@ -6,6 +6,7 @@ import { sortByAvailability, toCardData } from "@/lib/types/product";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { EditorialProductGrid } from "@/components/editorial/ProductGrid";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * /products/categories/[slug] 頁面。
@@ -41,6 +42,7 @@ export async function generateMetadata({
 }
 
 export default async function ProductCategoryPage({ params }: PageProps<"/products/categories/[slug]">) {
+  await requireB2cAccess();
   const { slug } = await params;
   const categoryName = decodeURIComponent(slug);
   const supabase = await createClient();

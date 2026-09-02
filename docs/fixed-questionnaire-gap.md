@@ -7,6 +7,11 @@
 > `src/lib/product-finder.ts`；「目前展示資料」以可重跑
 > `supabase/seed.sql` 與 B2B catalog migration 為準。其餘未標為「已對應」的
 > 差異仍需 A／B 確認後另行調整。
+>
+> **2026-09-01 更新**：B2C 料理方式（清蒸／煮湯／生食）、需求特性（方便料理／
+> 少刺無刺／份量剛好）與「其他海鮮」分類共 7 項缺口，經 A／B／C 確認後已於
+> `supabase/seed.sql` 補齊標籤與示範商品，並已套用至正式 Supabase 專案；狀態
+> 由「尚無 tag／category」更新為「已對應」。
 
 ## B2C
 
@@ -15,18 +20,18 @@
 | 1 料理方式 | 火鍋 | `hot-pot` | tag／`hot-pot` | 已有 tag | 已對應 |
 | 1 料理方式 | 煎／烤 | `pan-fry` | tag／`pan-fry` | 已有 tag | 已對應 |
 | 1 料理方式 | 氣炸 | `air-fry` | tag／`air-fry` | 已有 tag | 已對應 |
-| 1 料理方式 | 清蒸 | `steam` | tag／`steam` | 尚無 tag | 需確認是否新增展示 tag |
-| 1 料理方式 | 煮湯 | `soup` | tag／`soup` | 尚無 tag | 需確認是否新增展示 tag |
-| 1 料理方式 | 生食 | `raw` | tag／`raw` | 尚無 tag | 需確認食品安全語意與是否新增 |
-| 2 需求特性 | 方便料理 | `easy-cook` | tag／`easy-cook` | 尚無 tag | 需確認與「即煮」是否重疊 |
-| 2 需求特性 | 少刺／無刺 | `boneless` | tag／`boneless` | 尚無 tag | 需確認商品欄位／標籤語意 |
+| 1 料理方式 | 清蒸 | `steam` | tag／`steam` | 已有 tag（台灣虱目魚肚） | 已對應（2026-09-01） |
+| 1 料理方式 | 煮湯 | `soup` | tag／`soup` | 已有 tag（台灣虱目魚肚／台灣鮮甜蛤蜊） | 已對應（2026-09-01） |
+| 1 料理方式 | 生食 | `raw` | tag／`raw` | 已有 tag（挪威鮭魚菲力） | 已對應（2026-09-01）；商品描述已加註「急凍鎖鮮達生食級規格」呼應食品安全語意 |
+| 2 需求特性 | 方便料理 | `easy-cook` | tag／`easy-cook` | 已有 tag（日式調味鯖魚） | 已對應（2026-09-01）；與「即煮」並存，語意各自獨立不互斥 |
+| 2 需求特性 | 少刺／無刺 | `boneless` | tag／`boneless` | 已有 tag（挪威鮭魚菲力／台灣虱目魚肚／日式調味鯖魚） | 已對應（2026-09-01） |
 | 2 需求特性 | 高蛋白 | `high-protein` | tag／`high-protein` | 已有 tag | 已對應 |
 | 2 需求特性 | 適合小孩 | `kid-friendly` | tag／`kid-friendly` | 已有 tag | 已對應 |
-| 2 需求特性 | 份量剛好 | `right-portion` | tag／`right-portion` | 尚無 tag | 需確認規格欄位是否足以判定 |
+| 2 需求特性 | 份量剛好 | `right-portion` | tag／`right-portion` | 已有 tag（日式調味鯖魚） | 已對應（2026-09-01） |
 | 3 產品類型 | 魚類 | `fish` | category／`魚類` | 已有 category | 已對應 |
 | 3 產品類型 | 蝦類 | `shrimp` | category／`蝦類` | 已有 category | 已對應 |
 | 3 產品類型 | 貝類 | `shellfish` | category／`貝類` | 已有 category | 已對應 |
-| 3 產品類型 | 其他海鮮 | `other-seafood` | category／`其他海鮮` | 尚無 category／商品 | 需 A／B 確認分類邊界 |
+| 3 產品類型 | 其他海鮮 | `other-seafood` | category／`其他海鮮` | 已有 category／商品（新增台灣鮮甜小卷） | 已對應（2026-09-01） |
 | 3 產品類型 | 都可以 | `any` | 不加條件 | 不適用 | API 會略過 `any` |
 | 4 其他偏好 | 原味 | `plain` | tag／`plain` | 尚無 tag | 需確認與未加工的差異 |
 | 4 其他偏好 | 調味 | `seasoned` | tag／`seasoned` | 已有 tag | 已對應 |
@@ -61,4 +66,5 @@
   `specification` 條件同時比對 `b2b_products.specification` 與
   `b2b_products.packaging`。
 - 「尚無 tag／category」是仍待確認的資料契約差異；本次已依授權補齊 B2B 展示資料。
-- B2B 展示資料現涵蓋蝦蟹類、魚類、貝類、軟體類、肉類與調理食品；其餘固定題目缺口仍需另行確認。
+- B2B 展示資料現涵蓋蝦蟹類、魚類、貝類、軟體類、肉類與調理食品。
+- B2C 固定題目原本的 7 項缺口（清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好、其他海鮮）已於 2026-09-01 依 A／B／C 確認補齊 `supabase/seed.sql` 標籤與示範商品；本文件所有列項目前均為「已對應」。

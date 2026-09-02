@@ -50,4 +50,6 @@ supabase db reset
 
 目前 `supabase db push --dry-run` 回報 `upToDate: true`；`20260827031543_fix_admin_bulk_status_ambiguity.sql` 已完成正式部署。
 
+已知例外：`auth_leaked_password_protection` 為學生專題刻意忽略的 Supabase Auth warning；本專案不規劃正式營運，因此不修改 Auth 設定，也不把此 warning 視為 migration 或 schema 錯誤。若未來正式上線，才需重新評估並啟用。
+
 未來新增 schema 時建立新的 migration，不修改已套用檔案。只有在「SQL 已精確套用、但 history row 缺失」時才可使用 `migration repair`；本次不需要 repair。
