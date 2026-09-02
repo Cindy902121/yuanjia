@@ -156,7 +156,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
       </section>}
 
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-8 lg:grid-cols-[17rem_1fr] lg:px-8 lg:py-10">
-        <aside className="self-start rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)]">
+        <aside aria-label="型錄篩選器" className="self-start rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)] lg:sticky lg:top-24">
           <form
             className="space-y-6"
             key={[params.q ?? "", category, brand, ...selectedTags].join("|")}
@@ -222,13 +222,13 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
               <div className="mt-4 space-y-5">
                 {[...tagGroups].map(([groupName, tags], index) => (
                   <details className="group border-b border-[#EEF2F3] pb-4 last:border-b-0 last:pb-0" key={groupName} open={index < 2 || tags.some((tag) => selectedTags.includes(tag.slug))}>
-                    <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold tracking-[0.08em] text-[#536168] marker:content-none">
+                    <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold tracking-[0.08em] text-[#536168] marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]">
                       {groupName}
                       <span aria-hidden="true" className="text-base font-normal text-[#005DAA] transition group-open:rotate-45">＋</span>
                     </summary>
                     <div className="mt-2 space-y-2">
                       {tags.map((tag) => (
-                        <label className="flex min-h-6 cursor-pointer items-center gap-2 text-sm text-[#536168]" key={tag.slug}>
+                        <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm text-[#536168]" key={tag.slug}>
                           <input
                             className="size-4 rounded border-[#D9E1E5] text-[#005DAA] focus:ring-[#005DAA]"
                             defaultChecked={selectedTags.includes(tag.slug)}
@@ -263,7 +263,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         </aside>
 
         <section id="catalog-results">
-          <div className="mb-5 rounded-2xl border border-[#CFE3F0] bg-[#EAF5FB] p-6 sm:flex sm:items-end sm:justify-between sm:gap-6">
+          <div aria-live="polite" className="mb-5 rounded-2xl border border-[#CFE3F0] bg-[#EAF5FB] p-6 sm:flex sm:items-end sm:justify-between sm:gap-6">
             <div>
               <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">BUSINESS CATALOG</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#17242A]">企業產品型錄</h2>

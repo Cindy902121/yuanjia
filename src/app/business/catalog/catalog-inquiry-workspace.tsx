@@ -103,7 +103,7 @@ function ProductDetail({ onClose, onChoose, product }: { onClose: () => void; on
             <h2 className="mt-2 text-2xl font-bold" id="product-detail-title">{product.name}</h2>
             <p className="mt-1 text-sm text-[#536168]">{product.productCode}・{product.brand}・{product.category}</p>
           </div>
-          <button aria-label="關閉商品細項" className="grid size-10 shrink-0 place-items-center rounded-full text-xl text-[#536168] hover:bg-[#F1F5F7]" onClick={onClose} type="button">×</button>
+          <button aria-label="關閉商品細項" className="grid size-10 shrink-0 place-items-center rounded-full text-xl text-[#536168] hover:bg-[#F1F5F7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]" onClick={onClose} type="button">×</button>
         </div>
         <div className="grid gap-6 p-5 sm:grid-cols-[.9fr_1.1fr] sm:p-6">
           <ProductGallery product={product} />
@@ -128,8 +128,8 @@ function ProductDetail({ onClose, onChoose, product }: { onClose: () => void; on
               </section>
             ) : null}
             {product.tags.length ? <div className="mt-4 flex flex-wrap gap-1.5">{product.tags.map((tag) => <span className="rounded-full bg-[#EAF5FB] px-2.5 py-1 text-xs font-semibold text-[#386275]" key={tag.slug} title={tag.groupName}>{tag.name}</span>)}</div> : null}
-            <p className="mt-4 text-xs leading-5 text-[#536168]">價格、實際供應與交期由業務確認，本頁不顯示即時價格或庫存。</p>
-            <button className="mt-5 min-h-11 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white hover:bg-[#00457F]" onClick={onChoose} type="button">選擇規格，加入詢價單</button>
+          <p className="mt-4 text-xs leading-5 text-[#536168]">價格、實際供應與交期由業務確認，本頁不顯示即時價格或庫存。</p>
+            <button className="mt-5 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white hover:bg-[#00457F] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]" onClick={onChoose} type="button">選擇規格，加入詢價單</button>
           </div>
         </div>
       </section>
@@ -315,7 +315,7 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
       ) : feedback && feedback.startsWith("詢價已送出") ? (
         <div className="flex min-h-[calc(100dvh-9rem)] flex-col items-center justify-center px-4 text-center sm:min-h-[24rem]">
           <div className="mx-auto grid size-11 place-items-center rounded-full bg-[#E8F6EE] text-lg text-[#18794E]">✓</div>
-          <p className="mt-4 text-base font-bold text-[#18794E]">詢價已成功送出</p>
+          <p aria-live="assertive" className="mt-4 text-base font-bold text-[#18794E]">詢價已成功送出</p>
           <p className="mt-2 max-w-xs text-sm leading-6 text-[#536168]">{feedback}</p>
           <Link className="mt-6 inline-flex min-h-11 min-w-56 items-center justify-center rounded-lg bg-[#005DAA] px-5 text-sm font-bold text-white hover:bg-[#00457F]" href="/business/rfq" onClick={onClose}>查看詢價紀錄</Link>
           <p className="mt-4 text-xs text-[#809099]">您可以關閉此視窗繼續瀏覽商品</p>
@@ -332,7 +332,7 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
         <textarea className="mt-2 min-h-24 w-full resize-y rounded-lg border border-[#B9CCD5] p-3 text-sm outline-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]" id="inquiry-note" onChange={(event) => setNote(event.target.value)} placeholder="例如：希望交期、配送地區、使用通路" value={note} />
         <button className="mt-4 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length || submitting} onClick={async () => { setSubmitting(true); setFeedback(""); const response = await onSubmit(note); setFeedback(response.message); setSubmitting(false); }} type="button">{submitting ? "送出中…" : "確認詢價內容"}</button>
         {feedback && !feedback.startsWith("詢價已送出") ? <p aria-live="polite" className="mt-3 rounded-lg bg-[#FFF1F0] p-3 text-xs leading-5 text-[#B42318]">{feedback}</p> : null}
-        <p className="mt-3 text-xs leading-5 text-[#536168]">送出後由業務確認規格與報價；本頁不顯示價格或庫存。</p>
+          <p aria-live="polite" className="mt-3 text-xs leading-5 text-[#536168]">送出後由業務確認規格與報價；本頁不顯示價格或庫存。</p>
       </div> : null}
     </aside>
   );

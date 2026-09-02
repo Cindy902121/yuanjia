@@ -77,6 +77,7 @@ export default function RfqHistoryClient() {
   const [rfqs, setRfqs] = useState<Rfq[] | null>(null);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
 
   useEffect(() => {
     fetch("/api/b2b/rfqs")
@@ -94,15 +95,22 @@ export default function RfqHistoryClient() {
     return summary;
   }, [rfqs]);
 
-  if (error) return <p className="mt-8 rounded-lg bg-[#FFF1F0] p-4 text-sm text-[#B42318]">{error}</p>;
-  if (!rfqs) return <p className="mt-8 text-sm text-[#536168]">載入詢價紀錄中…</p>;
+  if (error) return <p aria-live="polite" className="mt-8 rounded-lg bg-[#FFF1F0] p-4 text-sm text-[#B42318]" role="alert">{error}</p>;
+  if (!rfqs) return <p aria-live="polite" className="mt-8 text-sm text-[#536168]">載入詢價紀錄中…</p>;
   if (!rfqs.length) return <section className="mt-8 rounded-2xl border border-dashed border-[#B9CCD5] bg-white px-6 py-14 text-center"><p className="text-lg font-bold text-[#17242A]">目前尚無詢價紀錄</p><p className="mt-2 text-sm leading-6 text-[#536168]">從企業型錄選擇規格與預估數量後，即可建立第一筆詢價需求。</p><a className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#005DAA] px-5 text-sm font-bold text-white transition hover:bg-[#00457F]" href="/business/catalog">前往企業型錄</a></section>;
+
+  const visibleRfqs = statusFilter === "all" ? rfqs : rfqs.filter((rfq) => normalizeStatus(rfq.status) === statusFilter);
 
   return (
     <section className="mt-8">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#D9E1E5] pb-5">
         <div><h2 className="text-xl font-bold text-[#17242A]">詢價處理概況</h2><p className="mt-1 text-sm text-[#536168]">僅列出目前公司送出的詢價需求。</p></div>
-        <p className="text-sm font-semibold text-[#536168]">共 {rfqs.length} 筆</p>
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#536168]" htmlFor="rfq-status-filter">篩選狀態
+          <select className="min-h-10 rounded-lg border border-[#B9CCD5] bg-white px-3 text-sm font-normal text-[#17242A] outline-none focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]" id="rfq-status-filter" onChange={(event) => setStatusFilter(event.target.value as "all" | Status)} value={statusFilter}>
+            <option value="all">全部（{rfqs.length}）</option>
+            {(Object.keys(statusMeta) as Status[]).map((status) => <option key={status} value={status}>{statusMeta[status].label}（{counts[status]}）</option>)}
+          </select>
+        </label>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {(Object.keys(statusMeta) as Status[]).map((status) => <div className="rounded-xl border border-[#D9E1E5] bg-white px-4 py-3" key={status}><p className="text-xs font-bold text-[#536168]">{statusMeta[status].label}</p><p className="mt-1 text-2xl font-bold text-[#17242A]">{counts[status]}</p></div>)}
@@ -110,7 +118,7 @@ export default function RfqHistoryClient() {
       <div className="mt-7 overflow-hidden rounded-2xl border border-[#C9D8DE] bg-white">
         <div className="hidden grid-cols-[9.5rem_8rem_minmax(14rem,1fr)_9rem_6rem] gap-4 border-b border-[#C9D8DE] bg-[#F3F7F8] px-5 py-3 text-xs font-bold tracking-wide text-[#536168] lg:grid"><span>詢價編號</span><span>送出日期</span><span>品項摘要</span><span>處理狀態</span><span className="text-right">明細</span></div>
         <ul className="divide-y divide-[#E2E8EB]">
-          {rfqs.map((rfq) => {
+          {visibleRfqs.map((rfq) => {
             const expanded = expandedId === rfq.id;
             const firstItem = rfq.items[0]?.product?.name ?? "商品資料待確認";
             return <li key={rfq.id}>
@@ -127,6 +135,7 @@ export default function RfqHistoryClient() {
             </li>;
           })}
         </ul>
+        {!visibleRfqs.length ? <p className="px-5 py-10 text-center text-sm text-[#536168]">目前沒有符合此狀態的詢價紀錄。</p> : null}
       </div>
     </section>
   );
