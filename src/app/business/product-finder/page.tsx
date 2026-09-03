@@ -16,7 +16,7 @@ export default async function ProductFinderPage() {
       <BusinessHeader companyName={access.companyName} />
       <main className="mx-auto max-w-6xl px-5 py-8 lg:px-8">
         <Link className="text-sm font-semibold text-[#005DAA] hover:underline" href="/business/catalog">← 返回企業型錄</Link>
-        <div className="mt-6"><p className="text-xs font-bold tracking-[.16em] text-[#005DAA]">PRODUCT FINDER</p><h1 className="mt-2 text-3xl font-bold">需求篩選器</h1><p className="mt-2 text-sm leading-6 text-[#536168]">先選擇用途、加工方式或保存條件，再交由業務確認規格與報價。</p></div>
+        <div className="mt-6"><p className="text-xs font-bold tracking-[.16em] text-[#005DAA]">CHANNEL FINDER</p><h1 className="mt-2 text-3xl font-bold">需求篩選器</h1><p className="mt-2 text-sm leading-6 text-[#536168]">先選擇主要銷售通路，再瀏覽適合的企業商品；規格、包裝與報價由業務確認。</p></div>
         <ProductFinderClient />
       </main>
     </div>

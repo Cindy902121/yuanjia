@@ -1,5 +1,5 @@
 import { isUuid } from "./api";
-import { B2B_FINDER_CONDITIONS } from "./product-finder";
+import { B2B_FINDER_EVENT_OPTIONS } from "./product-finder";
 
 export const ANALYTICS_EVENT_NAMES = [
   "b2b_login_success",
@@ -46,9 +46,11 @@ const B2B_EVENT_DATA_KEYS: Partial<Record<B2bAnalyticsEventName, readonly string
 
 const B2B_SEARCH_FILTER_TYPES = new Set(["keyword", "category", "brand", "tag"]);
 const B2B_FINDER_QUESTION_KEYS: Set<string> = new Set(
-  Object.values(B2B_FINDER_CONDITIONS).map((condition) => condition.type),
+  B2B_FINDER_EVENT_OPTIONS.map((option) => option.questionKey),
 );
-const B2B_FINDER_OPTION_IDS = new Set(Object.keys(B2B_FINDER_CONDITIONS));
+const B2B_FINDER_OPTION_IDS = new Set(
+  B2B_FINDER_EVENT_OPTIONS.map((option) => option.optionId),
+);
 
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength
