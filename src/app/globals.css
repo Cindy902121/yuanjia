@@ -68,3 +68,14 @@
     transform: translateX(0);
   }
 }
+
+/* 商品列表頁的手機版篩選 Bottom Sheet（src/components/editorial/ProductList.tsx）
+   用，跟上面 slide-in-right 同一套邏輯，只是方向改成由下往上滑入。 */
+@keyframes slide-in-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
