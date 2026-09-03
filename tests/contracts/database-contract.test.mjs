@@ -15,6 +15,8 @@ function read(relativePath) {
 const seed = read("supabase/seed.sql");
 const b2bTestFixtures = read("supabase/seed.b2b-test-fixtures.sql");
 const b2bTestCleanup = read("supabase/cleanup.b2b-test-fixtures.sql");
+const b2bAnalyticsFixtures = read("supabase/seed.b2b-analytics-test-fixtures.sql");
+const b2bAnalyticsCleanup = read("supabase/cleanup.b2b-analytics-test-fixtures.sql");
 const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814032613_align_b2b_demo_catalog.sql");
 const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes("b2b_product_spec_options"));
 const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
@@ -215,6 +217,32 @@ test("B2B authorization fixtures are isolated, repeatable and safely removable",
   assert.match(b2bTestCleanup, /W483038/);
   assert.match(b2bTestCleanup, /auth_user_id is null/);
   assert.match(b2bTestCleanup, /not exists/);
+});
+
+test("B2B Analytics fixtures are isolated, complete and safely removable", () => {
+  assert.match(b2bAnalyticsFixtures, /^begin;$/m);
+  assert.match(b2bAnalyticsFixtures, /^commit;$/m);
+  assert.match(b2bAnalyticsFixtures, /W483038/);
+  assert.match(b2bAnalyticsFixtures, /auth_user_id is not null/);
+  assert.match(b2bAnalyticsFixtures, /fixture-b2b-analytics-/);
+  assert.match(b2bAnalyticsFixtures, /fixture:b2b-analytics:rfq-1/);
+  for (const eventName of [
+    "b2b_login_success",
+    "b2b_catalog_view",
+    "b2b_product_view",
+    "b2b_search_filter",
+    "b2b_product_finder_start",
+    "b2b_product_finder_answer",
+    "b2b_product_finder_complete",
+    "b2b_product_finder_result_click",
+    "b2b_rfq_add",
+    "b2b_rfq_submit",
+  ]) {
+    assert.match(b2bAnalyticsFixtures, new RegExp(eventName));
+  }
+  assert.doesNotMatch(b2bAnalyticsFixtures, /auth\.users|auth\.admin|password/i);
+  assert.match(b2bAnalyticsCleanup, /fixture-b2b-analytics-/);
+  assert.match(b2bAnalyticsCleanup, /fixture:b2b-analytics:rfq-1/);
 });
 
 test("B2B demo seed matches the approved group names and category coverage", () => {

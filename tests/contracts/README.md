@@ -8,29 +8,54 @@
 pnpm test:contracts
 ```
 
-2026-08-27 本機完整 real contract 已驗證 31 pass、0 fail；測試 server、Auth
+2026-09-03 本機完整 real contract 已驗證 39 pass、0 fail、0 skipped；測試 server、Auth
 identity 與 fixture 均限於本機隔離環境。
 
 這會執行不需外部服務的 API guard、RFQ company scope、24 個事件白名單與
 payload、customer prefix fallback、文件／seed 契約與 P2 index migration 檢查。
 
-目前分支是從 GitHub `main` 建立；schema normalization PR 尚未合併時，RLS／SQL
-migration 的延伸案例會顯示為 skipped，並明確標示等待 baseline/security migration
-落到 main。
+未提供本機整合環境時，整合測試會有 8 個 skipped：Admin 權限矩陣／管理流程 2 個，
+加上 24 個事件、停用公司、多規格 RFQ、跨公司隔離、seed rerun 與五家公司 Analytics
+遮罩各 1 個。完成下方本機 setup 後，這 8 個案例會全部執行。
 
 ## 隔離整合驗證（可選）
 
+### 重建本機隔離環境
+
+本機 Supabase 的 Postgres 在 `127.0.0.1:54322`，API 在
+`127.0.0.1:54321`，Next 測試 server 預設在 `127.0.0.1:3100`。`db reset
+--local` 會清除本機資料與 Auth identity；每次 reset 後請依序執行：
+
+```bash
+supabase start --yes
+supabase db reset --local --yes
+docker exec -i supabase_db_supabase psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.b2b-test-fixtures.sql
+node scripts/provision-contract-test-identities.mjs
+node scripts/provision-b2b-isolation-fixture.mjs
+pnpm test:contracts:real
+```
+
+兩個 provisioning script 只接受本機 Supabase URL；seed rerun 也只接受
+`localhost`／`127.0.0.1` 的 Postgres URL。測試帳密與 B2B Auth 內部
+Email 留在被 Git ignore 的 `.env.test.local`，不會寫入 seed 或 repository。必要欄位
+另加：
+
+```env
+CONTRACT_TEST_B2B_EMAIL=b2b-contract-test@example.invalid
+```
+
 ### 真實 Supabase 的本機執行
 
-遠端專案的 URL／publishable key 放在 `.env.local`；測試用的 server secret
-與展示帳號放在不入 Git 的 `.env.test.local`。必要欄位如下（Admin 使用遠端
-實際 Email，例如 `admin@example.com`，不是登入頁上的角色名稱）：
+本機 Supabase 的 URL／publishable key 放在 `.env.local`；測試用的 server secret
+與展示帳號放在不入 Git 的 `.env.test.local`。必要欄位如下（Admin 使用實際
+Email，例如 `admin@example.com`，不是登入頁上的角色名稱）：
 
 ```env
 SUPABASE_SECRET_KEY=…
 CONTRACT_TEST_B2C_EMAIL=demo@yens.com.tw
 CONTRACT_TEST_B2C_PASSWORD=…
 CONTRACT_TEST_B2B_IDENTIFIER=Z232113
+CONTRACT_TEST_B2B_EMAIL=b2b-z232113@local.test
 CONTRACT_TEST_B2B_PASSWORD=…
 CONTRACT_TEST_ADMIN_EMAIL=admin@example.com
 CONTRACT_TEST_ADMIN_PASSWORD=…
@@ -71,8 +96,24 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 5. 停用該企業並重新登入確認被拒絕，再啟用確認恢復。
 6. 在「企業詢價」將一筆詢價改為「處理中」，確認清單更新。
 
-測試會自動刪除本次新增的企業、Auth identity、訂單、RFQ 與分析事件；手動
+測試會自動刪除本次新增的企業、Auth identity、訂單、RFQ、分析事件與匯出稽核紀錄；手動
 驗收建立的資料則請依環境政策自行清理，不要直接對正式資料庫執行測試指令。
+
+### B2B Analytics 五家公司遮罩驗收
+
+`analytics-report.integration.test.mjs` 會在本機動態建立五家 active companies，寫入
+漏斗、商品瀏覽／詢價、Finder 答案與 RFQ 明細，透過 Admin summary／export API 驗證：五家公司
+可見的排名、四家公司資料聚合為 `其他（已遮罩）`，以及原始商品／Finder 選項不外洩。
+測試結束會刪除本次建立的企業、Auth identity、RFQ、分析事件與 `analytics_export_audits` 紀錄。
+
+完整執行（需先確認 Supabase URL 指向 `127.0.0.1`／`localhost`）：
+
+```bash
+pnpm test:contracts:real
+```
+
+runner 會檢查 Supabase 與 Next 測試 server 都是本機網址；若設定仍指向 hosted
+project，會直接停止，不會寫入遠端資料。
 
 ### 手動指定測試 server
 
@@ -153,4 +194,30 @@ psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
 CONTRACT_TEST_B2B_INACTIVE_IDENTIFIER=E853699
 CONTRACT_TEST_B2B_OTHER_IDENTIFIER=W483038
 CONTRACT_TEST_B2B_OTHER_PASSWORD=由隔離測試 Auth user 自行設定
+```
+
+### B2B Analytics 測試資料
+
+一般契約測試建立的事件與 RFQ 會在測試結束時清理；若要驗收 Admin Analytics 報表，
+請在同一個本機／隔離資料庫依序套用 B2B fixture、建立 `W483038` 的 Auth identity，
+再套用專用 Analytics fixture：
+
+以下命令必須在 `NEXT_PUBLIC_SUPABASE_URL` 已指向
+`http://127.0.0.1:54321` 的 shell 執行；若 `.env.local` 指向遠端，請先切換到本機
+Supabase 的 URL 與 secret，不要將 fixture 套用到正式專案。
+
+```bash
+psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f supabase/seed.b2b-test-fixtures.sql
+node scripts/provision-b2b-isolation-fixture.mjs
+psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f supabase/seed.b2b-analytics-test-fixtures.sql
+```
+
+這組資料包含兩個 session、十種 B2B 事件、兩筆 RFQ 與三筆 RFQ 明細，且可重跑；
+不會由預設 `supabase/seed.sql` 自動套用，也不建立 Auth user。驗收完成後使用：
+
+```bash
+psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f supabase/cleanup.b2b-analytics-test-fixtures.sql
 ```

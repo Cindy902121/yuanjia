@@ -50,11 +50,8 @@ function requireValue(name) {
 
 function assertLocalTarget(url) {
   const hostname = new URL(url).hostname;
-  const isLocal = hostname === "127.0.0.1" || hostname === "localhost";
-  if (!isLocal && process.env.ALLOW_REMOTE_B2B_FIXTURE_PROVISIONING !== "1") {
-    throw new Error(
-      "Refusing a non-local Supabase target. Set ALLOW_REMOTE_B2B_FIXTURE_PROVISIONING=1 only for an explicitly approved isolated test project.",
-    );
+  if (!["127.0.0.1", "localhost"].includes(hostname)) {
+    throw new Error("Refusing a non-local Supabase target for B2B test fixtures.");
   }
 }
 

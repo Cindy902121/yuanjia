@@ -52,6 +52,17 @@ const credentials = {
 
 const inactiveB2bIdentifier = process.env.CONTRACT_TEST_B2B_INACTIVE_IDENTIFIER;
 const integrationReady = Boolean(baseUrl && credentials.b2c && credentials.b2b && credentials.admin);
+const contractDatabaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
+
+function isLocalDatabaseUrl(value) {
+  try {
+    return ["127.0.0.1", "localhost", "::1"].includes(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
+const isolatedDatabaseReady = isLocalDatabaseUrl(contractDatabaseUrl);
 
 const createdRows = {
   eventIds: new Set(),
@@ -526,7 +537,7 @@ test(
     const rfqId = [...createdRows.rfqIds][0];
     assert.ok(productId && rfqId, "the event contract needs a B2B product and RFQ fixture");
     const b2bEventData = {
-      b2b_search_filter: { filter_type: "category", selected_option_ids: ["b2b-fish"], result_count: 1 },
+      b2b_search_filter: { filter_type: "tag", selected_option_ids: ["b2b-fish"], result_count: 1 },
       b2b_product_finder_answer: { question_key: "tag", option_id: "b2b-fish" },
       b2b_product_finder_result_click: { product_id: productId },
       b2b_rfq_add: { product_id: productId },
@@ -681,12 +692,13 @@ test(
 
 test(
   "seed rerun preserves Auth identity binding",
-  { skip: process.env.CONTRACT_TEST_DATABASE_URL ? false : "set CONTRACT_TEST_DATABASE_URL to an isolated local/test database" },
+  { skip: isolatedDatabaseReady ? false : "set CONTRACT_TEST_DATABASE_URL to a local isolated test database" },
   async () => {
-    const databaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
+    const databaseUrl = contractDatabaseUrl;
     const query = "select coalesce(auth_user_id::text, '<null>') from public.companies where client_code = 'Z232113';";
     const run = async (args) => runDatabaseCommand(databaseUrl, args);
     const before = (await run(["-c", query])).stdout.trim();
+    assert.ok(before && before !== "<null>", "seed rerun requires Z232113 to have a bound Auth identity");
     await run(["-f", "supabase/seed.sql"]);
     await run(["-f", "supabase/seed.sql"]);
     const after = (await run(["-c", query])).stdout.trim();
