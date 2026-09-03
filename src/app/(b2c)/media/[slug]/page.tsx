@@ -103,42 +103,42 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
   };
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={articleJsonLd} />
       {faqJsonLd ? <JsonLd data={faqJsonLd} /> : null}
       <JsonLd data={breadcrumbJsonLd} />
       <EditorialStyles />
 
-      <article className="border-b border-[#e5e2da]">
+      <article className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection className="flex flex-col gap-4">
-            <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
-              <Link href="/media" className="hover:text-[#3E5C6B]">
+            <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+              <Link href="/media" className="hover:text-[#FF5A36]">
                 ← ALL MEDIA
               </Link>
             </nav>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               PRESS
             </span>
-            <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light leading-[1.5] tracking-[0.02em] text-[#2b2b2b] sm:text-3xl">
+            <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light leading-[1.5] tracking-[0.02em] text-[#0B1620] sm:text-3xl">
               {item.title}
             </h1>
             <div className="flex items-baseline gap-3">
-              <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+              <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                 {item.date}
               </time>
-              <span className="text-xs tracking-widest text-[#8a8a8a]">{item.outlet}</span>
+              <span className="text-xs tracking-widest text-[#5C7383]">{item.outlet}</span>
             </div>
           </FadeInSection>
 
           {/* 快訊摘要／30 秒懶人包：AEO 精選摘要，故意放在文章最前面。 */}
-          <FadeInSection className="flex flex-col gap-3 border-l-2 border-[#3E5C6B] bg-[#F3F1EB] px-6 py-6">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+          <FadeInSection className="flex flex-col gap-3 border-l-2 border-[#FF5A36] bg-[#F6FBFC] px-6 py-6">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
               30 秒懶人包
             </span>
             <ul className="flex flex-col gap-2">
               {detail.summaryBullets.map((bullet) => (
-                <li key={bullet} className="flex gap-2 text-sm font-light leading-[1.8] text-[#2b2b2b]">
+                <li key={bullet} className="flex gap-2 text-sm font-light leading-[1.8] text-[#0B1620]">
                   <span aria-hidden="true">•</span>
                   <span>{bullet}</span>
                 </li>
@@ -149,14 +149,14 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
       </article>
 
       {/* 事件核心還原 */}
-      <section className="border-b border-[#e5e2da]">
+      <section className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           <FadeInSection>
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#2b2b2b]">事件核心還原</h2>
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">事件核心還原</h2>
           </FadeInSection>
           <FadeInSection className="flex flex-col gap-4">
             {detail.eventCore.map((paragraph) => (
-              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#4a4a4a]">
+              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#5C7383]">
                 {paragraph}
               </p>
             ))}
@@ -165,39 +165,39 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
       </section>
 
       {/* 背景脈絡與名詞拆解 */}
-      <section className="border-b border-[#e5e2da] bg-[#F3F1EB]">
+      <section className="border-b border-[#D4DEE2] bg-[#F6FBFC]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-8 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           <FadeInSection>
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#2b2b2b]">背景脈絡與名詞拆解</h2>
-            <p className="mt-3 text-sm font-light leading-[1.9] text-[#4a4a4a]">{detail.backgroundIntro}</p>
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">背景脈絡與名詞拆解</h2>
+            <p className="mt-3 text-sm font-light leading-[1.9] text-[#5C7383]">{detail.backgroundIntro}</p>
           </FadeInSection>
 
           <FadeInSection className="flex flex-col">
             {detail.pillars.map((pillar, index) => (
-              <div key={pillar.title} className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 py-6 sm:flex-row sm:gap-8">
-                <h3 className="flex shrink-0 items-baseline gap-3 font-[family-name:var(--ep-font-serif)] text-base font-medium text-[#2b2b2b] sm:w-40">
-                  <span className="font-[family-name:var(--ep-font-en)] text-lg font-thin text-[#3E5C6B]">
+              <div key={pillar.title} className="flex flex-col gap-2 border-t border-[#0B1620]/15 py-6 sm:flex-row sm:gap-8">
+                <h3 className="flex shrink-0 items-baseline gap-3 font-[family-name:var(--ep-font-serif)] text-base font-medium text-[#0B1620] sm:w-40">
+                  <span className="font-[family-name:var(--ep-font-en)] text-lg font-thin text-[#FF5A36]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   {pillar.title}
                 </h3>
-                <p className="text-sm font-light leading-[1.9] text-[#4a4a4a]">{pillar.description}</p>
+                <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{pillar.description}</p>
               </div>
             ))}
           </FadeInSection>
 
           <FadeInSection className="flex flex-col gap-3">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
               名詞解釋
             </span>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]">
+                    <th className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]">
                       名詞
                     </th>
-                    <th className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]">
+                    <th className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]">
                       白話說明
                     </th>
                   </tr>
@@ -205,10 +205,10 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
                 <tbody>
                   {detail.glossary.map((glossaryItem) => (
                     <tr key={glossaryItem.term}>
-                      <td className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-medium text-[#2b2b2b]">
+                      <td className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-medium text-[#0B1620]">
                         {glossaryItem.term}
                       </td>
-                      <td className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#4a4a4a]">
+                      <td className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#5C7383]">
                         {glossaryItem.definition}
                       </td>
                     </tr>
@@ -221,23 +221,23 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
       </section>
 
       {/* 產業／社會影響評估 */}
-      <section className="border-b border-[#e5e2da]">
+      <section className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           <FadeInSection>
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#2b2b2b]">產業／社會影響評估</h2>
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">產業／社會影響評估</h2>
           </FadeInSection>
 
           <FadeInSection className="overflow-x-auto">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]">
+                  <th className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]">
                     指標
                   </th>
-                  <th className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]">
+                  <th className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]">
                     數據
                   </th>
-                  <th className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]">
+                  <th className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]">
                     代表意義
                   </th>
                 </tr>
@@ -245,13 +245,13 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
               <tbody>
                 {detail.impactTable.map((row) => (
                   <tr key={row.metric}>
-                    <td className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-medium text-[#2b2b2b]">
+                    <td className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-medium text-[#0B1620]">
                       {row.metric}
                     </td>
-                    <td className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-light text-[#2b2b2b]">
+                    <td className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light text-[#0B1620]">
                       {row.value}
                     </td>
-                    <td className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#4a4a4a]">
+                    <td className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#5C7383]">
                       {row.meaning}
                     </td>
                   </tr>
@@ -261,21 +261,21 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
           </FadeInSection>
 
           <FadeInSection className="flex flex-col gap-4">
-            <p className="text-sm font-light leading-[1.9] text-[#4a4a4a]">{detail.impactIntro}</p>
-            <p className="text-sm font-light leading-[1.9] text-[#4a4a4a]">{detail.impactAnalysis}</p>
+            <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{detail.impactIntro}</p>
+            <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{detail.impactAnalysis}</p>
           </FadeInSection>
         </div>
       </section>
 
       {/* 專家／公眾關注重點 */}
-      <section className="border-b border-[#e5e2da] bg-[#F3F1EB]">
+      <section className="border-b border-[#D4DEE2] bg-[#F6FBFC]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           <FadeInSection>
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#2b2b2b]">專家／公眾關注重點</h2>
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">專家／公眾關注重點</h2>
           </FadeInSection>
           <FadeInSection className="flex flex-col gap-4">
             {detail.focusParagraphs.map((paragraph) => (
-              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#4a4a4a]">
+              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#5C7383]">
                 {paragraph}
               </p>
             ))}
@@ -285,13 +285,13 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
 
       {/* 相關 FAQ：內容引用自 /faq，不在這裡重複維護文字。 */}
       {relatedFaq.length > 0 ? (
-        <section className="border-b border-[#e5e2da]">
+        <section className="border-b border-[#D4DEE2]">
           <div className="mx-auto flex w-full max-w-[820px] flex-col gap-8 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
             <FadeInSection className="flex flex-col gap-2">
-              <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#2b2b2b]">相關 FAQ</h2>
-              <p className="text-xs font-light text-[#8a8a8a]">
+              <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">相關 FAQ</h2>
+              <p className="text-xs font-light text-[#5C7383]">
                 以下問答同時收錄於{" "}
-                <Link href="/faq" className="underline underline-offset-2 hover:text-[#3E5C6B]">
+                <Link href="/faq" className="underline underline-offset-2 hover:text-[#FF5A36]">
                   常見問題
                 </Link>
                 。
@@ -299,11 +299,11 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
             </FadeInSection>
             <FadeInSection className="flex flex-col">
               {relatedFaq.map((faqItem) => (
-                <div key={faqItem.id} className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 py-6 first:border-t-0">
-                  <h3 className="font-[family-name:var(--ep-font-serif)] text-base font-medium text-[#2b2b2b]">
+                <div key={faqItem.id} className="flex flex-col gap-2 border-t border-[#0B1620]/15 py-6 first:border-t-0">
+                  <h3 className="font-[family-name:var(--ep-font-serif)] text-base font-medium text-[#0B1620]">
                     {faqItem.question}
                   </h3>
-                  <p className="text-sm font-light leading-[1.9] text-[#4a4a4a]">{faqItem.jsonLdAnswer}</p>
+                  <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{faqItem.jsonLdAnswer}</p>
                 </div>
               ))}
             </FadeInSection>
@@ -314,14 +314,14 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
       {/* 原始出處，維持可查核性。 */}
       <section>
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-1 px-5 py-12 sm:px-8 lg:px-10">
-          <p className="text-xs font-light text-[#8a8a8a]">
+          <p className="text-xs font-light text-[#5C7383]">
             資料來源：{item.outlet}，{item.date}
           </p>
           <a
             href={item.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="w-fit text-xs font-light text-[#8a8a8a] underline underline-offset-2 hover:text-[#3E5C6B]"
+            className="w-fit text-xs font-light text-[#5C7383] underline underline-offset-2 hover:text-[#FF5A36]"
           >
             查看原始報導 →
           </a>

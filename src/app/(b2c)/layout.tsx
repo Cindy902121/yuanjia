@@ -29,7 +29,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
  * 自己的版面（例如 BusinessHeader），/login 是 B2C／B2B／管理者共用的統一
  * 登入頁，本來就不該有 B2C 專屬導覽列。
  *
- * 底色／字體／文字色（`bg-[#FAF9F6]`／編輯風內文字體／`#2B2B2B`）原本掛在
+ * 底色／字體／文字色（`bg-[#EAF4F8]`／編輯風內文字體／`#0B1620`）原本掛在
  * root layout 的 `<body>` 上，現在收進來變成這個 group 專屬的外層 div——
  * B2B／Admin／登入頁不應該被迫套用 B2C 的視覺色彩，交給各自頁面自己決定。
  * `flex-1 flex flex-col`／`min-h-full` 是為了維持原本「內容不夠長時 Footer
@@ -44,7 +44,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
  */
 export default function B2CLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <div className="flex min-h-full flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <GoogleAnalytics />
       <Header />
       {children}

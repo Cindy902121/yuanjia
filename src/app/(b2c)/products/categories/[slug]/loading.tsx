@@ -7,7 +7,7 @@ import { CategoryOrTagPageSkeleton } from "@/components/editorial/Skeletons";
  */
 export default function ProductCategoryLoading() {
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
       <CategoryOrTagPageSkeleton />
     </main>

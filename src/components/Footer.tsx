@@ -29,12 +29,26 @@ import Link from "next/link";
  *   藍底上有對比，現在底色換成中性墨色，logo 直接放上去對比就足夠）。
  * - 欄位標題、連結字體改用內文字體＋拉寬字距，取代原本的粗體小標。
  * - 版權宣告改用更細的分隔線，維持整體「細線條」語言。
+ *
+ * 2026-09（配色遷移，只換色不換版面／結構——見使用者要求「Formal Version
+ * UI + Preview Color Palette」）：底色再從 `#2b2b2b` 換成 `/ui-preview` 的
+ * 深海色 `#071B2B`。文字全部本來就是 `text-white/NN` 這種透明度階層寫法，
+ * 跟 `/ui-preview` 深色區塊的文字處理方式一致，不需要再改；只有這個底色
+ * 本身需要換。排版、欄位結構、連結、文案完全沒有動。
+ *
+ * 2026-09（Ocean Motion Migration，首頁正式套用 `/about-preview` 核准過的
+ * 視覺設計）：底色再從 `#071B2B` 微調成 `#071923`——跟首頁 Ocean Gradient
+ * 收尾的終點色完全一致（見 `src/app/(b2c)/_ocean/ocean-styles.tsx` 的
+ * `.op-descent`／`.op-abyss-fade`），讓首頁捲到 Footer 是零接縫的深藍。
+ * 兩色幾乎看不出差異（只是更黑一階），這是全站共用元件，這次 Migration
+ * 唯一 touch 到、homepage 以外會受影響的正式檔案，但純粹一個顏色 token，
+ * 排版、欄位結構、連結、文案跟上面這段一樣完全沒有動。
  */
 export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#2b2b2b] text-white">
+    <footer className="bg-[#071923] text-white">
       <div className="mx-auto grid w-full max-w-[1300px] grid-cols-2 gap-x-8 gap-y-12 px-5 py-16 sm:px-8 lg:grid-cols-4 lg:px-10 lg:py-24">
         <div className="col-span-2 flex flex-col gap-4 lg:col-span-1">
           <Link href="/" className="w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">

@@ -40,15 +40,15 @@ export default function B2CError({
   }, [error]);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-[#FAF9F6] px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8">
-      <div className="flex flex-col items-center gap-4 border border-dashed border-[#2b2b2b]/20 px-12 py-20 text-center">
-        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+    <main className="flex flex-1 flex-col items-center justify-center bg-[#EAF4F8] px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8">
+      <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
+        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
           ERROR
         </span>
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           發生了一些問題
         </h1>
-        <p className="max-w-md text-sm font-light leading-[1.8] text-[#4a4a4a]">
+        <p className="max-w-md text-sm font-light leading-[1.8] text-[#5C7383]">
           頁面暫時無法顯示，請稍後再試一次；如果問題持續發生，歡迎透過常見問題頁的聯絡方式與我們反應。
         </p>
         <div className="mt-2 flex gap-3">

@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 function renderBlock(block: FaqAnswerBlock, key: number) {
   if (block.type === "paragraph") {
     return (
-      <p key={key} className="text-sm font-light leading-[1.9] text-[#4a4a4a]">
+      <p key={key} className="text-sm font-light leading-[1.9] text-[#5C7383]">
         {block.text}
       </p>
     );
@@ -39,7 +39,7 @@ function renderBlock(block: FaqAnswerBlock, key: number) {
 
   if (block.type === "note") {
     return (
-      <p key={key} className="text-xs font-light leading-[1.8] text-[#8a8a8a]">
+      <p key={key} className="text-xs font-light leading-[1.8] text-[#5C7383]">
         {block.text}
       </p>
     );
@@ -53,7 +53,7 @@ function renderBlock(block: FaqAnswerBlock, key: number) {
             {block.headers.map((header) => (
               <th
                 key={header}
-                className="border-b border-[#2b2b2b]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#2b2b2b]"
+                className="border-b border-[#0B1620]/30 px-3 py-2 text-left font-[family-name:var(--ep-font-serif)] font-medium text-[#0B1620]"
               >
                 {header}
               </th>
@@ -66,7 +66,7 @@ function renderBlock(block: FaqAnswerBlock, key: number) {
               {row.map((cell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className="border-b border-[#2b2b2b]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#4a4a4a]"
+                  className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#5C7383]"
                 >
                   {cell}
                 </td>
@@ -91,20 +91,20 @@ const faqJsonLd = {
 
 export default function FaqPage() {
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={faqJsonLd} />
       <EditorialStyles />
 
-      <section className="border-b border-[#e5e2da]">
+      <section className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-4 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               FAQ
             </span>
-            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-4xl">
+            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620] sm:text-4xl">
               常見問題
             </h1>
-            <p className="mt-4 max-w-xl text-sm font-light leading-[1.9] text-[#8a8a8a]">
+            <p className="mt-4 max-w-xl text-sm font-light leading-[1.9] text-[#5C7383]">
               本網站目前為 MVP 展示版本，實際下單、客服與退換貨服務請以正式上線後的公告為準。
             </p>
           </FadeInSection>
@@ -115,16 +115,16 @@ export default function FaqPage() {
         <div className="mx-auto flex w-full max-w-[1100px] flex-col px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           {FAQ_ITEMS.map((item, index) => (
             <FadeInSection key={item.question}>
-              <div className="grid grid-cols-1 gap-6 border-t border-[#2b2b2b]/15 py-12 lg:grid-cols-[220px_1fr] lg:gap-16">
+              <div className="grid grid-cols-1 gap-6 border-t border-[#0B1620]/15 py-12 lg:grid-cols-[220px_1fr] lg:gap-16">
                 <div className="flex flex-col gap-3 lg:sticky lg:top-24 lg:self-start">
-                  <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#3E5C6B]">
+                  <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#FF5A36]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h2 className="font-[family-name:var(--ep-font-serif)] text-lg leading-[1.6] text-[#2b2b2b]">
+                  <h2 className="font-[family-name:var(--ep-font-serif)] text-lg leading-[1.6] text-[#0B1620]">
                     {item.question}
                   </h2>
                   {item.subQuestions ? (
-                    <ul className="flex flex-col gap-1 text-xs font-light text-[#8a8a8a]">
+                    <ul className="flex flex-col gap-1 text-xs font-light text-[#5C7383]">
                       {item.subQuestions.map((sub) => (
                         <li key={sub}>・{sub}</li>
                       ))}

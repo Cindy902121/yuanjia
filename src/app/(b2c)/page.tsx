@@ -6,6 +6,12 @@ import { JsonLd } from "@/components/JsonLd";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { editorialButtonDark } from "@/lib/editorial/styles";
+import { OceanStyles } from "./_ocean/ocean-styles";
+import { OceanLineArt } from "./_ocean/ocean-line-art";
+import { CrabLineArt, ScallopLineArt } from "./_ocean/marine-line-art";
+import { BrandStoryPhoto, BrandStoryPhotoMobile, FoodSafetyPhoto } from "./_ocean/photo-moments";
+import { ScrollFish } from "./_ocean/scroll-fish";
+import { WaterRipple } from "./_ocean/water-ripple";
 
 const TITLE = "元家｜新鮮海鮮與調理食品";
 const DESCRIPTION = "元家精選冷凍海鮮與調理食品，從商品列表開始探索。";
@@ -86,18 +92,43 @@ const QUALITY_FACTS = [
  * /products/categories/[slug]），這次沒有沿用——編輯風偏好少而精的入口，
  * 分類瀏覽已經有 Header「商品分類」連到 /products 頁面本身的篩選欄可以做，
  * 如果之後覺得還是需要首頁快速入口，可以再加回來，不是技術上做不到。
+ *
+ * 2026-09（Ocean Motion Migration——視覺設計在 `/about-preview` 走完五輪
+ * 確認核准後，正式套用到這個頁面；Preview 提供外觀，這個檔案本身的內容／
+ * 資料／連結／id／既有動畫全部逐字保留，只疊加視覺層）：
+ * - 淺海→深海的連續漸層（`.op-descent`，見 `_ocean/ocean-styles.tsx`）
+ *   包住品牌故事～收尾引言這幾個 Section，取代原本每個 Section 各自的
+ *   `border-b`／`bg-[...]` 硬切；食安品質／媒體報導／收尾引言標記
+ *   `op-zone-dark`，讓文字顏色在深色背景下自動變淺（純 CSS 覆寫，這幾個
+ *   Section 本身的 className 字串沒有被改寫，只是外層多疊一個標記 class）。
+ * - Hero 底部、品牌故事、企業優勢、食安品質分別疊上海流線稿／大型螃蟹
+ *   線稿／扇貝線稿／品牌故事與食安品質的真實照片（來源與篩選過程見
+ *   Photography Plan，`_ocean/photo-moments.tsx`／`_ocean/marine-line-art.tsx`
+ *   檔頭有詳細說明）。
+ * - 新增 Scroll-driven 魚（`_ocean/scroll-fish.tsx`）跟滑鼠水波紋互動
+ *   （`_ocean/water-ripple.tsx`），都只掛在這個頁面，不是全站共用。
+ * - `Footer.tsx` 的底色同時從 `#071B2B` 改成 `#071923`，跟這裡漸層的終點
+ *   色一致，讓首頁捲到 Footer 是零接縫的深藍——這是這次 Migration 唯一
+ *   touch 到的、homepage 以外的正式檔案，純粹一個顏色 token，Footer 的
+ *   內容／連結／版面沒有變。
  */
 export default function HomePage() {
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={organizationJsonLd} />
       <EditorialStyles />
+      <OceanStyles />
+      <WaterRipple />
 
-      {/* HERO：左右滿版真實照片，白色文字疊在圖片上，底部深色漸層維持對比。 */}
-      <section className="relative flex min-h-[520px] items-end overflow-hidden border-b border-[#e5e2da] lg:min-h-[680px]">
+      {/* HERO：左右滿版真實照片，白色文字疊在圖片上，底部深色漸層維持對比。
+          Ocean Motion Migration：拿掉 border-b 硬切，改成 .op-hero-fade
+          白霧淡出銜接下面的 Ocean Gradient——內容／CTA／Typography／高度
+          全部沒有動。 */}
+      <section className="relative flex min-h-[520px] items-end overflow-hidden lg:min-h-[680px]">
         <div className="absolute inset-0" aria-hidden="true">
           <Image src="/hero-seafood.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+          <div className="op-hero-fade absolute inset-x-0 bottom-0 h-24 lg:h-36" />
         </div>
 
         <FadeInSection className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-5 pb-16 pt-32 sm:px-8 lg:px-10 lg:pb-24">
@@ -119,39 +150,48 @@ export default function HomePage() {
         </FadeInSection>
       </section>
 
-      {/* 01 品牌故事 */}
-      <section id="about" className="scroll-mt-20 border-b border-[#e5e2da]">
-        <div id="brand-story" className="scroll-mt-20 mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1fr] lg:gap-20 lg:px-10 lg:py-32">
-          <FadeInSection className="flex flex-col gap-8">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
-              01 · BRAND STORY
-            </span>
-            <span className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-3xl">
-              品牌故事
-            </span>
-          </FadeInSection>
+      {/* 淺海 → 深海的連續漸層容器，涵蓋品牌故事～收尾引言這幾個 Section
+          （Ocean Motion Migration 新增，見上方檔頭說明）。 */}
+      <div className="op-descent relative">
+        <ScrollFish />
 
-          <FadeInSection className="flex flex-col gap-6 lg:pt-16">
-            <p className="text-[15px] font-light leading-[2] text-[#4a4a4a]">
-              元家企業的故事，最早可追溯到 1968 年於澎湖草創的「元進行」商行；1979
-              年於台北正式成立元家企業股份有限公司，隔年在高雄設立冷凍草蝦外銷廠，以自創品牌行銷日本、美國，奠定日後發展的基礎。此後陸續拓展冷凍水產的進口、銷售與生產加工，並跨足調理食品領域，2012
-              年起積極開拓海外市場，成為橫跨零售、餐飲、電商與國際貿易的水產食品供應商。
-            </p>
-            <p className="text-[15px] font-light leading-[2] text-[#4a4a4a]">
-              我們期望透過食的流通，將幸福傳遞給世界——提供穩定、值得信賴的商品與服務，同時關懷生態環境的平衡，引領安心的飲食文化。
-            </p>
-          </FadeInSection>
-        </div>
-      </section>
+        {/* 01 品牌故事 */}
+        <section id="about" className="relative scroll-mt-20 overflow-hidden">
+          <OceanLineArt />
+          <BrandStoryPhoto />
+          <div id="brand-story" className="relative scroll-mt-20 mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1fr] lg:gap-20 lg:px-10 lg:py-32">
+            <FadeInSection className="flex flex-col gap-8">
+              <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+                01 · BRAND STORY
+              </span>
+              <span className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
+                品牌故事
+              </span>
+            </FadeInSection>
 
-      {/* 02 企業優勢：雜誌式清單，不是卡片格線。 */}
-      <section className="border-b border-[#e5e2da] bg-[#F3F1EB]">
-        <div id="advantages" className="scroll-mt-20 mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
+            <FadeInSection className="flex flex-col gap-6 lg:pt-16">
+              <p className="text-[15px] font-light leading-[2] text-[#5C7383]">
+                元家企業的故事，最早可追溯到 1968 年於澎湖草創的「元進行」商行；1979
+                年於台北正式成立元家企業股份有限公司，隔年在高雄設立冷凍草蝦外銷廠，以自創品牌行銷日本、美國，奠定日後發展的基礎。此後陸續拓展冷凍水產的進口、銷售與生產加工，並跨足調理食品領域，2012
+                年起積極開拓海外市場，成為橫跨零售、餐飲、電商與國際貿易的水產食品供應商。
+              </p>
+              <p className="text-[15px] font-light leading-[2] text-[#5C7383]">
+                我們期望透過食的流通，將幸福傳遞給世界——提供穩定、值得信賴的商品與服務，同時關懷生態環境的平衡，引領安心的飲食文化。
+              </p>
+              <BrandStoryPhotoMobile />
+            </FadeInSection>
+          </div>
+        </section>
+
+        {/* 02 企業優勢：雜誌式清單，不是卡片格線。 */}
+        <section className="relative overflow-hidden">
+          <CrabLineArt tone="light" className="-right-64 top-8 hidden h-[560px] w-[880px] lg:block" />
+          <div id="advantages" className="relative scroll-mt-20 mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               02 · STRENGTHS
             </span>
-            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-3xl">
+            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
               企業優勢
             </h2>
           </FadeInSection>
@@ -159,14 +199,14 @@ export default function HomePage() {
           <div className="flex flex-col">
             {ADVANTAGES.map((item, index) => (
               <FadeInSection key={item.title}>
-                <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 py-8 sm:flex-row sm:items-baseline sm:gap-10 lg:py-10">
-                  <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#3E5C6B] sm:w-24 sm:shrink-0">
+                <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 py-8 sm:flex-row sm:items-baseline sm:gap-10 lg:py-10">
+                  <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#FF5A36] sm:w-24 sm:shrink-0">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#2b2b2b] sm:w-48 sm:shrink-0">
+                  <h3 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#0B1620] sm:w-48 sm:shrink-0">
                     {item.title}
                   </h3>
-                  <p className="max-w-xl text-sm font-light leading-[1.9] text-[#4a4a4a]">{item.description}</p>
+                  <p className="max-w-xl text-sm font-light leading-[1.9] text-[#5C7383]">{item.description}</p>
                 </div>
               </FadeInSection>
             ))}
@@ -175,13 +215,14 @@ export default function HomePage() {
       </section>
 
       {/* 03 食安與品質 */}
-      <section id="quality" className="scroll-mt-20 border-b border-[#e5e2da]">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-32">
+      <section id="quality" className="op-zone-dark relative scroll-mt-20 overflow-hidden">
+        <FoodSafetyPhoto />
+        <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-32">
           <FadeInSection className="flex flex-col items-center gap-3">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               03 · QUALITY
             </span>
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-3xl">
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
               食品安全與品質，是我們的堅持
             </h2>
           </FadeInSection>
@@ -191,13 +232,13 @@ export default function HomePage() {
               {QUALITY_STEPS.map((step, index, arr) => (
                 <li key={step} className="flex items-center gap-4">
                   <div className="flex flex-col items-center gap-3">
-                    <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#3E5C6B]">
+                    <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#FF5A36]">
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <p className="text-sm font-medium tracking-[0.05em] text-[#2b2b2b]">{step}</p>
+                    <p className="text-sm font-medium tracking-[0.05em] text-[#0B1620]">{step}</p>
                   </div>
                   {index < arr.length - 1 ? (
-                    <span aria-hidden="true" className="hidden h-px w-8 bg-[#2b2b2b]/20 sm:block" />
+                    <span aria-hidden="true" className="hidden h-px w-8 bg-[#0B1620]/20 sm:block" />
                   ) : null}
                 </li>
               ))}
@@ -206,7 +247,7 @@ export default function HomePage() {
 
           <FadeInSection className="mx-auto grid max-w-4xl grid-cols-1 gap-x-10 gap-y-4 text-left sm:grid-cols-2">
             {QUALITY_FACTS.map((fact) => (
-              <p key={fact} className="border-t border-[#2b2b2b]/10 pt-4 text-sm font-light leading-[1.9] text-[#4a4a4a]">
+              <p key={fact} className="border-t border-[#0B1620]/10 pt-4 text-sm font-light leading-[1.9] text-[#5C7383]">
                 {fact}
               </p>
             ))}
@@ -214,14 +255,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 04 媒體報導：非對稱圖文跨頁，用真實裁切過的新聞照片。 */}
-      <section className="border-b border-[#e5e2da] bg-[#F3F1EB]">
+      {/* 04 媒體報導：非對稱圖文跨頁，用真實裁切過的新聞照片。維持乾淨、
+          不加新照片——Ocean Motion Migration 刻意排除這個 Section，只標記
+          op-zone-dark 讓文字適應深色背景，跟 Preview 最終確認版本一致。 */}
+      <section className="op-zone-dark">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               04 · MEDIA
             </span>
-            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-3xl">
+            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
               媒體都在報導元家
             </h2>
           </FadeInSection>
@@ -232,10 +275,10 @@ export default function HomePage() {
                 <Image src="/media-seafood-platter.jpg" alt="" aria-hidden="true" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
               </div>
               <div className="flex items-baseline gap-3">
-                <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">2026.06.16</time>
-                <span className="text-xs tracking-widest text-[#8a8a8a]">風傳媒</span>
+                <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">2026.06.16</time>
+                <span className="text-xs tracking-widest text-[#5C7383]">風傳媒</span>
               </div>
-              <p className="font-[family-name:var(--ep-font-serif)] text-base leading-[1.8] text-[#2b2b2b]">
+              <p className="font-[family-name:var(--ep-font-serif)] text-base leading-[1.8] text-[#0B1620]">
                 無懼全球波動！元家企業深化垂直整合 2026食品展大秀上百款頂級海鮮與即食解方
               </p>
             </FadeInSection>
@@ -245,10 +288,10 @@ export default function HomePage() {
                 <Image src="/media-cny-feast.jpg" alt="" aria-hidden="true" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
               </div>
               <div className="flex items-baseline gap-3">
-                <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">2025.12.31</time>
-                <span className="text-xs tracking-widest text-[#8a8a8a]">經濟日報</span>
+                <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">2025.12.31</time>
+                <span className="text-xs tracking-widest text-[#5C7383]">經濟日報</span>
               </div>
-              <p className="font-[family-name:var(--ep-font-serif)] text-base leading-[1.8] text-[#2b2b2b]">
+              <p className="font-[family-name:var(--ep-font-serif)] text-base leading-[1.8] text-[#0B1620]">
                 元家企業推「瑪瑙之宴」年菜組 冷鏈科技打造五星級團圓饗宴
               </p>
             </FadeInSection>
@@ -257,27 +300,36 @@ export default function HomePage() {
           <FadeInSection>
             <Link
               href="/media"
-              className="group inline-flex items-center gap-3 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-[#2b2b2b]"
+              className="group inline-flex items-center gap-3 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-[#0B1620]"
             >
               查看完整媒體報導 MORE
-              <span className="h-px w-8 bg-[#2b2b2b] transition-all duration-300 group-hover:w-12" aria-hidden="true" />
+              <span className="h-px w-8 bg-[#0B1620] transition-all duration-300 group-hover:w-12" aria-hidden="true" />
             </Link>
           </FadeInSection>
         </div>
       </section>
 
-      {/* 收尾引言，呼應參考站尾段的品牌心聲寫法，文字沿用首頁既有真實文案。 */}
-      <section>
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-5 py-24 text-center sm:px-8 lg:py-32">
-          <FadeInSection>
-            <p className="font-[family-name:var(--ep-font-serif)] text-xl font-light leading-[2] tracking-[0.05em] text-[#2b2b2b] sm:text-2xl">
-              我們期望透過食的流通，
-              <br />
-              將幸福傳遞給世界。
-            </p>
-          </FadeInSection>
-        </div>
-      </section>
+        {/* 收尾引言，呼應參考站尾段的品牌心聲寫法，文字沿用首頁既有真實文案。 */}
+        <section className="op-zone-dark relative overflow-hidden">
+          <ScallopLineArt
+            tone="dark"
+            className="bottom-4 left-1/2 hidden h-[140px] w-[210px] -translate-x-1/2 sm:block"
+          />
+          <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-5 py-24 text-center sm:px-8 lg:py-32">
+            <FadeInSection>
+              <p className="font-[family-name:var(--ep-font-serif)] text-xl font-light leading-[2] tracking-[0.05em] text-[#0B1620] sm:text-2xl">
+                我們期望透過食的流通，
+                <br />
+                將幸福傳遞給世界。
+              </p>
+            </FadeInSection>
+          </div>
+        </section>
+
+        {/* 純裝飾的收尾色塊：.op-descent 終點已經是接近全黑的深藍，這裡只是
+            再收一次尾確保跟 Footer（bg-[#071923]）零接縫。 */}
+        <div aria-hidden="true" className="op-abyss-fade h-16 lg:h-24" />
+      </div>
     </main>
   );
 }

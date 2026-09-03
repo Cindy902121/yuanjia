@@ -61,11 +61,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   const initialTagSlug = allTagSlugs.includes(tagParam ?? "") ? tagParam : undefined;
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       {/* Banner：跟首頁 hero 同樣的「滿版圖片＋白字疊層」手法。 */}
-      <section className="relative flex min-h-[280px] items-end overflow-hidden border-b border-[#e5e2da] lg:min-h-[360px]">
+      <section className="relative flex min-h-[280px] items-end overflow-hidden border-b border-[#D4DEE2] lg:min-h-[360px]">
         <div className="absolute inset-0" aria-hidden="true">
           <Image src="/products-banner.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
@@ -83,10 +83,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
       <section>
         <div className="mx-auto flex w-full max-w-[1200px] flex-col px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection className="mb-14 flex flex-col gap-2">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               MENU · 商品一覽
             </span>
-            <p className="text-xs font-light text-[#8a8a8a]">
+            <p className="text-xs font-light text-[#5C7383]">
               本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
             </p>
           </FadeInSection>

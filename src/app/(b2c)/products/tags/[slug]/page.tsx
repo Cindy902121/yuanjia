@@ -55,7 +55,7 @@ export default async function ProductTagPage({ params }: PageProps<"/products/ta
   const matches = sortByAvailability(products.map(toCardData));
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
       <TrackPageView eventName="b2c_tag_view" />
 
@@ -63,15 +63,15 @@ export default async function ProductTagPage({ params }: PageProps<"/products/ta
         <div className="flex flex-col gap-4">
           <Link
             href="/products"
-            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
           >
             ← ALL PRODUCTS
           </Link>
           <div>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               TAG
             </span>
-            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#2b2b2b]">
+            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620]">
               {tagName}
             </h1>
           </div>

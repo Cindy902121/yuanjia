@@ -22,9 +22,11 @@
  * /products/tags/[slug] 這兩頁沒有呼叫 `notFound()`（查無商品時顯示「無符合
  * 商品」文字，不是 404），沒有這個限制，可以放心加 loading.tsx。
  *
- * 用 `animate-pulse`＋淺灰底色塊（`#EDEAE2`，跟站內「無商品圖片」佔位色
- * `#F3F1EB` 相近但特意不同，方便肉眼區分「這是骨架屏」還是「這是無圖片的
- * 真實內容」），不模擬真實圖片／文字內容——這是骨架屏的標準做法，只是告訴
+ * 用 `animate-pulse`＋淺色底色塊（`#F6FBFC`，跟站內「無商品圖片」佔位色
+ * 同一個值——2026-09 配色遷移把原本兩個刻意不同的相近色統一成 Preview
+ * 對應的同一個 surface 色，見 docs 配色遷移紀錄；`animate-pulse` 本身的
+ * 閃爍動態已經足以區分「這是骨架屏」還是「這是無圖片的真實內容」，不靠
+ * 底色深淺差異），不模擬真實圖片／文字內容——這是骨架屏的標準做法，只是告訴
  * 使用者「這裡即將出現內容」，不是假裝畫面已經載入完成。`aria-hidden`：
  * 骨架屏本身不是資訊，不需要念給螢幕閱讀器聽；loading.tsx 顯示期間 Next.js
  * 會自動用 `aria-busy`／live region 通知使用者「頁面正在載入」。
@@ -37,11 +39,11 @@ export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
     <div className="grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2" aria-hidden="true">
       {Array.from({ length: count }).map((_, index) => (
         <div key={index} className="flex animate-pulse flex-col gap-4">
-          <div className="aspect-[4/3] bg-[#EDEAE2]" />
-          <div className="h-5 w-3/4 bg-[#EDEAE2]" />
-          <div className="h-4 w-full bg-[#EDEAE2]" />
-          <div className="h-4 w-1/3 bg-[#EDEAE2]" />
-          <div className="h-9 w-full bg-[#EDEAE2]" />
+          <div className="aspect-[4/3] bg-[#F6FBFC]" />
+          <div className="h-5 w-3/4 bg-[#F6FBFC]" />
+          <div className="h-4 w-full bg-[#F6FBFC]" />
+          <div className="h-4 w-1/3 bg-[#F6FBFC]" />
+          <div className="h-9 w-full bg-[#F6FBFC]" />
         </div>
       ))}
     </div>
@@ -53,9 +55,9 @@ export function CategoryOrTagPageSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-16 sm:px-8 lg:px-10 lg:py-24">
       <div className="flex animate-pulse flex-col gap-4" aria-hidden="true">
-        <div className="h-3 w-24 bg-[#EDEAE2]" />
-        <div className="h-8 w-40 bg-[#EDEAE2]" />
-        <div className="h-4 w-full max-w-xl bg-[#EDEAE2]" />
+        <div className="h-3 w-24 bg-[#F6FBFC]" />
+        <div className="h-8 w-40 bg-[#F6FBFC]" />
+        <div className="h-4 w-full max-w-xl bg-[#F6FBFC]" />
       </div>
       <ProductGridSkeleton />
     </div>

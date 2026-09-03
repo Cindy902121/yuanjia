@@ -39,8 +39,8 @@ const DELIVERY_METHODS = [
 ] as const;
 
 const inputClass =
-  "min-h-11 border border-[#2b2b2b]/25 bg-transparent px-3 text-sm text-[#2b2b2b] outline-none transition-colors placeholder:text-[#8a8a8a] focus:border-[#2b2b2b]";
-const sectionLabelClass = "font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]";
+  "min-h-11 border border-[#0B1620]/25 bg-transparent px-3 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#5C7383] focus:border-[#0B1620]";
+const sectionLabelClass = "font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]";
 
 /**
  * /checkout 的實際內容。PRD B2C-04／FDD §6.3、§7.2：
@@ -221,14 +221,14 @@ export function CheckoutForm() {
 
   if (submitState.status === "success") {
     return (
-      <div className="flex flex-col items-center gap-4 border border-[#2b2b2b]/15 px-12 py-20 text-center">
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+      <div className="flex flex-col items-center gap-4 border border-[#0B1620]/15 px-12 py-20 text-center">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           訂單已建立
         </h1>
-        <p className="text-sm font-light text-[#4a4a4a]">
-          展示訂單編號：<span className="font-[family-name:var(--ep-font-en)] text-[#2b2b2b]">{submitState.orderId}</span>
+        <p className="text-sm font-light text-[#5C7383]">
+          展示訂單編號：<span className="font-[family-name:var(--ep-font-en)] text-[#0B1620]">{submitState.orderId}</span>
         </p>
-        <p className="text-xs font-light text-[#8a8a8a]">
+        <p className="text-xs font-light text-[#5C7383]">
           本網站為 MVP 展示，未串接真實金流與物流，這是一筆展示用模擬訂單。
         </p>
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>
@@ -240,11 +240,11 @@ export function CheckoutForm() {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 border border-dashed border-[#2b2b2b]/20 px-12 py-20 text-center">
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+      <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           結帳
         </h1>
-        <p className="text-sm font-light text-[#4a4a4a]">購物車是空的，先去挑幾樣商品吧。</p>
+        <p className="text-sm font-light text-[#5C7383]">購物車是空的，先去挑幾樣商品吧。</p>
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>
           瀏覽商品
         </Link>
@@ -255,9 +255,9 @@ export function CheckoutForm() {
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-8">
       <TrackPageView eventName="b2c_checkout_start" />
-      <div className="flex flex-col gap-1 border-b border-[#2b2b2b]/15 pb-6">
+      <div className="flex flex-col gap-1 border-b border-[#0B1620]/15 pb-6">
         <span className={sectionLabelClass}>CHECKOUT</span>
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           結帳
         </h1>
       </div>
@@ -278,7 +278,7 @@ export function CheckoutForm() {
         </ul>
       ) : null}
 
-      <p className="border-l-2 border-[#3E5C6B] py-1 pl-4 text-xs font-light leading-6 text-[#4a4a4a]">
+      <p className="border-l-2 border-[#FF5A36] py-1 pl-4 text-xs font-light leading-6 text-[#5C7383]">
         本頁的付款方式、寄送方式、優惠券與備註僅供畫面展示——MVP 未串接真實金流與物流，這些選擇不會被保存，送出訂單只會記錄收件資訊與商品品項。
       </p>
 
@@ -289,20 +289,20 @@ export function CheckoutForm() {
             <h2 className={sectionLabelClass}>商品明細 · ITEMS</h2>
             <ul className="flex flex-col">
               {items.map((item) => (
-                <li key={item.productId} className="flex items-center gap-3 border-t border-[#2b2b2b]/10 py-4 first:border-t-0">
+                <li key={item.productId} className="flex items-center gap-3 border-t border-[#0B1620]/10 py-4 first:border-t-0">
                   <div
                     aria-hidden="true"
-                    className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#F3F1EB] text-[10px] text-[#8a8a8a]"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#5C7383]"
                   >
                     無商品圖片
                   </div>
                   <div className="flex flex-1 flex-col">
-                    <span className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">{item.name}</span>
-                    <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                    <span className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">{item.name}</span>
+                    <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                       NT$ {item.price} × {item.quantity}
                     </span>
                   </div>
-                  <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#2b2b2b]">
+                  <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                     NT$ {item.price * item.quantity}
                   </span>
                 </li>
@@ -310,7 +310,7 @@ export function CheckoutForm() {
             </ul>
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 pt-6">
+          <div className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-6">
             <label htmlFor="coupon" className={sectionLabelClass}>
               優惠券 · COUPON
             </label>
@@ -329,10 +329,10 @@ export function CheckoutForm() {
                 套用
               </button>
             </div>
-            {couponMessage ? <p className="text-xs font-light text-[#8a8a8a]">{couponMessage}</p> : null}
+            {couponMessage ? <p className="text-xs font-light text-[#5C7383]">{couponMessage}</p> : null}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 pt-6">
+          <div className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-6">
             <label htmlFor="note" className={sectionLabelClass}>
               訂單備註（選填） · NOTE
             </label>
@@ -342,7 +342,7 @@ export function CheckoutForm() {
               onChange={(event) => setNote(event.target.value)}
               rows={3}
               placeholder="例如：配送時間偏好、特殊需求"
-              className="border border-[#2b2b2b]/25 bg-transparent px-3 py-2 text-sm text-[#2b2b2b] outline-none transition-colors placeholder:text-[#8a8a8a] focus:border-[#2b2b2b]"
+              className="border border-[#0B1620]/25 bg-transparent px-3 py-2 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#5C7383] focus:border-[#0B1620]"
             />
           </div>
         </div>
@@ -350,12 +350,12 @@ export function CheckoutForm() {
         {/* 右欄：收件資訊、付款、寄送、費用小計、送出。 */}
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <label className="flex items-center gap-2 text-sm text-[#2b2b2b]">
+            <label className="flex items-center gap-2 text-sm text-[#0B1620]">
               <input
                 type="checkbox"
                 checked={useMemberProfile}
                 onChange={(event) => handleUseMemberProfileChange(event.target.checked)}
-                className="h-4 w-4 accent-[#3E5C6B]"
+                className="h-4 w-4 accent-[#FF5A36]"
               />
               使用展示會員資料
             </label>
@@ -396,17 +396,17 @@ export function CheckoutForm() {
             />
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 pt-6">
+          <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
             <span className={sectionLabelClass}>付款方式 · PAYMENT</span>
             <div className="flex flex-col gap-2">
               {PAYMENT_METHODS.map((method) => (
-                <label key={method.value} className="flex items-center gap-2 text-sm text-[#2b2b2b]">
+                <label key={method.value} className="flex items-center gap-2 text-sm text-[#0B1620]">
                   <input
                     type="radio"
                     name="payment_method_ui"
                     checked={paymentMethod === method.value}
                     onChange={() => setPaymentMethod(method.value)}
-                    className="h-4 w-4 accent-[#3E5C6B]"
+                    className="h-4 w-4 accent-[#FF5A36]"
                   />
                   {method.label}
                 </label>
@@ -414,22 +414,22 @@ export function CheckoutForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 pt-6">
+          <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
             <span className={sectionLabelClass}>寄送方式 · DELIVERY</span>
             <div className="flex flex-col gap-2">
               {DELIVERY_METHODS.map((method) => (
-                <label key={method.value} className="flex items-center justify-between gap-2 text-sm text-[#2b2b2b]">
+                <label key={method.value} className="flex items-center justify-between gap-2 text-sm text-[#0B1620]">
                   <span className="flex items-center gap-2">
                     <input
                       type="radio"
                       name="delivery_method_ui"
                       checked={deliveryMethod === method.value}
                       onChange={() => setDeliveryMethod(method.value)}
-                      className="h-4 w-4 accent-[#3E5C6B]"
+                      className="h-4 w-4 accent-[#FF5A36]"
                     />
                     {method.label}
                   </span>
-                  <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                  <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                     {method.fee === 0 ? "免運" : `NT$ ${method.fee}`}
                   </span>
                 </label>
@@ -437,26 +437,26 @@ export function CheckoutForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 pt-6 text-sm">
-            <div className="flex items-center justify-between text-[#4a4a4a]">
+          <div className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-6 text-sm">
+            <div className="flex items-center justify-between text-[#5C7383]">
               <span>商品小計</span>
               <span className="font-[family-name:var(--ep-font-en)] tracking-widest">NT$ {totalPrice}</span>
             </div>
-            <div className="flex items-center justify-between text-[#4a4a4a]">
+            <div className="flex items-center justify-between text-[#5C7383]">
               <span>運費</span>
               <span className="font-[family-name:var(--ep-font-en)] tracking-widest">
                 {shippingFee === 0 ? "免運" : `NT$ ${shippingFee}`}
               </span>
             </div>
-            <div className="flex items-baseline justify-between border-t border-[#2b2b2b]/15 pt-2 text-base text-[#2b2b2b]">
+            <div className="flex items-baseline justify-between border-t border-[#0B1620]/15 pt-2 text-base text-[#0B1620]">
               <span className="font-[family-name:var(--ep-font-serif)]">總計</span>
               <span className="font-[family-name:var(--ep-font-en)] text-lg tracking-widest">NT$ {grandTotal}</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="flex items-center gap-2 text-sm text-[#2b2b2b]">
-              <input type="checkbox" name="privacy_consent" className="h-4 w-4 accent-[#3E5C6B]" />
+            <label className="flex items-center gap-2 text-sm text-[#0B1620]">
+              <input type="checkbox" name="privacy_consent" className="h-4 w-4 accent-[#FF5A36]" />
               我已閱讀並同意隱私權政策（展示用途，不會用於真實行銷）。
             </label>
             {fieldErrors.privacy_consent ? (
@@ -504,7 +504,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm text-[#2b2b2b]">
+      <label htmlFor={id} className="text-sm text-[#0B1620]">
         {label}
       </label>
       <input

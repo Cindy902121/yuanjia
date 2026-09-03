@@ -30,16 +30,16 @@ export const metadata: Metadata = {
  */
 export default function B2CNotFound() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-[#FAF9F6] px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8">
+    <main className="flex flex-1 flex-col items-center justify-center bg-[#EAF4F8] px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8">
       <EditorialStyles />
-      <div className="flex flex-col items-center gap-4 border border-dashed border-[#2b2b2b]/20 px-12 py-20 text-center">
-        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+      <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
+        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
           404
         </span>
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           找不到這個頁面
         </h1>
-        <p className="max-w-md text-sm font-light leading-[1.8] text-[#4a4a4a]">
+        <p className="max-w-md text-sm font-light leading-[1.8] text-[#5C7383]">
           這個網址可能已經失效、商品已下架，或連結有誤。歡迎回到商品列表，看看目前有哪些新鮮嚴選。
         </p>
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>

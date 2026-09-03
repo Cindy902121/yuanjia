@@ -30,6 +30,19 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * - 順便把抽屜內部（品項清單、數量調整、結帳按鈕）也換成編輯風：直角方框
  *   數量選擇器（src/lib/editorial/styles.ts）、細線分隔取代卡片框、按鈕改
  *   editorialButtonSolid／方框連結。
+ *
+ * 2026-09（配色遷移，只換色不換排版／結構）：這個檔案的配色刻意分兩套處理，
+ * 不是單一規則套到底：
+ * - 觸發按鈕（上面 87 行附近的 `<button>`）視覺上「長在」Header 的深色列上
+ *   （見 src/components/Header.tsx 同批修改），套用跟 Header 導覽連結一樣的
+ *   深色底文字（`text-white/70`），不是全站通用的淺色底文字色。
+ * - 抽屜面板本身（品項清單、結帳按鈕，`open` 為 true 時渲染的那個區塊）是
+ *   浮在頁面內容上的淺色面板，跟全站其他淺色頁面套同一套一般配色規則
+ *   （底色／文字／邊框對應到 Preview 的 glacier／ink／mist 等）。
+ * 陰影 `shadow-[-16px_0_40px_rgba(...)]` 的顏色數值也跟著新的 ink 色改了
+ * rgb 值（原本對應 `#2b2b2b`＝rgb(43,43,43)，現在對應 `#0B1620`＝
+ * rgb(11,22,32)），純粹是陰影顏色本身要跟著新的文字／邊框色系一致，不是
+ * 新增或調整陰影效果。
  */
 export function CartDrawer() {
   const { items, totalPrice, updateQuantity, removeItem } = useCart();
@@ -89,13 +102,13 @@ export function CartDrawer() {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="relative text-sm tracking-[0.1em] text-[#4a4a4a] transition-colors hover:text-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+        className="relative text-sm tracking-[0.1em] text-white/70 transition-colors hover:text-[#FF5A36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
       >
         購物車
         {totalQuantity > 0 ? (
           <span
             aria-hidden="true"
-            className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#3E5C6B] px-1.5 text-xs font-semibold text-white"
+            className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#FF5A36] px-1.5 text-xs font-semibold text-white"
           >
             {totalQuantity > 99 ? "99+" : totalQuantity}
           </span>
@@ -110,7 +123,7 @@ export function CartDrawer() {
           <div
             aria-hidden="true"
             onClick={close}
-            className="absolute inset-0 bg-[#2b2b2b]/40 motion-safe:animate-[fade-in_150ms_ease-out]"
+            className="absolute inset-0 bg-[#0B1620]/40 motion-safe:animate-[fade-in_150ms_ease-out]"
           />
 
           <div
@@ -118,10 +131,10 @@ export function CartDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label="購物車"
-            className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] shadow-[-16px_0_40px_rgba(43,43,43,0.16)] motion-safe:animate-[slide-in-right_200ms_ease-out]"
+            className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620] shadow-[-16px_0_40px_rgba(11,22,32,0.16)] motion-safe:animate-[slide-in-right_200ms_ease-out]"
           >
-            <div className="flex items-center justify-between border-b border-[#2b2b2b]/15 px-6 py-5">
-              <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-light tracking-[0.03em] text-[#2b2b2b]">
+            <div className="flex items-center justify-between border-b border-[#0B1620]/15 px-6 py-5">
+              <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-light tracking-[0.03em] text-[#0B1620]">
                 購物車{totalQuantity > 0 ? `（${totalQuantity}）` : ""}
               </h2>
               <button
@@ -129,7 +142,7 @@ export function CartDrawer() {
                 type="button"
                 onClick={close}
                 aria-label="關閉購物車"
-                className="flex h-9 w-9 items-center justify-center border border-[#2b2b2b]/20 text-[#4a4a4a] transition-colors hover:border-[#2b2b2b] hover:text-[#2b2b2b]"
+                className="flex h-9 w-9 items-center justify-center border border-[#0B1620]/20 text-[#5C7383] transition-colors hover:border-[#0B1620] hover:text-[#0B1620]"
               >
                 ✕
               </button>
@@ -137,11 +150,11 @@ export function CartDrawer() {
 
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="text-sm font-light text-[#4a4a4a]">購物車是空的。</p>
+                <p className="text-sm font-light text-[#5C7383]">購物車是空的。</p>
                 <Link
                   href="/products"
                   onClick={close}
-                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#3E5C6B] hover:text-[#2b2b2b]"
+                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#FF5A36] hover:text-[#0B1620]"
                 >
                   去看看商品
                 </Link>
@@ -150,10 +163,10 @@ export function CartDrawer() {
               <>
                 <ul className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
                   {items.map((item) => (
-                    <li key={item.productId} className="flex gap-3 border-b border-[#2b2b2b]/10 pb-5 last:border-0 last:pb-0">
+                    <li key={item.productId} className="flex gap-3 border-b border-[#0B1620]/10 pb-5 last:border-0 last:pb-0">
                       <div
                         aria-hidden="true"
-                        className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F3F1EB] text-[10px] text-[#8a8a8a]"
+                        className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#5C7383]"
                       >
                         無圖片
                       </div>
@@ -161,7 +174,7 @@ export function CartDrawer() {
                         <Link
                           href={`/products/${item.slug}`}
                           onClick={close}
-                          className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b] hover:text-[#3E5C6B]"
+                          className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620] hover:text-[#FF5A36]"
                         >
                           {item.name}
                         </Link>
@@ -188,7 +201,7 @@ export function CartDrawer() {
                               ＋
                             </button>
                           </div>
-                          <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#2b2b2b]">
+                          <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                             NT$ {item.price * item.quantity}
                           </span>
                         </div>
@@ -197,7 +210,7 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => removeItem(item.productId)}
                         aria-label={`移除 ${item.name}`}
-                        className="self-start text-[#8a8a8a] transition-colors hover:text-[#B42318]"
+                        className="self-start text-[#5C7383] transition-colors hover:text-[#B42318]"
                       >
                         🗑
                       </button>
@@ -205,10 +218,10 @@ export function CartDrawer() {
                   ))}
                 </ul>
 
-                <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 px-6 py-5">
+                <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 px-6 py-5">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#2b2b2b]">總計</span>
-                    <span className="font-[family-name:var(--ep-font-en)] text-lg tracking-widest text-[#2b2b2b]">
+                    <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">總計</span>
+                    <span className="font-[family-name:var(--ep-font-en)] text-lg tracking-widest text-[#0B1620]">
                       NT$ {totalPrice}
                     </span>
                   </div>
@@ -218,7 +231,7 @@ export function CartDrawer() {
                   <Link
                     href="/cart"
                     onClick={close}
-                    className="inline-flex min-h-10 items-center justify-center border border-[#2b2b2b]/25 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="inline-flex min-h-10 items-center justify-center border border-[#0B1620]/25 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     查看完整購物車
                   </Link>

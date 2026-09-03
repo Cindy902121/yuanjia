@@ -115,7 +115,7 @@ export function EditorialProductList({
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="搜尋商品名稱"
             aria-label="搜尋商品名稱"
-            className="w-full border-b border-[#2b2b2b]/30 bg-transparent py-2 text-sm text-[#2b2b2b] outline-none placeholder:text-[#8a8a8a] focus:border-[#2b2b2b]"
+            className="w-full border-b border-[#0B1620]/30 bg-transparent py-2 text-sm text-[#0B1620] outline-none placeholder:text-[#5C7383] focus:border-[#0B1620]"
           />
           {hasActiveFilters ? (
             <button
@@ -125,7 +125,7 @@ export function EditorialProductList({
                 setSelectedCategorySlugs([]);
                 setSelectedTagSlugs([]);
               }}
-              className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+              className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
             >
               CLEAR
             </button>
@@ -161,12 +161,12 @@ export function EditorialProductList({
 
       {/* 右側商品清單：2 欄網格，無編號。手機版 order-1，見上方 aside 的說明。 */}
       <div className="order-1 flex flex-1 flex-col gap-2 lg:order-2">
-        <p className="mb-6 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]" aria-live="polite">
+        <p className="mb-6 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]" aria-live="polite">
           {hasActiveFilters ? `${filtered.length} RESULTS` : `${filtered.length} ITEMS`}
         </p>
 
         {filtered.length === 0 ? (
-          <p className="border-t border-[#2b2b2b]/15 py-16 text-center text-sm font-light text-[#8a8a8a]">無符合商品</p>
+          <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#5C7383]">無符合商品</p>
         ) : (
           <div className="grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2">
             {filtered.map((product) => {
@@ -178,7 +178,7 @@ export function EditorialProductList({
                       {card.coverImage ? (
                         <Image src={card.coverImage.url} alt={card.coverImage.alt} fill sizes="(min-width: 640px) 45vw, 90vw" className="object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#F3F1EB] text-xs text-[#8a8a8a]">
+                        <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#5C7383]">
                           無商品圖片
                         </div>
                       )}
@@ -187,19 +187,19 @@ export function EditorialProductList({
                     <div className="flex flex-col gap-2">
                       <Link
                         href={`/products/${product.slug}`}
-                        className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+                        className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
                       >
-                        <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#2b2b2b] group-hover:text-[#3E5C6B]">
+                        <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#0B1620] group-hover:text-[#FF5A36]">
                           {product.name}
                         </h2>
                       </Link>
-                      <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#4a4a4a]">{card.shortDescription}</p>
+                      <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#5C7383]">{card.shortDescription}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-4">
-                        <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#2b2b2b]">
+                        <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                           NT$ {card.price}
                         </span>
                         {card.inventoryStatus === "out_of_stock" ? (
-                          <span className="text-xs tracking-widest text-[#8a8a8a]">缺貨</span>
+                          <span className="text-xs tracking-widest text-[#5C7383]">缺貨</span>
                         ) : null}
                       </div>
                       <div className="relative z-10 mt-1">
@@ -220,7 +220,7 @@ export function EditorialProductList({
 function EditorialFilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">{label}</span>
+      <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">{label}</span>
       <div className="flex flex-col gap-2" role="group" aria-label={`依${label}篩選`}>
         {children}
       </div>
@@ -243,7 +243,7 @@ function EditorialFilterToggle({
       onClick={onClick}
       aria-pressed={active}
       className={`w-fit border-b pb-0.5 text-left text-sm font-light transition-colors ${
-        active ? "border-[#3E5C6B] text-[#3E5C6B]" : "border-transparent text-[#4a4a4a] hover:border-[#2b2b2b]/30"
+        active ? "border-[#FF5A36] text-[#FF5A36]" : "border-transparent text-[#5C7383] hover:border-[#0B1620]/30"
       }`}
     >
       {children}

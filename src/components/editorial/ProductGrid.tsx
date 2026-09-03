@@ -15,7 +15,7 @@ import { editorialButtonLight } from "@/lib/editorial/styles";
  */
 export function EditorialProductGrid({ products }: { products: ProductCardData[] }) {
   if (products.length === 0) {
-    return <p className="border-t border-[#2b2b2b]/15 py-16 text-center text-sm font-light text-[#8a8a8a]">無符合商品</p>;
+    return <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#5C7383]">無符合商品</p>;
   }
 
   return (
@@ -32,7 +32,7 @@ export function EditorialProductGrid({ products }: { products: ProductCardData[]
                 className="object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#F3F1EB] text-xs text-[#8a8a8a]">
+              <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#5C7383]">
                 無商品圖片
               </div>
             )}
@@ -41,19 +41,19 @@ export function EditorialProductGrid({ products }: { products: ProductCardData[]
           <div className="flex flex-col gap-2">
             <Link
               href={`/products/${product.slug}`}
-              className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+              className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
             >
-              <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#2b2b2b] group-hover:text-[#3E5C6B]">
+              <h2 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#0B1620] group-hover:text-[#FF5A36]">
                 {product.name}
               </h2>
             </Link>
-            <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#4a4a4a]">{product.shortDescription}</p>
+            <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#5C7383]">{product.shortDescription}</p>
             <div className="mt-1 flex flex-wrap items-center gap-4">
-              <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#2b2b2b]">
+              <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                 NT$ {product.price}
               </span>
               {product.inventoryStatus === "out_of_stock" ? (
-                <span className="text-xs tracking-widest text-[#8a8a8a]">缺貨</span>
+                <span className="text-xs tracking-widest text-[#5C7383]">缺貨</span>
               ) : null}
             </div>
             <div className="relative z-10 mt-1">

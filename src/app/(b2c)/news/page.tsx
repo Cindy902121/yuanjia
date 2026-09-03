@@ -34,16 +34,16 @@ export const metadata: Metadata = {
  */
 export default function NewsPage() {
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
-      <section className={NEWS_ARTICLES.length === 0 ? "" : "border-b border-[#e5e2da]"}>
+      <section className={NEWS_ARTICLES.length === 0 ? "" : "border-b border-[#D4DEE2]"}>
         <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
               NEWS
             </span>
-            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#2b2b2b] sm:text-4xl">
+            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620] sm:text-4xl">
               最新消息
             </h1>
           </FadeInSection>
@@ -54,7 +54,7 @@ export default function NewsPage() {
         <section>
           <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center gap-3 px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-24">
             <FadeInSection>
-              <p className="text-sm font-light text-[#4a4a4a]">目前尚無最新消息，敬請期待新品與活動公告。</p>
+              <p className="text-sm font-light text-[#5C7383]">目前尚無最新消息，敬請期待新品與活動公告。</p>
             </FadeInSection>
           </div>
         </section>
@@ -65,20 +65,20 @@ export default function NewsPage() {
               <FadeInSection key={article.slug}>
                 <Link
                   href={`/news/${article.slug}`}
-                  className="group flex flex-col gap-3 border-t border-[#2b2b2b]/15 py-10 first:border-t-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+                  className="group flex flex-col gap-3 border-t border-[#0B1620]/15 py-10 first:border-t-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
                 >
                   <div className="flex items-baseline gap-4">
-                    <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#3E5C6B]">
+                    <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#FF5A36]">
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                    <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                       {article.publishDate}
                     </time>
                   </div>
-                  <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium leading-[1.6] text-[#2b2b2b] group-hover:text-[#3E5C6B] sm:text-2xl">
+                  <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium leading-[1.6] text-[#0B1620] group-hover:text-[#FF5A36] sm:text-2xl">
                     {article.title}
                   </h2>
-                  <p className="max-w-2xl text-sm font-light leading-[1.8] text-[#4a4a4a]">
+                  <p className="max-w-2xl text-sm font-light leading-[1.8] text-[#5C7383]">
                     {article.summaryBullets[0]}
                   </p>
                 </Link>

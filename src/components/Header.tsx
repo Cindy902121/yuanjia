@@ -78,6 +78,32 @@ import { CartDrawer } from "@/components/CartDrawer";
  * `priority` 應該留給真的是 LCP 候選的圖片，例如首頁／About／企業合作頁的
  * `hero-seafood.jpg`（`fill sizes="100vw"` 滿版大圖，見各自 page.tsx）——那些
  * 已經是正確用法，不需要跟著拿掉。
+ *
+ * 2026-09（配色遷移，使用者要求「Formal Version UI + Preview Color
+ * Palette」——只換色，不換排版／結構／互動）：底色從暖白 `#FAF9F6` 換成
+ * `/ui-preview` 的深海色 `#071B2B`，文字／邊框／hover 色跟著從「深色文字
+ * 配淺色底」整組反轉成「淺色文字配深色底」（`text-[#4a4a4a]` 等→
+ * `text-white/70`，`hover:text-[#3E5C6B]`→`hover:text-[#FF5A36]`），
+ * 位置／間距／字級／導覽項目順序完全沒有動。下拉選單的陰影
+ * `shadow-[...]` 顏色也跟著加深（原本 `rgba(43,43,43,0.1)` 太淺、在新的
+ * 深色選單面板上幾乎看不出來），純粹是因為背景色改變而必須連動調整的
+ * 陰影顏色，不是新增陰影效果。
+ *
+ * 2026-09（同批修改，使用者回報「logo 顏色跑掉、只剩一片白」後修正）：
+ * logo 一開始用 `brightness-0 invert` 處理（想法是讓深色 logo 在深色底上
+ * 反轉成白色），但 `brightness(0)` 對「不透明的每一個像素」一視同仁全部
+ * 變黑（不分原本是白底還是藍綠色的圖案本身），`invert(1)` 再全部翻成
+ * 白色，結果整張圖變成一塊沒有線條細節的純白矩形，不是「白色的 logo
+ * 圖案」。第一次修正時拿掉濾鏡、但額外加了一層淺色（`#EAF4F8`）背景色塊
+ * 墊底。
+ *
+ * 2026-09（同日，使用者回報 Header logo 有明顯淡藍色矩形色塊、要求比照
+ * Footer 做法後再次修正）：Footer.tsx 的 logo（同一張 `/yens-logo.png`）
+ * 完全沒有加任何底色或濾鏡，直接放在同樣的 `#071B2B` 深色底上，實際渲染
+ * 完全正常、對比足夠——證明圖檔本身沒有問題，上一輪加的淺色墊底其實是
+ * 不必要的裝飾（濾鏡拿掉後 logo 本來就能正常顯示原始顏色）。這裡拿掉
+ * `bg-[#EAF4F8] px-2 py-1.5`，改成跟 Footer 一樣單純的透明背景，只有
+ * logo 圖案＋外框 focus 樣式，讓 logo 直接露出 Header 原本的深色底。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -85,14 +111,14 @@ export async function Header() {
   const isLoggedIn = Boolean(data?.claims);
 
   const navLinkClass =
-    "text-[#4a4a4a] tracking-[0.1em] transition-colors hover:text-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]";
+    "text-white/70 tracking-[0.1em] transition-colors hover:text-[#FF5A36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#2b2b2b]/10 bg-[#FAF9F6]">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071B2B]">
       <div className="mx-auto flex w-full max-w-[1300px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4 sm:px-8 lg:h-[76px] lg:px-10 lg:py-0">
         <Link
           href="/"
-          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+          className="inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
         >
           <Image
             src="/yens-logo.png"
@@ -116,17 +142,17 @@ export async function Header() {
               關於元家
             </Link>
             <div className="invisible absolute left-1/2 top-full z-10 w-40 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              <div className="flex flex-col gap-1 border border-[#2b2b2b]/15 bg-[#FAF9F6] p-2 shadow-[0_8px_24px_rgba(43,43,43,0.1)]">
-                <Link href="/#brand-story" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+              <div className="flex flex-col gap-1 border border-white/15 bg-[#071B2B] p-2 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                <Link href="/#brand-story" className="px-3 py-2 text-sm text-white/70 hover:text-[#FF5A36]">
                   品牌故事
                 </Link>
-                <Link href="/#advantages" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                <Link href="/#advantages" className="px-3 py-2 text-sm text-white/70 hover:text-[#FF5A36]">
                   企業優勢
                 </Link>
-                <Link href="/media" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                <Link href="/media" className="px-3 py-2 text-sm text-white/70 hover:text-[#FF5A36]">
                   媒體報導
                 </Link>
-                <Link href="/news" className="px-3 py-2 text-sm text-[#4a4a4a] hover:text-[#3E5C6B]">
+                <Link href="/news" className="px-3 py-2 text-sm text-white/70 hover:text-[#FF5A36]">
                   最新消息
                 </Link>
               </div>
@@ -150,7 +176,7 @@ export async function Header() {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
+                  className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
                 >
                   登出
                 </button>
@@ -159,7 +185,7 @@ export async function Header() {
           ) : (
             <Link
               href="/login"
-              className="border border-[#2b2b2b]/30 px-4 py-1.5 text-xs tracking-[0.1em] text-[#2b2b2b] transition-colors hover:border-[#2b2b2b] hover:bg-[#2b2b2b] hover:text-white"
+              className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
             >
               會員登入
             </Link>

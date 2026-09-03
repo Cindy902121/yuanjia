@@ -262,7 +262,7 @@ export function B2CHelpWidget() {
         onClick={openPanel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2b2b2b] text-2xl text-white shadow-[0_8px_24px_rgba(43,43,43,0.3)] transition-colors hover:bg-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#0B1620] text-2xl text-white shadow-[0_8px_24px_rgba(43,43,43,0.3)] transition-colors hover:bg-[#FF5A36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
       >
         <span aria-hidden="true">💬</span>
         <span className="sr-only">開啟需求協助小工具</span>
@@ -274,17 +274,17 @@ export function B2CHelpWidget() {
           role="dialog"
           aria-modal="false"
           aria-label="需求協助小工具"
-          className="absolute bottom-[calc(100%+0.75rem)] right-0 flex max-h-[32rem] w-80 flex-col overflow-hidden border border-[#2b2b2b]/15 bg-[#FAF9F6] shadow-[0_16px_40px_rgba(43,43,43,0.2)]"
+          className="absolute bottom-[calc(100%+0.75rem)] right-0 flex max-h-[32rem] w-80 flex-col overflow-hidden border border-[#0B1620]/15 bg-[#EAF4F8] shadow-[0_16px_40px_rgba(43,43,43,0.2)]"
         >
-          <div className="flex items-center justify-between border-b border-[#2b2b2b]/15 px-4 py-3">
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-sm font-medium text-[#2b2b2b]">
+          <div className="flex items-center justify-between border-b border-[#0B1620]/15 px-4 py-3">
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-sm font-medium text-[#0B1620]">
               {view === "menu" ? "需要幫忙嗎？" : view === "finder" ? "幫你找商品" : "常見問題"}
             </h2>
             <button
               type="button"
               onClick={closePanel}
               aria-label="關閉"
-              className="flex h-8 w-8 items-center justify-center text-[#4a4a4a] transition-colors hover:text-[#2b2b2b]"
+              className="flex h-8 w-8 items-center justify-center text-[#5C7383] transition-colors hover:text-[#0B1620]"
             >
               ✕
             </button>
@@ -300,7 +300,7 @@ export function B2CHelpWidget() {
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => trackEvent({ event_name: "b2c_line_click" })}
-                    className="flex min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">💚</span>
                     加 LINE 官方帳號詢問
@@ -310,7 +310,7 @@ export function B2CHelpWidget() {
                   <button
                     type="button"
                     onClick={enterFinder}
-                    className="flex w-full min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-left text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex w-full min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-left text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">🔍</span>
                     幫我找適合的商品
@@ -323,7 +323,7 @@ export function B2CHelpWidget() {
                       setView("ai");
                       trackEvent({ event_name: "b2c_ai_demo_open" });
                     }}
-                    className="flex w-full min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-left text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex w-full min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-left text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">🤖</span>
                     常見問題快速問答
@@ -337,14 +337,14 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
 
                 {step < FINDER_STEPS.length ? (
                   <>
-                    <p className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">
+                    <p className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">
                       {FINDER_STEPS[step].question}
                     </p>
                     <div role="group" aria-label={FINDER_STEPS[step].question} className="flex flex-wrap gap-2">
@@ -353,7 +353,7 @@ export function B2CHelpWidget() {
                           key={option.key}
                           type="button"
                           onClick={() => selectAnswer(option.key)}
-                          className="border border-[#2b2b2b]/25 px-3 py-1.5 text-xs text-[#4a4a4a] transition-colors hover:border-[#3E5C6B] hover:text-[#3E5C6B]"
+                          className="border border-[#0B1620]/25 px-3 py-1.5 text-xs text-[#5C7383] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
                         >
                           {option.label}
                         </button>
@@ -363,21 +363,21 @@ export function B2CHelpWidget() {
                       <button
                         type="button"
                         onClick={skipOptionalStep}
-                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
                       >
                         SKIP
                       </button>
                     ) : null}
-                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                       STEP {step + 1} / {FINDER_STEPS.length}
                     </p>
                   </>
                 ) : (
                   <>
                     {resultsLoading ? (
-                      <p className="text-center text-sm font-light text-[#8a8a8a]">搜尋中…</p>
+                      <p className="text-center text-sm font-light text-[#5C7383]">搜尋中…</p>
                     ) : results.length === 0 ? (
-                      <p className="border border-dashed border-[#2b2b2b]/20 p-4 text-center text-sm font-light text-[#8a8a8a]">
+                      <p className="border border-dashed border-[#0B1620]/20 p-4 text-center text-sm font-light text-[#5C7383]">
                         無符合商品
                       </p>
                     ) : (
@@ -393,10 +393,10 @@ export function B2CHelpWidget() {
                                 });
                                 closePanel();
                               }}
-                              className="flex items-center justify-between gap-2 border border-[#2b2b2b]/20 px-3 py-2 text-sm transition-colors hover:border-[#3E5C6B]"
+                              className="flex items-center justify-between gap-2 border border-[#0B1620]/20 px-3 py-2 text-sm transition-colors hover:border-[#FF5A36]"
                             >
-                              <span className="text-[#2b2b2b]">{product.name}</span>
-                              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                              <span className="text-[#0B1620]">{product.name}</span>
+                              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
                                 NT$ {product.price}
                               </span>
                             </Link>
@@ -407,7 +407,7 @@ export function B2CHelpWidget() {
                     <button
                       type="button"
                       onClick={resetFinder}
-                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#3E5C6B] hover:text-[#2b2b2b]"
+                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#FF5A36] hover:text-[#0B1620]"
                     >
                       RESTART
                     </button>
@@ -421,18 +421,18 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={() => setView("menu")}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
-                <p className="text-xs font-light text-[#8a8a8a]">
+                <p className="text-xs font-light text-[#5C7383]">
                   以下是固定的常見問答內容，僅供展示，不會呼叫真正的 AI，也不會保存對話。
                 </p>
                 <dl className="flex flex-col gap-4">
                   {AI_DEMO_ENTRIES.map((entry) => (
-                    <div key={entry.question} className="flex flex-col gap-1 border-t border-[#2b2b2b]/10 pt-3 first:border-t-0 first:pt-0">
-                      <dt className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">Q：{entry.question}</dt>
-                      <dd className="text-sm font-light leading-6 text-[#4a4a4a]">A：{entry.answer}</dd>
+                    <div key={entry.question} className="flex flex-col gap-1 border-t border-[#0B1620]/10 pt-3 first:border-t-0 first:pt-0">
+                      <dt className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">Q：{entry.question}</dt>
+                      <dd className="text-sm font-light leading-6 text-[#5C7383]">A：{entry.answer}</dd>
                     </div>
                   ))}
                 </dl>
