@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { CartPageClient } from "./cart-page-client";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
+import { getB2BAccess } from "@/lib/b2b/catalog";
+import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
 
 const TITLE = "購物車 | 元家";
 const DESCRIPTION = "查看購物車內容，調整數量後前往結帳。";
@@ -27,11 +29,16 @@ export const metadata: Metadata = {
  *
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 cart-page-client.tsx。
+ *
+ * 2026-09-03：補上路由規格註 1「B2B 誤入 B2C 購物路由」的守門畫面——B2B 公司
+ * session 進來時不渲染購物車，改顯示 B2BShoppingGuard（見該元件檔頭說明）。
  */
-export default function CartPage() {
+export default async function CartPage() {
+  const access = await getB2BAccess();
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-      <CartPageClient />
+      {access.role === "b2b" ? <B2BShoppingGuard /> : <CartPageClient />}
     </main>
   );
 }

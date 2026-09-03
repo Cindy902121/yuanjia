@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { CheckoutForm } from "./checkout-form";
+import { getB2BAccess } from "@/lib/b2b/catalog";
+import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
 
 /**
  * FDD §9.1：「/checkout 的 title 與 H1 使用「結帳」，但不加入 sitemap 且設定
@@ -21,11 +23,15 @@ export const metadata: Metadata = {
  *
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 checkout-form.tsx。
+ *
+ * 2026-09-03：補上路由規格註 1「B2B 誤入 B2C 購物路由」的守門畫面，同 /cart。
  */
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const access = await getB2BAccess();
+
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-      <CheckoutForm />
+      {access.role === "b2b" ? <B2BShoppingGuard /> : <CheckoutForm />}
     </main>
   );
 }

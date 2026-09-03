@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSessionContext } from "@/lib/auth-context";
+import { getB2BAccess } from "@/lib/b2b/catalog";
 import { logout } from "@/lib/actions/auth";
 import { DEMO_MEMBER_PROFILE } from "@/lib/cart/demo-profile";
 import { editorialButtonSolid } from "@/lib/editorial/styles";
+import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
 
 /**
  * /user 頁面（2026-08-19，PRD B2C 伸展項目，8/17-8/22 團隊任務清單列為選做）。
@@ -25,6 +27,11 @@ import { editorialButtonSolid } from "@/lib/editorial/styles";
  *
  * noindex：這是帳號相關頁面，不該被搜尋引擎索引，跟 /login、/checkout 同一個
  * 處理方式。
+ *
+ * 2026-09-03：路由規格表 /user 這一列，B2B 公司使用者是「登出確認[^1]」，不是
+ * 直接顯示 B2C 會員中心（B2B 公司 session 也會通過 `!user` 判斷為 false，
+ * 之前完全沒特殊處理）。這裡在讀 B2C session 之前先用 getB2BAccess() 判斷，
+ * 是 B2B 就顯示 B2BShoppingGuard，不繼續往下渲染會員資料。
  */
 export const metadata: Metadata = {
   title: "會員中心 | 元家",
@@ -32,7 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default async function UserPage() {
-  const { user } = await getSessionContext();
+  const access = await getB2BAccess();
+  const { user } = access.role === "b2b" ? { user: null } : await getSessionContext();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-24">
@@ -45,7 +53,9 @@ export default async function UserPage() {
         </h1>
       </div>
 
-      {!user ? (
+      {access.role === "b2b" ? (
+        <B2BShoppingGuard />
+      ) : !user ? (
         <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
           <p className="text-sm font-light text-[#5C7383]">請先登入查看會員中心。</p>
           <Link href="/login" className={editorialButtonSolid}>

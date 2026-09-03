@@ -7,6 +7,8 @@ import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { EditorialProductGrid } from "@/components/editorial/ProductGrid";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { getB2BAccess } from "@/lib/b2b/catalog";
+import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
 
 /**
  * /products/tags/[slug] 頁面。
@@ -20,6 +22,9 @@ import { EditorialStyles } from "@/components/editorial/EditorialStyles";
  * （見 src/components/editorial/ProductGrid.tsx），跟 /products 用同一套卡片
  * 視覺，但沒有篩選欄——這頁本身就是「某個標籤的結果」，不需要在結果頁裡再篩
  * 一次。
+ *
+ * 2026-09-03：路由規格註 1，B2B 公司 session 進來顯示「請先登出企業帳號」
+ * 守門畫面，同 /products。
  */
 export async function generateMetadata({
   params,
@@ -45,6 +50,15 @@ export async function generateMetadata({
 }
 
 export default async function ProductTagPage({ params }: PageProps<"/products/tags/[slug]">) {
+  const access = await getB2BAccess();
+  if (access.role === "b2b") {
+    return (
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
+        <B2BShoppingGuard />
+      </main>
+    );
+  }
+
   const { slug } = await params;
   const supabase = await createClient();
   const [tag, products] = await Promise.all([

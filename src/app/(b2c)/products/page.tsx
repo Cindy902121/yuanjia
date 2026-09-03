@@ -7,6 +7,8 @@ import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialProductList } from "@/components/editorial/ProductList";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
+import { getB2BAccess } from "@/lib/b2b/catalog";
+import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
 
 const TITLE = "商品列表 | 元家";
 const DESCRIPTION = "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。";
@@ -42,8 +44,21 @@ export const metadata: Metadata = {
  * 舊版元件（ProductListWithFilters、ProductCard、FeaturedProductsBanner）
  * **沒有刪除**——`/products/categories/[slug]`、`/products/tags/[slug]` 這兩個
  * 還沒重新設計的頁面繼續沿用，等之後也改版了才會是真的可以清掉舊元件的時候。
+ *
+ * 2026-09-03：路由規格註 1，B2B 公司 session 進來要顯示「請先登出企業帳號」
+ * 守門畫面，不是商品列表。放在商品／分類資料查詢之前判斷，B2B 進來時直接
+ * short-circuit，不需要多打這幾個 Supabase 查詢。
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
+  const access = await getB2BAccess();
+  if (access.role === "b2b") {
+    return (
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
+        <B2BShoppingGuard />
+      </main>
+    );
+  }
+
   const params = await searchParams;
   const supabase = await createClient();
   const [products, categories] = await Promise.all([
