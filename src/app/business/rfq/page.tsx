@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import BusinessHeader from "../catalog/business-header";
 import RfqHistoryClient from "./rfq-history-client";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "詢價紀錄 | 元家企業採購服務",
+};
 
 export default async function RfqPage() {
   const access = await getB2BAccess();

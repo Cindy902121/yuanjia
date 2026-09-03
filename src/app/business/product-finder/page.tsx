@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import BusinessHeader from "../catalog/business-header";
 import ProductFinderClient from "./product-finder-client";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "需求篩選器 | 元家企業採購服務",
+};
 
 export default async function ProductFinderPage() {
   const access = await getB2BAccess();
