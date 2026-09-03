@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import CatalogInquiryWorkspace from "./catalog-inquiry-workspace";
+import B2bCatalogTracker from "./catalog-tracker";
 import BusinessHeader from "./business-header";
 import CatalogJourneyPrototype from "./catalog-journey-prototype";
 import CatalogProcurementPrototype from "./catalog-procurement-prototype";
@@ -142,6 +143,12 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
       style={{ fontFamily: '"Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif' }}
     >
       <BusinessHeader companyName={access.companyName} />
+      <B2bCatalogTracker
+        brand={brand}
+        category={category}
+        hasKeyword={Boolean(keyword)}
+        selectedTags={selectedTags}
+      />
 
       {activeProject && activeProjectOffer ? (
         <section aria-labelledby="project-catalog-title" className="border-b border-[#B7D3E2] bg-[#EAF5FB]">
