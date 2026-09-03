@@ -104,6 +104,37 @@ import { CartDrawer } from "@/components/CartDrawer";
  * 不必要的裝飾（濾鏡拿掉後 logo 本來就能正常顯示原始顏色）。這裡拿掉
  * `bg-[#EAF4F8] px-2 py-1.5`，改成跟 Footer 一樣單純的透明背景，只有
  * logo 圖案＋外框 focus 樣式，讓 logo 直接露出 Header 原本的深色底。
+ *
+ * 2026-09-03（9/3 B2C QA 排程「檢查手機版」發現）：手機寬度（375px 測試）下，
+ * 原本的 `<nav>` 跟右側帳號區塊沒有任何收合機制，所有連結（商品分類／食安
+ * 與產地／關於元家／常見問題／企業合作／會員中心或登入／登出／購物車）直接
+ * 用 `flex-wrap` 擠成三整行文字，開場畫面近 40% 高度都被導覽列占滿才看到
+ * 主視覺。這裡補上 `lg:hidden` 以下（跟檔案裡其他處的 `lg:` 斷點一致）收成
+ * 漢堡選單：
+ * - 純 CSS checkbox hack（隱藏的 `<input type="checkbox" className="peer">`
+ *   ＋ `<label>` 當觸發按鈕 ＋ 選單面板用 `peer-checked:flex` 顯示），刻意不
+ *   拆 Client Component、不用 `useState`——理由跟檔案上面「關於元家」下拉選單
+ *   一樣：Header 是 async Server Component，純 CSS 解法才能維持這點。
+ * - 手機選單面板是 `absolute left-0 top-full w-full`，不是 `fixed`、也沒有用
+ *   `transform`／`filter`／`backdrop-filter`／`will-change: transform`——這幾個
+ *   屬性會讓套用的元素變成底下 `position: fixed` 子元素的新定位基準，
+ *   `<CartDrawer />` 的滿版遮罩就是靠 `fixed` 定位，這條限制在檔案上面
+ *   `backdrop-blur` 那次事故已經記錄過，這裡選單面板雖然不是 CartDrawer 的
+ *   祖先節點（兩者是 header 底下的手足），但還是照同一個原則挑最安全的
+ *   屬性組合，不留隱患。
+ * - 「關於元家」在桌面版是 hover 下拉（媒體報導／最新消息），手機選單裡改成
+ *   直接展開的縮排子連結——觸控裝置沒有 hover，展開式下拉在手機上本來就不
+ *   好用，攤平成清單反而更好點。
+ * - 購物車入口（`<CartDrawer />`）維持在頂列，手機版也一樣一眼就看得到、
+ *   點得到，不收進選單面板裡——這是大部分電商站的慣例，購物車跟漢堡選單
+ *   分開才不會多一層點擊。
+ * - 選單面板本身沒有 JS 控制的「點連結後自動收合」——不需要：面板裡的連結
+ *   都是換頁，Header 是 Server Component，換頁後重新渲染，checkbox 本來就會
+ *   回到未勾選狀態；唯一沒有換頁動作的登出按鈕用的是既有 `logout()` Server
+ *   Action，一樣會導頁，同樣道理不需要額外處理。
+ * - 斷點選 `lg`（1024px）而不是 `sm`／`md`：導覽項目數量（4 個主連結＋4 個
+ *   帳號區塊項目）在平板寬度一樣塞不進一行，跟這個檔案其他地方（例如
+ *   `lg:h-[76px]`）已經用 `lg` 當「完整桌面版佈局」的分界一致。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -112,10 +143,23 @@ export async function Header() {
 
   const navLinkClass =
     "text-white/70 tracking-[0.1em] transition-colors hover:text-[#FF5A36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]";
+  const mobileNavLinkClass =
+    "block px-1 py-2.5 text-sm text-white/70 tracking-[0.1em] transition-colors hover:text-[#FF5A36]";
+  const mobileAccountButtonClass =
+    "mt-1 inline-flex w-fit border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]";
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071B2B]">
-      <div className="mx-auto flex w-full max-w-[1300px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4 sm:px-8 lg:h-[76px] lg:px-10 lg:py-0">
+      {/* `sr-only`，不是 `hidden`——`hidden`＝`display:none` 會讓這顆 checkbox
+          整個從 tab 順序跟無障礙樹裡消失，鍵盤使用者連 Tab 都碰不到、更打不
+          開手機選單（測的時候用瀏覽器自動化工具點它才發現這個問題：工具跟
+          鍵盤使用者遇到的是同一種「摸不到」）。`sr-only` 只是視覺上收起來，
+          仍然保留在 tab 順序＋可以用空白鍵切換，下面的 `<label>` 補上
+          `peer-focus-visible:` 讓鍵盤 focus 到它時，看得到的是 label 本身
+          的外框提示。 */}
+      <input type="checkbox" id="mobile-nav-toggle" className="peer sr-only" />
+
+      <div className="mx-auto flex w-full max-w-[1300px] items-center justify-between gap-x-6 px-5 py-4 sm:px-8 lg:h-[76px] lg:px-10 lg:py-0">
         <Link
           href="/"
           className="inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
@@ -130,7 +174,7 @@ export async function Header() {
           />
         </Link>
 
-        <nav aria-label="主導覽" className="flex flex-wrap items-center gap-x-7 gap-y-2 text-sm">
+        <nav aria-label="主導覽" className="hidden items-center gap-x-7 text-sm lg:flex">
           <Link href="/products" className={navLinkClass}>
             商品分類
           </Link>
@@ -163,36 +207,89 @@ export async function Header() {
           </Link>
         </nav>
 
-        <div className="flex flex-wrap items-center gap-5 text-sm">
-          <Link href="/business/lead" className={`${navLinkClass} text-xs`}>
-            企業合作
-          </Link>
-
-          {isLoggedIn ? (
-            <>
-              <Link href="/user" className={navLinkClass}>
-                會員中心
-              </Link>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
-                >
-                  登出
-                </button>
-              </form>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
-            >
-              會員登入
+        <div className="flex items-center gap-5 text-sm">
+          <div className="hidden items-center gap-5 lg:flex">
+            <Link href="/business/lead" className={`${navLinkClass} text-xs`}>
+              企業合作
             </Link>
-          )}
+
+            {isLoggedIn ? (
+              <>
+                <Link href="/user" className={navLinkClass}>
+                  會員中心
+                </Link>
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
+                  >
+                    登出
+                  </button>
+                </form>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]"
+              >
+                會員登入
+              </Link>
+            )}
+          </div>
 
           <CartDrawer />
+
+          <label
+            htmlFor="mobile-nav-toggle"
+            className="cursor-pointer text-lg leading-none text-white/70 transition-colors hover:text-[#FF5A36] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#FF5A36] lg:hidden"
+          >
+            ☰<span className="sr-only">選單</span>
+          </label>
         </div>
+      </div>
+
+      <div className="hidden flex-col border-t border-white/10 bg-[#071B2B] px-5 py-4 sm:px-8 peer-checked:flex lg:hidden">
+        <Link href="/products" className={mobileNavLinkClass}>
+          商品分類
+        </Link>
+        <Link href="/#quality" className={mobileNavLinkClass}>
+          食安與產地
+        </Link>
+        <Link href="/#about" className={mobileNavLinkClass}>
+          關於元家
+        </Link>
+        <Link href="/media" className={`${mobileNavLinkClass} pl-5 text-xs text-white/55`}>
+          媒體報導
+        </Link>
+        <Link href="/news" className={`${mobileNavLinkClass} pl-5 text-xs text-white/55`}>
+          最新消息
+        </Link>
+        <Link href="/faq" className={mobileNavLinkClass}>
+          常見問題
+        </Link>
+
+        <div className="my-2 h-px bg-white/10" aria-hidden="true" />
+
+        <Link href="/business/lead" className={mobileNavLinkClass}>
+          企業合作
+        </Link>
+
+        {isLoggedIn ? (
+          <>
+            <Link href="/user" className={mobileNavLinkClass}>
+              會員中心
+            </Link>
+            <form action={logout}>
+              <button type="submit" className={mobileAccountButtonClass}>
+                登出
+              </button>
+            </form>
+          </>
+        ) : (
+          <Link href="/login" className={mobileAccountButtonClass}>
+            會員登入
+          </Link>
+        )}
       </div>
     </header>
   );
