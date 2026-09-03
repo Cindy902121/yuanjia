@@ -2,11 +2,14 @@
 
 import { FormEvent, useState } from "react";
 
+import { trackEvent } from "@/lib/analytics/track";
+
 type LoginMode = "email" | "customer-code";
 
 type LoginResponse = {
   message?: string;
   redirectTo?: string;
+  role?: "admin" | "business_staff" | "b2b" | "b2c";
 };
 
 const modeContent = {
@@ -61,6 +64,9 @@ export function LoginForm() {
       return;
     }
 
+    if (result.role === "b2b") {
+      trackEvent({ event_name: "b2b_login_success" });
+    }
     window.location.assign(result.redirectTo);
   }
 

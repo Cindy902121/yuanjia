@@ -147,6 +147,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         brand={brand}
         category={category}
         hasKeyword={Boolean(keyword)}
+        resultCount={products.length}
         selectedTags={selectedTags}
       />
 

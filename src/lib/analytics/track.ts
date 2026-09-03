@@ -2,24 +2,21 @@
 
 import type { AnalyticsEventName } from "../analytics-events";
 
-interface TrackEventPayload {
+export interface TrackEventPayload {
   event_name: AnalyticsEventName;
-  /**
- * 目前 analytics_events 資料表唯一有對應欄位（product_reference）的參數。
- * 篩選條件的明細尚未納入此分支的資料表，故不送未被 API 接受的欄位。
-   */
   product_id?: string;
+  event_data?: Record<string, unknown>;
 }
 
 /**
- * 送出 B2C／B2B 分析事件。
+ * 送出分析事件。B2C 事件保留相容行為，B2B 事件會由 server route 補上
+ * company、Auth user、完整客戶代碼快照與 first-party session。
  *
- * 以 fire-and-forget 方式送出：
+ * 刻意做成 fire-and-forget：
  * - 用 `keepalive: true`，確保使用者點擊連結、頁面開始導覽時，事件還是送得出去。
  * - `catch` 吞掉所有錯誤（包含離線等），不會讓任何畫面壞掉、不會擋住互動。
  * - 只在開發模式印 `console.debug`，方便開發時確認「有沒有在對的時機被呼叫」，
  *   正式環境不會有多餘的 log。
- *
  */
 export function trackEvent(payload: TrackEventPayload) {
   fetch("/api/analytics/events", {
@@ -28,7 +25,7 @@ export function trackEvent(payload: TrackEventPayload) {
     body: JSON.stringify(payload),
     keepalive: true,
   }).catch(() => {
-    // API 尚未存在或網路錯誤時靜默失敗。
+    // 分析事件失敗不可中斷企業客戶的瀏覽或詢價流程。
   });
 
   if (process.env.NODE_ENV === "development") {

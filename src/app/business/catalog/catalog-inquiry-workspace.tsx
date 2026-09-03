@@ -360,7 +360,11 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
 
   function addItem(quantity: number, selection: SpecificationSelection) {
     if (!chosenProduct) return;
-    trackEvent({ event_name: "b2b_rfq_add", product_id: chosenProduct.id });
+    trackEvent({
+      event_name: "b2b_rfq_add",
+      product_id: chosenProduct.id,
+      event_data: { product_id: chosenProduct.id },
+    });
     const key = selectionKey(chosenProduct, selection);
     setItems((current) => {
       const matched = current.find((item) => item.key === key);
@@ -389,7 +393,10 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) return { ok: false, message: body.error ?? "詢價送出失敗，請稍後再試。" };
-    trackEvent({ event_name: "b2b_rfq_submit" });
+    trackEvent({
+      event_name: "b2b_rfq_submit",
+      event_data: { rfq_id: body.rfqId },
+    });
     setItems([]);
     return { ok: true, message: `詢價已送出（編號 ${String(body.rfqId ?? "").slice(0, 8)}），業務將與您聯繫。` };
   }
@@ -401,7 +408,20 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
           <p><span className="font-bold">採購小提醒：</span>先選規格，再集中送出詢價需求。</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => <ProductCard key={product.id} onChoose={(nextProduct) => { trackEvent({ event_name: "b2b_product_view", product_id: nextProduct.id }); setChosenProduct(nextProduct); }} onDetail={(nextProduct) => { trackEvent({ event_name: "b2b_product_view", product_id: nextProduct.id }); setDetailProduct(nextProduct); }} product={product} />)}
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              onChoose={(nextProduct) => {
+                trackEvent({ event_name: "b2b_product_view", product_id: nextProduct.id });
+                setChosenProduct(nextProduct);
+              }}
+              onDetail={(nextProduct) => {
+                trackEvent({ event_name: "b2b_product_view", product_id: nextProduct.id });
+                setDetailProduct(nextProduct);
+              }}
+              product={product}
+            />
+          ))}
         </div>
       </section>
       {inquiryOpen ? <div className="fixed inset-0 z-40 bg-[#17242A]/30 backdrop-blur-[1px]" role="presentation"><button aria-label="收起詢價單" className="absolute inset-0 cursor-default" onClick={() => setInquiryOpen(false)} type="button" /><div className="absolute inset-y-0 right-0 w-full max-w-[26rem] translate-x-0 transition-transform duration-300"><InquiryPanel items={items} onClose={() => setInquiryOpen(false)} onRemove={(key) => setItems((current) => current.filter((item) => item.key !== key))} onSubmit={submitInquiry} onUpdateQuantity={(key, quantity) => setItems((current) => current.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item))} /></div></div> : null}

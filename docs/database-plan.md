@@ -85,7 +85,7 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 - [x] 前綴規則包含前綴、級距、通路與啟用狀態。
 - [x] 後台可維護代表性商品、套用既有標籤、查看詢價與模擬訂單。
-- [x] 事件資料不包含姓名、電話、Email、完整客戶代碼或 company_id。
+- [x] 事件報表／CSV 不包含姓名、電話、Email、完整客戶代碼或 company_id；原始 B2B 事件僅由 server-side 安全契約保存必要識別欄位。
 - [x] 分析篩選項：日期、級距、通路、產品、分類與品牌。
 
 #### C1. 前綴規則與客戶分類
@@ -123,13 +123,16 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 
 #### C5. 事件隱私與行為分析
 
-- 分析事件只接受白名單內的 `event_name` 與選填 `product_id`；`surface`、`occurred_at`、`product_reference`、`product_category`、`product_brand`、`customer_tier_snapshot`、`channel_snapshot` 均由伺服器產生。
-- B2B 事件的級距／通路由登入 session 的客戶代碼前綴解析；B2C 事件的級距／通路為 `NULL`。不保存 `customer_prefix_snapshot`。
-- 事件不得保存姓名、電話、Email、完整客戶代碼、客戶代碼前綴、`company_id`、使用者 ID、IP、Cookie 或 session token；`product_reference` 僅為商品 UUID。
-- 級距／通路與商品分類／品牌均為事件發生當下的快照；規則或商品內容日後修改時，舊事件不重分類，新事件才使用新值。
-- 分析篩選只作用於 `analytics_events` 的網站行為統計，不延伸套用到 RFQ 數量／商品排名；`surface`（`b2c`／`b2b`）與 `channel_snapshot`（客戶通路）是不同維度。
-- 篩選條件為日期、級距、通路、產品、分類與品牌；每個條件先接受單一值，跨欄位採 `AND`。產品以 `product_reference` UUID 篩選；分類／品牌以事件快照完全相等比對，歷史上曾出現的值仍可選取。
-- 日期以 `Asia/Taipei` 日曆日解讀，`date_from` 與 `date_to` 均包含整日，伺服器轉換為 UTC 查詢 `timestamptz`。無符合資料回傳 `200`、零值與空集合；格式錯誤或不存在的篩選值回傳 `400`。
+- 事件 API 只接受白名單內的 `event_name`、選填 `product_id` 與結構化 `event_data`；`surface`、`occurred_at`、產品／分類／品牌快照、級距／通路與 B2B 身份欄位均由伺服器產生。
+- B2B 事件保存 `actor_user_id`、`company_id`、`session_id`、完整 `customer_code_snapshot`、級距／通路快照與受白名單驗證的 `event_data`；不保存姓名、電話、Email、IP、瀏覽器指紋或 User-Agent，完整代碼不進報表／CSV。
+- `session_id` 使用伺服器隨機第一方 Cookie，30 分鐘無事件後過期；有效事件寫入失敗只記錄 server error，不阻塞企業客戶操作，也不建立重試佇列。
+- 級距／通路與產品分類／品牌均為事件當下快照；規則或商品內容修改後，舊事件不重分類。B2C 事件保留相容 API，但不納入 Admin 報表。
+- Admin 分析只提供 B2B，只有 `admin` 可查看；日期、級距、通路、產品、分類、品牌、事件名稱、篩選類型與 Finder 題目跨欄位採 `AND`、同欄多選採 `OR`，`surface` 固定為 `b2b`。
+- 日期使用 `Asia/Taipei` 起訖整日，預設近 90 日，支援今天／7／30／90 日與自訂，最長 24 個月；超過 90 日確認，趨勢依日／週／月聚合並提供前期比較。
+- 報表由 PostgreSQL 聚合，不載入原始事件；主漏斗與 Finder 漏斗依同一 session 的事件順序計算，公司到達數另列；排行預設不重複公司數，可切換事件指標，RFQ 實際資料另由 `b2b_rfqs` 計算。
+- 新制上線前的舊事件只計入總事件數，不回填公司／使用者／Session、強度、排行或漏斗；Admin summary 與 CSV 單次最多輸出 10,000 筆聚合列。
+- 少於 5 家公司的級距／通路群組、商品行為、Finder 選項與詢價商品列均顯示「其他（已遮罩）」；無資料回傳 200、零值與空集合，格式／篩選錯誤回傳 400，API／資料庫錯誤提供重試。
+- `GET /api/admin/analytics/export` 只輸出聚合列，不輸出原始事件、完整代碼或公司明細；下載前需填用途，並稽核管理者、時間、用途、查詢範圍、格式與筆數。原始事件與完整代碼保留 24 個月，每月清理。
 
 > 本節的 `[x]` 代表需求與驗收規格已確認；本次已整合商品 CRUD、圖片、CSV 批量匯入、規格選項、角色與 B2B 管理頁，以及對應 Storage／migration。
 
@@ -151,6 +154,7 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；CI 維持只跑靜態檢查，不連接測試資料庫；hosted／staging 驗收另依隔離環境執行。
 - [x] B2C schema 擴充延後至另一次有明確資料模型與 backfill／rollback 計畫的工作，
   決策記錄於 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
+- [x] 共識版 B2B 行為分析 migration、事件追蹤、聚合 summary／CSV API、匯出稽核與 Admin 報表 UI 已建立並納入本機版本控制；本次 Git 同步未執行 migration repair 或正式 `db push`。
 
 ### B2B 客戶代碼規則
 
@@ -166,5 +170,10 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
   認證與額外欄位超出目前 PRD／FDD 的 MVP 資料模型，本期依 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)
   延後，待 A／B 另行確認需求後拆分。
 - 測試只使用本機 Supabase 與本機 Next server；測試用 Auth identity 與 fixture 不進入 Git，也不指向正式資料庫。
+
+### 驗證收尾（2026-08-27）
+
+- [x] 清除舊 `.next` 產物後重新完成 TypeScript 檢查與 production build。
+- [x] `pnpm lint` 通過；目前僅保留 5 個既有 warning，沒有 lint error。
 
 在此之前，不建立 ERP 串接、CRM、團購、真實金流、正式訂單或個人 B2B 帳號。

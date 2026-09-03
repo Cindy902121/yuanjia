@@ -4,32 +4,36 @@ import { useEffect } from "react";
 
 import { trackEvent } from "@/lib/analytics/track";
 
-type B2bCatalogTrackerProps = {
-  brand: string;
-  category: string;
-  hasKeyword: boolean;
-  selectedTags: string[];
-};
-
-/**
- * Keeps event collection at the catalog route boundary, so changing a
- * server-rendered filter URL is recorded after the matching result state has
- * been rendered. This branch's analytics API accepts only event names (and an
- * optional product id), so filter details are deliberately not sent yet.
- */
 export default function B2bCatalogTracker({
   brand,
   category,
   hasKeyword,
+  resultCount,
   selectedTags,
-}: B2bCatalogTrackerProps) {
+}: {
+  brand: string;
+  category: string;
+  hasKeyword: boolean;
+  resultCount: number;
+  selectedTags: string[];
+}) {
   useEffect(() => {
     trackEvent({ event_name: "b2b_catalog_view" });
 
-    if (hasKeyword || category || brand || selectedTags.length) {
-      trackEvent({ event_name: "b2b_search_filter" });
+    const filters = [
+      hasKeyword ? { filter_type: "keyword", selected_option_ids: [] } : null,
+      category ? { filter_type: "category", selected_option_ids: [category] } : null,
+      brand ? { filter_type: "brand", selected_option_ids: [brand] } : null,
+      selectedTags.length ? { filter_type: "tag", selected_option_ids: selectedTags } : null,
+    ].filter((filter): filter is { filter_type: string; selected_option_ids: string[] } => Boolean(filter));
+
+    for (const filter of filters) {
+      trackEvent({
+        event_name: "b2b_search_filter",
+        event_data: { ...filter, result_count: resultCount },
+      });
     }
-  }, [brand, category, hasKeyword, selectedTags]);
+  }, [brand, category, hasKeyword, resultCount, selectedTags]);
 
   return null;
 }

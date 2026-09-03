@@ -265,12 +265,11 @@ test("admin catalog management includes media, prefix, option and batch contract
   assert.match(routes.adminStaff, /app_admins/);
 });
 
-test("analytics filters use Taipei inclusive dates and only filter event behavior", () => {
-  assert.match(routes.adminAnalytics, /parseTaipeiDate/);
-  assert.match(routes.adminAnalytics, /eventQuery = eventQuery\.lt\("occurred_at", dateTo\)/);
-  assert.match(routes.adminAnalytics, /hasEventValue/);
-  assert.doesNotMatch(routes.adminAnalytics, /rfqQuery\.gte/);
-  assert.doesNotMatch(routes.adminAnalytics, /item\.product_id !== productId/);
+test("analytics filters use the B2B database aggregate contract", () => {
+  assert.match(routes.adminAnalytics, /parseAnalyticsFilters/);
+  assert.match(routes.adminAnalytics, /admin_b2b_analytics_summary/);
+  assert.doesNotMatch(routes.adminAnalytics, /from\("analytics_events"\)/);
+  assert.doesNotMatch(routes.adminAnalytics, /customer_code_snapshot|actor_user_id|company_id/);
 });
 
 test("B2B customer codes are accepted from Admin and validated with the approved format", () => {
