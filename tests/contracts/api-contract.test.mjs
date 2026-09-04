@@ -36,6 +36,7 @@ const routes = {
 };
 
 const b2cPages = [
+  read("src/app/(b2c)/page.tsx"),
   read("src/app/(b2c)/products/page.tsx"),
   read("src/app/(b2c)/products/categories/[slug]/page.tsx"),
   read("src/app/(b2c)/products/tags/[slug]/page.tsx"),

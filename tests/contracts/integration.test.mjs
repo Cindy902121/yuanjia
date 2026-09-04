@@ -262,6 +262,7 @@ test(
 
     const anonymousProductsResponse = await request("/api/b2c/products");
     assert.equal(anonymousProductsResponse.status, 200);
+    assert.equal((await request("/")).status, 200);
     const anonymousProducts = await json(anonymousProductsResponse);
     const productId = anonymousProducts.products?.[0]?.id;
     assert.ok(productId, "the B2C fixture needs at least one product");
@@ -280,6 +281,7 @@ test(
     assert.equal((await request("/api/b2c/mock-orders")).status, 401);
 
     assert.equal((await request("/api/b2c/products", { headers: { cookie: b2cCookies } })).status, 200);
+    assert.equal((await request("/", { headers: { cookie: b2cCookies } })).status, 200);
     assert.equal((await request("/api/b2b/products", { headers: { cookie: b2cCookies } })).status, 403);
     await createOrder(orderBody, { headers: { cookie: b2cCookies } });
     assert.equal((await request("/api/b2c/mock-orders", { method: "GET", headers: { cookie: b2cCookies } })).status, 403);
@@ -298,6 +300,7 @@ test(
     assert.equal((await request("/api/b2c/products", { headers: { cookie: b2bCookies } })).status, 403);
     assert.equal((await request("/api/b2c/mock-orders", { headers: { cookie: b2bCookies } })).status, 403);
     for (const path of [
+      "/",
       "/products",
       "/products/categories/fish",
       "/products/tags/fish",
