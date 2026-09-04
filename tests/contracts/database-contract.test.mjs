@@ -37,6 +37,12 @@ const adminBulkStatusFixFile = migrationFiles.find((file) => file.includes("fix_
 const adminBulkStatusFix = adminBulkStatusFixFile
   ? read(`supabase/migrations/${adminBulkStatusFixFile}`)
   : "";
+const b2bFinderChannelMigrationFile = migrationFiles.find((file) =>
+  file.includes("b2b_product_finder_channel_tags"),
+);
+const b2bFinderChannelMigration = b2bFinderChannelMigrationFile
+  ? read(`supabase/migrations/${b2bFinderChannelMigrationFile}`)
+  : "";
 const databasePlan = read("docs/database-plan.md");
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));
 const securityMigration = migrationFiles.find((file) => file.includes("20260812150001_establish_mvp_security_contract"));
@@ -271,5 +277,43 @@ test("B2B demo seed matches the approved group names and category coverage", () 
   ]) {
     assert.match(seed, new RegExp(association.replaceAll("'", "\\'")));
     assert.match(b2bCatalogAlignmentMigration, new RegExp(association.replaceAll("'", "\\'")));
+  }
+});
+
+test("B2B product finder stores the approved channel leaves as product tags", () => {
+  assert.ok(b2bFinderChannelMigrationFile, "B2B finder channel migration should exist");
+  const leafSlugs = [
+    "wholesale_small",
+    "wholesale_mid_large",
+    "ecommerce_group_buy",
+    "ecommerce_live",
+    "ecommerce_marketplace",
+    "mass_retail",
+    "traditional_market",
+    "seafood_specialty_store",
+    "foodservice_general",
+    "foodservice_chain",
+    "foodservice_banquet_catering",
+    "foodservice_hotel",
+  ];
+
+  assert.match(b2bFinderChannelMigration, /insert into public\.b2b_tags/);
+  assert.match(b2bFinderChannelMigration, /group_name, slug, name, is_active/);
+  assert.match(b2bFinderChannelMigration, /on conflict \(slug\) do update/);
+  assert.match(b2bFinderChannelMigration, /insert into public\.b2b_product_tags/);
+  assert.match(b2bFinderChannelMigration, /on conflict \(product_id, tag_id\) do nothing/);
+  for (const slug of leafSlugs) {
+    assert.match(b2bFinderChannelMigration, new RegExp(`'${slug}'`));
+    assert.match(seed, new RegExp(`'${slug}'`));
+  }
+  for (const mapping of [
+    "B2B-SHRIMP-001', 'wholesale_small",
+    "B2B-PREP-001', 'ecommerce_group_buy",
+    "B2B-SHELL-001', 'mass_retail",
+    "B2B-FISH-003', 'foodservice_chain",
+  ]) {
+    const pattern = new RegExp(mapping.replaceAll("'", "\\'"));
+    assert.match(b2bFinderChannelMigration, pattern);
+    assert.match(seed, pattern);
   }
 });

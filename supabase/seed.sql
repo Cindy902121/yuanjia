@@ -73,7 +73,19 @@ values
   ('用途', 'restaurant', '餐飲料理', true),
   ('用途', 'retail', '零售販售', true),
   ('用途', 'bulk-supply', '團膳／大量供應', true),
-  ('保存／包裝', 'frozen', '冷凍保存', true)
+  ('保存／包裝', 'frozen', '冷凍保存', true),
+  ('通路', 'wholesale_small', '小盤', true),
+  ('通路', 'wholesale_mid_large', '中大型盤商', true),
+  ('通路', 'ecommerce_group_buy', '團購', true),
+  ('通路', 'ecommerce_live', '直播', true),
+  ('通路', 'ecommerce_marketplace', '網購平台', true),
+  ('通路', 'mass_retail', '量販／超市', true),
+  ('通路', 'traditional_market', '傳統菜市場', true),
+  ('通路', 'seafood_specialty_store', '海鮮專賣店', true),
+  ('通路', 'foodservice_general', '一般餐飲', true),
+  ('通路', 'foodservice_chain', '連鎖', true),
+  ('通路', 'foodservice_banquet_catering', '宴會・外燴', true),
+  ('通路', 'foodservice_hotel', '飯店', true)
 on conflict (slug) do update
 set group_name = excluded.group_name,
     name = excluded.name,
@@ -226,7 +238,26 @@ join public.b2b_tags tag on (product.product_code, tag.slug) in (
   ('B2B-PREP-001', 'processed-food'),
   ('B2B-PREP-001', 'seasoned'),
   ('B2B-PREP-001', 'restaurant'),
-  ('B2B-PREP-001', 'frozen')
+  ('B2B-PREP-001', 'frozen'),
+  ('B2B-SHRIMP-001', 'wholesale_small'),
+  ('B2B-SHRIMP-001', 'wholesale_mid_large'),
+  ('B2B-MEAT-001', 'wholesale_mid_large'),
+  ('B2B-PREP-001', 'ecommerce_group_buy'),
+  ('B2B-PREP-001', 'ecommerce_live'),
+  ('B2B-PREP-001', 'ecommerce_marketplace'),
+  ('B2B-SHELL-001', 'mass_retail'),
+  ('B2B-FISH-001', 'traditional_market'),
+  ('B2B-FISH-002', 'traditional_market'),
+  ('B2B-FISH-002', 'seafood_specialty_store'),
+  ('B2B-SHELL-001', 'seafood_specialty_store'),
+  ('B2B-FISH-001', 'foodservice_general'),
+  ('B2B-FISH-002', 'foodservice_general'),
+  ('B2B-FISH-003', 'foodservice_general'),
+  ('B2B-SOFT-001', 'foodservice_general'),
+  ('B2B-PREP-001', 'foodservice_general'),
+  ('B2B-FISH-003', 'foodservice_chain'),
+  ('B2B-SOFT-001', 'foodservice_banquet_catering'),
+  ('B2B-SOFT-001', 'foodservice_hotel')
 )
 on conflict (product_id, tag_id) do nothing;
 

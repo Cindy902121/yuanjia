@@ -202,6 +202,28 @@ test("B2B catalog and RFQ contracts preserve multi-spec selections", () => {
   assert.match(routes.b2bRfqs, /same product.*same specification|相同規格/);
 });
 
+test("B2B product finder exposes the fixed channel/category backend contract", () => {
+  const finderConfig = read("src/lib/product-finder.ts");
+  for (const value of [
+    "wholesale",
+    "wholesale_small",
+    "ecommerce",
+    "ecommerce_group_buy",
+    "mass_retail",
+    "traditional_retail_specialty",
+    "seafood_specialty_store",
+    "foodservice",
+    "foodservice_chain",
+  ]) {
+    assert.match(finderConfig, new RegExp(value));
+  }
+  assert.match(finderConfig, /parseB2bChannelSelection/);
+  assert.match(routes.b2bFinder, /searchParams\.get\("channel"\)/);
+  assert.match(routes.b2bFinder, /searchParams\.get\("category"\)/);
+  assert.match(routes.b2bFinder, /parseB2bChannelSelection/);
+  assert.match(routes.b2bFinder, /findProductIdsByTags/);
+});
+
 test("all 24 analytics event names and server-derived payload fields are preserved", () => {
   const source = read("src/lib/analytics-events.ts");
   const match = source.match(/ANALYTICS_EVENT_NAMES = \[([\s\S]*?)\] as const/);

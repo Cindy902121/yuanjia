@@ -7,6 +7,7 @@ import {
 } from "@/lib/catalog";
 import {
   B2B_FINDER_CONDITIONS,
+  parseB2bChannelSelection,
   parseFinderConditions,
 } from "@/lib/product-finder";
 import { attachProductImages } from "@/lib/product-images";
@@ -28,10 +29,22 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const conditions = parseFinderConditions(
-    url.searchParams.get("conditions"),
-    B2B_FINDER_CONDITIONS,
-  );
+  const rawChannel = url.searchParams.get("channel");
+  const rawCategory = url.searchParams.get("category");
+  const hasChannelSelection = rawChannel !== null || rawCategory !== null;
+  const channelSelection = hasChannelSelection
+    ? parseB2bChannelSelection(rawChannel, rawCategory)
+    : null;
+  if (hasChannelSelection && !channelSelection) {
+    return apiError("通路或通路分類不在允許範圍內。", 400);
+  }
+
+  const conditions = channelSelection
+    ? [{ key: channelSelection.tagSlug, type: "tag" as const, value: channelSelection.tagSlug }]
+    : parseFinderConditions(
+        url.searchParams.get("conditions"),
+        B2B_FINDER_CONDITIONS,
+      );
   if (!conditions) {
     return apiError("需求條件不在允許範圍內。", 400);
   }
@@ -54,7 +67,9 @@ export async function GET(request: Request) {
 
     if (productIds) {
       if (productIds.length === 0) {
-        return json({ conditions: conditions.map(({ key }) => key), products: [] });
+        return channelSelection
+          ? json({ channel: channelSelection.channel, category: channelSelection.category, products: [] })
+          : json({ conditions: conditions.map(({ key }) => key), products: [] });
       }
       query = query.in("id", productIds);
     }
@@ -88,10 +103,16 @@ export async function GET(request: Request) {
       productsWithTagsAndOptions,
     );
 
-    return json({
-      conditions: conditions.map(({ key }) => key),
-      products: productsWithImages,
-    });
+    return channelSelection
+      ? json({
+          channel: channelSelection.channel,
+          category: channelSelection.category,
+          products: productsWithImages,
+        })
+      : json({
+          conditions: conditions.map(({ key }) => key),
+          products: productsWithImages,
+        });
   } catch {
     return apiError("目前無法執行 B2B 需求篩選。", 503);
   }
