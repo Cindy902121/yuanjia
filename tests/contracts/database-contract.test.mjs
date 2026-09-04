@@ -13,6 +13,7 @@ function read(relativePath) {
 }
 
 const seed = read("supabase/seed.sql");
+const b2cFixtures = read("src/lib/fixtures/products.ts");
 const b2bTestFixtures = read("supabase/seed.b2b-test-fixtures.sql");
 const b2bTestCleanup = read("supabase/cleanup.b2b-test-fixtures.sql");
 const b2bAnalyticsFixtures = read("supabase/seed.b2b-analytics-test-fixtures.sql");
@@ -85,6 +86,21 @@ test("seed is a non-destructive, repeatable display-data contract", () => {
   assert.doesNotMatch(seed, /password/i);
   assert.match(seed, /auth_user_id 永不被/);
   assert.match(seed, /seed 覆蓋/);
+});
+
+test("B2C plain processing data stays aligned across seed and fixtures", () => {
+  assert.match(seed, /\('加工方式', 'plain', '原味', true\)/);
+  for (const productSlug of [
+    "norwegian-salmon-fillet",
+    "taiwan-milkfish-belly",
+    "argentine-red-shrimp",
+    "taiwan-clam",
+    "taiwan-squid",
+  ]) {
+    assert.match(seed, new RegExp(`\\('${productSlug}', 'plain'\\)`));
+  }
+  assert.match(b2cFixtures, /slug: "plain", name: "原味"/);
+  assert.doesNotMatch(b2cFixtures, /slug: "original"/);
 });
 
 test("the P2 migration covers exactly the three remote unindexed foreign keys", () => {

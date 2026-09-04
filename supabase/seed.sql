@@ -8,10 +8,10 @@
 --
 -- B2B 展示客戶代碼範例：Z232113（20 萬以下）。
 -- 另外兩組測試代碼 E853699／W483038 由 optional fixture 提供。
--- 目前展示集包含 6 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、16／15 個標籤，
--- 以及 26／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
+-- 目前展示集包含 6 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、17／27 個標籤，
+-- 以及 31／50 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
 -- 軟體類、肉類與調理食品。B2C 已補齊 docs/fixed-questionnaire-gap.md
--- 記錄的固定問卷缺口：清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好
+-- 記錄的固定問卷缺口：清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好、原味
 -- 標籤，以及「其他海鮮」分類（新增台灣鮮甜小卷示範商品）。
 
 begin;
@@ -50,6 +50,7 @@ values
   ('需求特性', 'easy-cook', '方便料理', true),
   ('需求特性', 'boneless', '少刺／無刺', true),
   ('需求特性', 'right-portion', '份量剛好', true),
+  ('加工方式', 'plain', '原味', true),
   ('加工方式', 'ready-to-cook', '即煮', true),
   ('加工方式', 'seasoned', '調味', true)
 on conflict (slug) do update
@@ -181,18 +182,22 @@ join public.b2c_tags tag on (product.slug, tag.slug) in (
   ('norwegian-salmon-fillet', 'raw'),
   ('norwegian-salmon-fillet', 'boneless'),
   ('norwegian-salmon-fillet', 'high-protein'),
+  ('norwegian-salmon-fillet', 'plain'),
   ('taiwan-milkfish-belly', 'fish'),
   ('taiwan-milkfish-belly', 'pan-fry'),
   ('taiwan-milkfish-belly', 'steam'),
   ('taiwan-milkfish-belly', 'soup'),
   ('taiwan-milkfish-belly', 'boneless'),
   ('taiwan-milkfish-belly', 'kid-friendly'),
+  ('taiwan-milkfish-belly', 'plain'),
   ('argentine-red-shrimp', 'shrimp'),
   ('argentine-red-shrimp', 'hot-pot'),
   ('argentine-red-shrimp', 'high-protein'),
+  ('argentine-red-shrimp', 'plain'),
   ('taiwan-clam', 'shellfish'),
   ('taiwan-clam', 'hot-pot'),
   ('taiwan-clam', 'soup'),
+  ('taiwan-clam', 'plain'),
   ('seasoned-mackerel', 'fish'),
   ('seasoned-mackerel', 'seasoned'),
   ('seasoned-mackerel', 'ready-to-cook'),
@@ -200,7 +205,8 @@ join public.b2c_tags tag on (product.slug, tag.slug) in (
   ('seasoned-mackerel', 'boneless'),
   ('seasoned-mackerel', 'right-portion'),
   ('taiwan-squid', 'hot-pot'),
-  ('taiwan-squid', 'high-protein')
+  ('taiwan-squid', 'high-protein'),
+  ('taiwan-squid', 'plain')
 )
 on conflict (product_id, tag_id) do nothing;
 

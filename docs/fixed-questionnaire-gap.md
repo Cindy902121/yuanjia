@@ -12,6 +12,9 @@
 > 少刺無刺／份量剛好）與「其他海鮮」分類共 7 項缺口，經 A／B／C 確認後已於
 > `supabase/seed.sql` 補齊標籤與示範商品，並已套用至正式 Supabase 專案；狀態
 > 由「尚無 tag／category」更新為「已對應」。
+>
+> **2026-09-04 更新**：「原味」已補上 `plain` tag、5 筆未調味商品關聯，並同步更新
+> fixture 與契約測試；已套用至正式 Supabase 專案。
 
 ## B2C
 
@@ -33,7 +36,7 @@
 | 3 產品類型 | 貝類 | `shellfish` | category／`貝類` | 已有 category | 已對應 |
 | 3 產品類型 | 其他海鮮 | `other-seafood` | category／`其他海鮮` | 已有 category／商品（新增台灣鮮甜小卷） | 已對應（2026-09-01） |
 | 3 產品類型 | 都可以 | `any` | 不加條件 | 不適用 | API 會略過 `any` |
-| 4 其他偏好 | 原味 | `plain` | tag／`plain` | 尚無 tag | 需確認與未加工的差異 |
+| 4 其他偏好 | 原味 | `plain` | tag／`plain` | 已有 tag／商品（5 筆未調味 B2C 商品） | 已對應（2026-09-04） |
 | 4 其他偏好 | 調味 | `seasoned` | tag／`seasoned` | 已有 tag | 已對應 |
 | 4 其他偏好 | 即食／即煮 | `ready-to-cook` | tag／`ready-to-cook` | 已有 tag | 已對應 |
 | 4 其他偏好 | 都可以 | `any` | 不加條件 | 不適用 | API 會略過 `any` |
@@ -65,6 +68,6 @@
 - B2C 的分類條件只比對 `b2c_products.category`；B2B 的
   `specification` 條件同時比對 `b2b_products.specification` 與
   `b2b_products.packaging`。
-- 「尚無 tag／category」是仍待確認的資料契約差異；本次已依授權補齊 B2B 展示資料。
+- 「尚無 tag／category」是仍待確認的資料契約差異；本次已依授權補齊 B2B 與 B2C 展示資料。
 - B2B 展示資料現涵蓋蝦蟹類、魚類、貝類、軟體類、肉類與調理食品。
-- B2C 固定題目原本的 7 項缺口（清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好、其他海鮮）已於 2026-09-01 依 A／B／C 確認補齊 `supabase/seed.sql` 標籤與示範商品；本文件所有列項目前均為「已對應」。
+- B2C 固定題目原本的 8 項缺口（清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好、其他海鮮、原味）已於 2026-09-01／2026-09-04 依 A／B／C 確認補齊 `supabase/seed.sql` 標籤與示範商品；本文件所有列項目前均為「已對應」。

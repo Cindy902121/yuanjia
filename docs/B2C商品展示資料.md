@@ -170,7 +170,7 @@
 |---|---|---|---|---|
 | C1 | 商品筆數與內容（已過期） | 本文件第 2、3 章的 12 筆展示商品需求已過期；現行 `supabase/seed.sql` 以 6 筆展示資料為準，歷史 12 筆的 slug、分類、標籤與現行資料不同 | 型別定義（第 6～8 章）與現行資料庫 schema／seed 對齊；12 筆內容只保留作歷史案例 | 不再更新 migration／seed 以符合本文件 12 筆設計 |
 | C2 | 「食材」標籤語意 | 本文件「食材」標籤為魚種細節（鮭魚、比目魚、蝦、干貝、花枝、雞肉）；資料庫「食材」群組標籤實際值是分類本身的複本（魚類、蝦類、貝類） | 沿用資料庫現況作為型別範例，並在型別中註明 `groupName` 是自由文字、`name` 語意由團隊決定 | 「食材」標籤要細到魚種，還是等同分類；決定後需同步調整 `b2c_tags` 種子資料 |
-| C3 | 料理方式／需求特性／加工方式標籤詞彙 | PRD 5.3.2 定義料理方式 6 選項、需求特性 5 選項，本文件沿用；資料庫僅實作料理方式 3 個（火鍋、**煎烤**〔非分開的「煎／烤」〕、氣炸）、需求特性 2 個（高蛋白、適合小孩）、加工方式 2 個（即煮、調味，缺「原味」） | 型別中 `name`／`slug` 均為 `string`，不假設固定 enum 值 | 是否擴充資料庫標籤清單以符合 PRD／本文件詞彙，或本文件詞彙依資料庫現況收斂 |
+| C3 | 料理方式／需求特性／加工方式標籤詞彙 | PRD 5.3.2 定義料理方式 6 選項、需求特性 5 選項，本文件沿用；資料庫已實作完整料理方式 6 個、需求特性 5 個、加工方式 3 個（原味、即煮、調味） | 型別中 `name`／`slug` 均為 `string`，不假設固定 enum 值 | 已依固定題目補齊；後續新增詞彙需同步 seed 與契約測試 |
 | C4 | 「單位」＋「規格」vs 單一 `specification` | 本文件第 2、3 章展示表格把「單位」「規格」拆兩欄；資料庫 `b2c_products` 只有單一 `specification text not null` 欄位（已內含單位，如 `"200g/包"`） | 第 6 章型別只定義一個 `specification: string` 欄位，對應資料庫；不新增 `unit` 欄位 | 是否要新增 `unit` 獨立欄位（需 migration），或維持單一字串由前端整段顯示 |
 | C5 | 「認證／品質」結構化程度 | 本文件把「認證／品質」寫成類似清單的字串（如 `"HACCP、ISO 22000"`）；資料庫只有單一可為 `null` 的自由文字 `quality_info`，沒有 `certifications` 陣列或 `qualityHighlights` 結構 | 型別維持 `qualityInfo: string \| null` 單一欄位；如需陣列，前端可用「、」「，」切字串僅供顯示，不當作穩定資料結構 | 是否新增 `certifications text[]` 或另建資料表，才能做到結構化的認證清單 |
 | C6 | 商品圖片 | 需求要求「商品圖片陣列」「alt」「isPrimary」「sortOrder」；目前遠端已由 `20260825024950_add_admin_catalog_media_and_management.sql` 建立 `b2c_product_images` 與 `b2c-media` bucket，`b2c_products.image_path` 保留為 legacy 欄位 | `images: ProductImage[]` 型別仍保留；正式查詢應 join `b2c_product_images`，`alt`／`isPrimary`／`sortOrder` 對應資料表欄位與 mapper | 商品圖片資料與前端 mapper 尚需依目前圖片表接線；分類與認證仍未由本次 migration 建立 |
