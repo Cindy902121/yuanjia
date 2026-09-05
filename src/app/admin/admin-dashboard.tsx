@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
 import { B2bCsvImportPanel, CustomerPrefixRulePanel } from "./admin-catalog-tools";
 import AnalyticsReportPanel from "./analytics-report-panel";
+import { OperationsOverview } from "./operations-overview";
+import styles from "./admin-workspace.module.css";
 
 type AdminTab =
   | "overview"
@@ -176,8 +179,10 @@ export function AdminDashboard({
   initialTab?: AdminTab;
   scope?: AdminScope;
 }) {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab") as AdminTab | null;
   const [activeTab, setActiveTab] = useState<AdminTab>(
-    initialTab ?? (scope === "business" ? "b2b-products" : "overview"),
+    initialTab ?? requestedTab ?? (scope === "business" ? "b2b-products" : "overview"),
   );
   const visibleTabs = tabs.filter((tab) => tabsByScope[scope].includes(tab.id));
   const [b2cProducts, setB2cProducts] = useState<Product[]>([]);
@@ -260,6 +265,10 @@ export function AdminDashboard({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [loadAll]);
+
+  useEffect(() => {
+    if (requestedTab && tabsByScope[scope].includes(requestedTab)) setActiveTab(requestedTab);
+  }, [requestedTab, scope]);
 
   const activeB2cCount = useMemo(
     () => b2cProducts.filter((product) => product.is_active).length,
@@ -452,7 +461,7 @@ export function AdminDashboard({
   }
 
   return (
-    <main className="min-h-screen flex-1 bg-[#F4F7F8] text-[#17242A]">
+    <main className={`${styles.workspace} min-h-screen flex-1`}>
       <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="flex flex-col gap-5 border-b border-[#D8E1E5] pb-6 md:flex-row md:items-end md:justify-between">
           <div>
@@ -541,14 +550,7 @@ export function AdminDashboard({
               </div>
             ) : (
               <>
-                {activeTab === "overview" ? (
-                  <Overview
-                    activeB2cCount={activeB2cCount}
-                    companyCount={companies.filter((company) => company.is_active).length}
-                    openOrderCount={openOrderCount}
-                    onSelectTab={selectTab}
-                  />
-                ) : null}
+                {activeTab === "overview" ? <OperationsOverview revision={0} scope={scope} /> : null}
                 {activeTab === "analytics" ? <AnalyticsReportPanel /> : null}
                 {activeTab === "b2c-products" ? (
                   <ProductPanel

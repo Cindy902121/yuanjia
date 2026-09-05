@@ -24,19 +24,31 @@ export async function GET(request: Request) {
     return apiError("詢價狀態不正確。", 400);
   }
 
+  const pageValue = url.searchParams.get("page") ?? "1";
+  const sizeValue = url.searchParams.get("page_size") ?? "200";
+  const page = Number(pageValue);
+  const pageSize = Number(sizeValue);
+  const sort = url.searchParams.get("sort") ?? "newest";
+  const id = url.searchParams.get("id");
+  if (!/^\d+$/.test(pageValue) || !/^\d+$/.test(sizeValue) || !Number.isSafeInteger(page) || page < 1 || page > 100000 || pageSize < 1 || pageSize > 200 || !["oldest", "newest"].includes(sort) || (id && !isUuid(id))) {
+    return apiError("詢價篩選或頁碼不正確。", 400);
+  }
   const admin = createAdminClient();
   let query = admin
     .from("b2b_rfqs")
     .select(
       "id, company_id, customer_tier_snapshot, channel_snapshot, status, total_note, created_at, updated_at",
+      { count: "exact" },
     )
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .order("created_at", { ascending: sort === "oldest" })
+    .order("id", { ascending: true })
+    .range((page - 1) * pageSize, page * pageSize - 1);
   if (status) {
     query = query.eq("status", status);
   }
 
-  const { data: rfqs, error: rfqError } = await query;
+  if (id) query = query.eq("id", id);
+  const { data: rfqs, error: rfqError, count } = await query;
   if (rfqError) {
     return apiError("目前無法讀取企業詢價。", 503);
   }
@@ -90,6 +102,7 @@ export async function GET(request: Request) {
   }
 
   return json({
+    total: count, page, page_size: pageSize,
     rfqs: (rfqs ?? []).map((rfq) => ({
       ...rfq,
       company: companyById.get(rfq.company_id) ?? null,
