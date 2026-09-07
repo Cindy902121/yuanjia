@@ -169,7 +169,8 @@ MVP 不保存個別採購、門市或分店使用者資料。
 | storage_method | text | 保存方式 |
 | description | text | 採購型描述 |
 | image_path | text nullable | 圖片路徑或資源識別 |
-| is_active | boolean | 是否出現在型錄 |
+| status | text | B2B 商品工作狀態：`draft`、`review`、`published` 或 `offline`；商品狀態唯一來源 |
+| is_active | boolean | 相容欄位；由 `status = 'published'` 同步為 `true`，不作為 B2B 狀態來源 |
 | created_at | timestamptz | 建立時間 |
 | updated_at | timestamptz | 更新時間 |
 
@@ -316,12 +317,11 @@ MVP 的 B2C 訂單為展示資料，不代表真實銷售資料。
 | channel_snapshot | text nullable | B2B 通路快照 |
 | occurred_at | timestamptz | 事件時間 |
 
-不保存姓名、電話、Email、完整客戶代碼、IP、company_id、匿名 session 或 metadata。
+> **v2.2 歷史設計（僅適用於當時的 B2C／匿名事件，不適用於現行 B2B Analytics）：** 不保存姓名、電話、Email、完整客戶代碼、IP、company_id、匿名 session 或 metadata。
 
 本節欄位以目前 Supabase migration 為唯一實作依據。未來如需新增欄位，必須建立新的 migration，不在 API 或前端自行假設欄位存在。
 
-> **本節僅保留 v2.2（2026-08-17）原始設計，作為歷史對照。實作現況請一併參照
-> 下方 4.8.1，該節已依 2026-08-30 三人共識更新 `analytics_events` 實際欄位。**
+> **本節僅保留 v2.2（2026-08-17）原始設計，作為歷史對照，不作為現行 MVP 驗收依據。** 實作現況請一併參照下方 4.8.1，該節已依 2026-08-30 三人共識更新 `analytics_events` 實際欄位。
 
 ### 4.8.1 分析報表擴充（2026-08-30 共識變更）
 
@@ -527,7 +527,7 @@ Success：HTTP 201，回傳展示訂單編號與已建立狀態。
 - B2C 固定四步：料理方式、需求特性、產品類型、其他偏好（可選）。
 - B2B 固定四步：產品類型、產品型態、使用情境、規格／保存條件（可選）。
 - 支援返回、重新開始與空結果狀態「無符合商品」。
-- 答案不保存為個人資料；只保存面向、產品、分類、品牌、級距與通路等事件欄位，不保存公司識別或匿名 session。
+- B2C 固定需求篩選答案不保存為個人資料，B2C 分析由 GA4 負責；B2B 固定需求篩選答案本身不作為個人資料內容保存，但其行為事件會由伺服器依有效 session 與公司 context 保存 `actor_user_id`、`company_id`、`session_id`、`customer_code_snapshot` 與白名單 `event_data`。報表與 CSV 僅輸出聚合結果，不輸出公司識別或完整客戶代碼。
 
 ### 6.6 B2C 浮動工具
 
@@ -626,10 +626,11 @@ Request 與伺服器規則：
 
 **PATCH `/api/admin/products/{channel}/{productId}`**
 
-- 僅 Admin 可使用，Request 為 `{ "is_active": boolean }`。
-- B2C 更新 `b2c_products.is_active`；B2B 更新 `b2b_products.is_active`。
+- 僅具備對應管理角色者可使用：B2C 為啟用的 `admin`，B2B 為啟用的 `admin` 或 `business_staff`。
+- Request 可包含商品可更新欄位；狀態欄位依 channel 不同：B2C 使用 `{ "is_active": boolean }` 更新 `b2c_products.is_active`；B2B 主要使用 `{ "status": "draft" | "review" | "published" | "offline" }` 更新 `b2b_products.status`，並由伺服器驗證合法狀態轉換。
+- B2B 的 `is_active` 僅保留作為既有管理 API 的相容輸入；收到時會轉換為 `published`／`offline`，資料庫再由 `status` 同步相容欄位。新 UI 與批次 API 以 `status` 為準。
 - 下架只改變可見性，不刪除商品、標籤關聯或歷史資料。
-- 前台 B2C、B2B 型錄與需求篩選 API 均只回傳 active 商品。
+- 前台 B2C 只回傳 `is_active = true`；B2B 型錄與需求篩選 API 只回傳 `status = 'published'`（同步代表 `is_active = true`）。
 
 ### 6.11 Admin B2C 展示訂單 API
 

@@ -8,8 +8,9 @@
 pnpm test:contracts
 ```
 
-最近一次本機完整 real contract 已驗證 43 pass、0 fail、0 skipped；測試 server、Auth
-identity 與 fixture 均限於本機隔離環境。
+最近一次在目前分支執行 `pnpm test:contracts` 可重現 35 pass、0 fail、8 skipped
+（共 43 項）；被跳過的案例需要另外載入測試 server、Auth identity 或隔離資料庫。
+測試 server、Auth identity 與 fixture 均限於本機隔離環境。
 
 另依 2026-08-30 團隊驗收回報，已在安全的 hosted／staging 環境完成並通過真實
 整合測試：匿名、B2C、B2B、Admin 權限矩陣、B2B 停用公司不能登入、停用商品不出現
