@@ -1,61 +1,17 @@
-import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 
-const ROOT = new URL("..", import.meta.url);
 const FIXTURE_CODE = "W483038";
 const FIXTURE_NAME = "第二家公司隔離測試";
 
-async function readEnvFile(name) {
-  try {
-    return await readFile(new URL(name, ROOT), "utf8");
-  } catch (error) {
-    if (error.code === "ENOENT") return "";
-    throw error;
-  }
-}
-
-function parseEnv(contents) {
-  const values = {};
-  for (const rawLine of contents.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (!match) continue;
-    const value = match[2].trim();
-    values[match[1]] =
-      value.length >= 2 &&
-      ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'")))
-        ? value.slice(1, -1)
-        : value;
-  }
-  return values;
-}
-
-async function loadEnv() {
-  const values = {
-    ...parseEnv(await readEnvFile(".env.local")),
-    ...parseEnv(await readEnvFile(".env.test.local")),
-  };
-  for (const [name, value] of Object.entries(values)) {
-    if (process.env[name] === undefined) process.env[name] = value;
-  }
-}
+import {
+  assertLocalSupabaseTarget,
+  loadContractTestEnv,
+} from "./contract-test-env.mjs";
 
 function requireValue(name) {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`Missing ${name}. Put it in .env.test.local; never commit that file.`);
   return value;
-}
-
-function assertLocalTarget(url) {
-  const hostname = new URL(url).hostname;
-  const isLocal = hostname === "127.0.0.1" || hostname === "localhost";
-  if (!isLocal && process.env.ALLOW_REMOTE_B2B_FIXTURE_PROVISIONING !== "1") {
-    throw new Error(
-      "Refusing a non-local Supabase target. Set ALLOW_REMOTE_B2B_FIXTURE_PROVISIONING=1 only for an explicitly approved isolated test project.",
-    );
-  }
 }
 
 async function findOrCreateUser(admin, email, password) {
@@ -107,13 +63,13 @@ async function bindCompany(admin, userId) {
   if (error) throw error;
 }
 
-await loadEnv();
+await loadContractTestEnv();
 const supabaseUrl = requireValue("NEXT_PUBLIC_SUPABASE_URL");
 const secretKey = requireValue("SUPABASE_SECRET_KEY");
 const email = requireValue("CONTRACT_TEST_B2B_OTHER_EMAIL");
 const password = requireValue("CONTRACT_TEST_B2B_OTHER_PASSWORD");
 
-assertLocalTarget(supabaseUrl);
+assertLocalSupabaseTarget(supabaseUrl);
 
 const admin = createClient(supabaseUrl, secretKey, {
   auth: { autoRefreshToken: false, persistSession: false },

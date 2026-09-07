@@ -1,68 +1,21 @@
-import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  assertLocalDatabaseTarget,
+  assertLocalSupabaseTarget,
+  assertLocalTestServerTarget,
+  loadContractTestEnv,
+} from "./contract-test-env.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_PORT = process.env.CONTRACT_TEST_PORT ?? "3100";
 const testFiles = [
+  "tests/contracts/contract-test-env.test.mjs",
   "tests/contracts/api-contract.test.mjs",
   "tests/contracts/database-contract.test.mjs",
   "tests/contracts/integration.test.mjs",
 ];
-
-async function readEnvFile(path) {
-  try {
-    return await readFile(path, "utf8");
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return "";
-    }
-    throw error;
-  }
-}
-
-function parseEnv(contents) {
-  const values = {};
-
-  for (const rawLine of contents.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
-
-    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (!match) {
-      continue;
-    }
-
-    let value = match[2].trim();
-    if (
-      value.length >= 2 &&
-      ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'")))
-    ) {
-      value = value.slice(1, -1);
-    }
-    values[match[1]] = value;
-  }
-
-  return values;
-}
-
-async function loadLocalEnv() {
-  const merged = {};
-  for (const file of [".env.local", ".env.test.local"]) {
-    const contents = await readEnvFile(resolve(ROOT, file));
-    Object.assign(merged, parseEnv(contents));
-  }
-
-  for (const [name, value] of Object.entries(merged)) {
-    if (process.env[name] === undefined) {
-      process.env[name] = value;
-    }
-  }
-}
 
 function missingEnvironment() {
   return [
@@ -128,7 +81,7 @@ async function waitForServer(baseUrl, child) {
 }
 
 async function main() {
-  await loadLocalEnv();
+  await loadContractTestEnv();
 
   const missing = missingEnvironment();
   if (missing.length > 0) {
@@ -138,28 +91,46 @@ async function main() {
     return;
   }
 
-  const port = process.env.CONTRACT_TEST_PORT ?? DEFAULT_PORT;
+  const port = process.env.CONTRACT_TEST_PORT ?? "3100";
   const baseUrl = (process.env.CONTRACT_TEST_BASE_URL ?? `http://127.0.0.1:${port}`).replace(/\/$/, "");
-  process.env.CONTRACT_TEST_BASE_URL = baseUrl;
-
-  let server;
   const useExistingServer = process.env.CONTRACT_TEST_USE_EXISTING_SERVER === "1";
 
   try {
-    if (useExistingServer) {
-      await waitForServer(baseUrl);
-    } else {
-      server = spawn(
-        process.execPath,
-        [resolve(ROOT, "node_modules/next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", port],
-        {
+    const serverTarget = assertLocalTestServerTarget(baseUrl);
+    assertLocalSupabaseTarget(process.env.NEXT_PUBLIC_SUPABASE_URL);
+    if (process.env.CONTRACT_TEST_DATABASE_URL) {
+      assertLocalDatabaseTarget(process.env.CONTRACT_TEST_DATABASE_URL);
+    }
+    if (serverTarget.port !== port) {
+      throw new Error("CONTRACT_TEST_BASE_URL 的 port 必須與 CONTRACT_TEST_PORT 相同。");
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 2;
+    return;
+  }
+
+  if (useExistingServer) {
+    console.error("為避免測試連到未知資料庫，test:contracts:real 必須由 runner 啟動本機測試 server；請移除 CONTRACT_TEST_USE_EXISTING_SERVER。");
+    process.exitCode = 2;
+    return;
+  }
+
+  process.env.CONTRACT_TEST_BASE_URL = baseUrl;
+
+  let server;
+
+  try {
+    server = spawn(
+      process.execPath,
+      [resolve(ROOT, "node_modules/next/dist/bin/next"), "dev", "--webpack", "--hostname", "127.0.0.1", "--port", port],
+      {
         cwd: ROOT,
         env: process.env,
         stdio: "inherit",
-        },
-      );
-      await waitForServer(baseUrl, server);
-    }
+      },
+    );
+    await waitForServer(baseUrl, server);
 
     const result = await run(process.execPath, ["--test", ...testFiles]);
     process.exitCode = result.code;

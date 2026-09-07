@@ -66,9 +66,9 @@
 ## 本機隔離測試環境
 
 本機 Supabase 是唯一測試資料庫，API 位於 `127.0.0.1:54321`，Postgres 位於
-`127.0.0.1:54322`，Next 測試 server 預設位於 `127.0.0.1:3100`。URL、key、
-Auth 帳密只放在被 Git ignore 的 `.env.local`／`.env.test.local`，不放入
-migration、seed 或文件。
+`127.0.0.1:54322`，Next 測試 server 預設位於 `127.0.0.1:3100`。契約測試的
+URL、key、Auth 帳密只放在被 Git ignore 的 `.env.test.local`，不會讀取或 fallback
+到 `.env.local`，也不放入 migration、seed 或文件。
 
 第一次建立或 schema 變更後，依序執行：
 
@@ -87,8 +87,9 @@ pnpm test:contracts:real
 測試 identity 並綁定 `Z232113`；第二個建立 `W483038` 跨公司 identity。
 Fixture SQL 建立 `E853699` 停用公司與停用商品。
 
-`pnpm test:contracts:real` 會自動啟動並關閉 Next 測試 server，並清理測試期間
-建立的商品、圖片、訂單、RFQ、公司與事件。手動驗收產生的資料，請使用精準的
+`pnpm test:contracts:real` 會先強制檢查 Supabase、Postgres 與 Next 測試 server
+都是本機 loopback，再自動啟動並關閉 Next 測試 server，並清理測試期間建立的商品、
+圖片、訂單、RFQ、公司與事件。手動驗收產生的資料，請使用精準的
 `supabase/cleanup.b2b-test-fixtures.sql`，或直接重建本機資料庫。
 
 ## 遠端操作安全界線

@@ -22,14 +22,17 @@ B2C Auth 的註冊、Email 驗證、密碼重設與 Google OAuth 設定請參考
 
 ### 重建本機隔離環境
 
-本機 Supabase 的 Postgres 在 `127.0.0.1:54322`，Next 測試 server 預設在
-`127.0.0.1:3100`。`db reset --local` 會清除本機資料與 Auth identity；每次
-reset 後請依序執行：
+本機 Supabase 的 Postgres 通常在 `127.0.0.1:54322`，Next 測試 server 預設在
+`127.0.0.1:3100`。如果同一台電腦有其他 checkout 正在使用這組 port，請先
+建立不同 project name／port 的 Supabase instance，並把它的 API、Postgres URL
+與資料庫 container 填入 `.env.test.local`；不要對共用 instance 執行 reset。
+隔離 instance 的 `db reset --local` 會清除該 instance 的資料與 Auth identity；
+每次 reset 後請依序執行：
 
 ```bash
 supabase start --yes
 supabase db reset --local --yes
-docker exec -i supabase_db_supabase psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.b2b-test-fixtures.sql
+docker exec -i "$CONTRACT_TEST_DATABASE_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/seed.b2b-test-fixtures.sql
 node scripts/provision-contract-test-identities.mjs
 node scripts/provision-b2b-isolation-fixture.mjs
 pnpm test:contracts:real
@@ -38,14 +41,16 @@ pnpm test:contracts:real
 兩個 provisioning script 只接受本機 Supabase URL；測試帳密留在被 Git ignore 的
 `.env.test.local`，不會寫入 seed 或 repository。
 
-### 真實 Supabase 的本機執行
+### 本機隔離 Supabase 的 real API 執行
 
-本機 Supabase 的 URL／publishable key 放在 `.env.local`；測試用的 server secret
-與展示帳號放在不入 Git 的 `.env.test.local`。必要欄位如下（Admin 使用
-實際 Email，例如 `admin@example.com`，不是登入頁上的角色名稱；本機測試可使用
-任意已建立的本機 Email）：
+`pnpm test:contracts:real` 只讀取 `.env.test.local` 與命令列環境，不會把 `.env.local`
+當 fallback。Supabase URL、publishable key、server secret 與展示帳號都放在被 Git
+ignore 的 `.env.test.local`。必要欄位如下（Admin 使用實際 Email，例如
+`admin@example.com`，不是登入頁上的角色名稱；本機測試可使用任意已建立的本機 Email）：
 
 ```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=本機 Supabase publishable key
 SUPABASE_SECRET_KEY=…
 CONTRACT_TEST_B2C_EMAIL=demo@yens.com.tw
 CONTRACT_TEST_B2C_PASSWORD=…
@@ -62,7 +67,16 @@ CONTRACT_TEST_ADMIN_EMAIL=admin@example.com
 CONTRACT_TEST_ADMIN_PASSWORD=…
 CONTRACT_TEST_BUSINESS_STAFF_EMAIL=business-staff@example.com
 CONTRACT_TEST_BUSINESS_STAFF_PASSWORD=…
+CONTRACT_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+CONTRACT_TEST_DATABASE_CONTAINER=supabase_db_<isolated-project>
 ```
+
+runner 會強制確認 Supabase、Postgres 與 Next 測試 server 都是 loopback 本機目標；
+若設定 `CONTRACT_TEST_DATABASE_CONTAINER`，seed rerun 會在該 container 內執行，並
+確認它發布的 Postgres port 與 `CONTRACT_TEST_DATABASE_URL` 相同，避免 workspace
+裡的 `psql` helper 把 seed 寫到另一個 checkout。
+任何 hosted／正式環境 URL 都會在啟動前停止。為避免既有 server 的環境來源不明，
+`CONTRACT_TEST_USE_EXISTING_SERVER=1` 不再允許，請讓 runner 自己啟動測試 server。
 
 執行：
 
@@ -71,9 +85,9 @@ pnpm test:contracts:real
 ```
 
 這會啟動隔離的 Next server（預設 `127.0.0.1:3100`）、執行靜態與 API
-整合契約，並清理本次建立的展示訂單、RFQ 與分析事件。若已有可用的測試
-server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
-`CONTRACT_TEST_BASE_URL` 後再執行。跨公司案例與 seed rerun 仍是可選測試，
+整合契約，並清理本次建立的展示訂單、RFQ 與分析事件。請不要改用既有測試
+server；runner 必須自行啟動，以確保它使用 `.env.test.local` 的本機 Supabase。
+跨公司案例與 seed rerun 仍是可選測試，
 分別需要第二家公司帳號與隔離 Postgres URL。
 
 ### Admin 管理頁與 API 驗收範圍
@@ -103,10 +117,13 @@ server，可設定 `CONTRACT_TEST_USE_EXISTING_SERVER=1` 與
 
 ### 手動指定測試 server
 
-也可以在隔離的 local/test Supabase 與 Next server 設定：
+也可以在隔離的 local/test Supabase 與 Next server 設定後，直接執行契約測試：
 
 ```bash
-export CONTRACT_TEST_BASE_URL=http://127.0.0.1:3000
+export CONTRACT_TEST_BASE_URL=http://127.0.0.1:3100
+export NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY='本機 Supabase publishable key'
+export SUPABASE_SECRET_KEY='本機 Supabase secret key'
 export CONTRACT_TEST_B2C_EMAIL='…'
 export CONTRACT_TEST_B2C_PASSWORD='…'
 export CONTRACT_TEST_B2B_IDENTIFIER='…'
@@ -123,7 +140,8 @@ export CONTRACT_TEST_ADMIN_PASSWORD='…'
 pnpm test:contracts
 ```
 
-這組測試會透過 API 建立展示事件／RFQ／模擬訂單狀態驗證，因此不得指向正式
+若提供 `CONTRACT_TEST_BASE_URL`、Supabase URL 或資料庫 URL，測試會強制檢查它們
+都是本機 loopback；這組測試會透過 API 建立展示事件／RFQ／模擬訂單，因此不得指向正式
 資料庫。若另提供第二家公司帳號
 `CONTRACT_TEST_B2B_OTHER_IDENTIFIER`／`CONTRACT_TEST_B2B_OTHER_PASSWORD`，會再
 驗證跨公司 RFQ 不可見。
@@ -143,8 +161,8 @@ pnpm test:contracts
 資料庫明確執行：
 
 ```bash
-psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -f supabase/seed.b2b-test-fixtures.sql
+docker exec -i "$CONTRACT_TEST_DATABASE_CONTAINER" psql -U postgres -d postgres \
+  -v ON_ERROR_STOP=1 < supabase/seed.b2b-test-fixtures.sql
 ```
 
 這會建立三筆彼此獨立的測試情境：
@@ -173,8 +191,8 @@ identity 綁定；不會對遠端建立帳號，也不會把密碼寫入 Git。
 要移除 fixture，使用精準且有 FK／Auth 保護的清理檔：
 
 ```bash
-psql "$CONTRACT_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -f supabase/cleanup.b2b-test-fixtures.sql
+docker exec -i "$CONTRACT_TEST_DATABASE_CONTAINER" psql -U postgres -d postgres \
+  -v ON_ERROR_STOP=1 < supabase/cleanup.b2b-test-fixtures.sql
 ```
 
 如果測試 RFQ 仍參照商品／公司，或公司已綁 Auth identity，清理檔會保留該列，

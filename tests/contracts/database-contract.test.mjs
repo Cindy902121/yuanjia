@@ -4,9 +4,15 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { assertLocalDatabaseTarget } from "../../scripts/contract-test-env.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const migrationDir = join(ROOT, "supabase", "migrations");
 const migrationFiles = readdirSync(migrationDir).filter((file) => file.endsWith(".sql"));
+
+if (process.env.CONTRACT_TEST_DATABASE_URL) {
+  assertLocalDatabaseTarget(process.env.CONTRACT_TEST_DATABASE_URL);
+}
 
 function read(relativePath) {
   return readFileSync(join(ROOT, relativePath), "utf8");

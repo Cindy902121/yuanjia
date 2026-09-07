@@ -1,11 +1,78 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import test from "node:test";
 
+import {
+  assertLocalDatabaseTarget,
+  assertLocalSupabaseTarget,
+  assertLocalTestServerTarget,
+} from "../../scripts/contract-test-env.mjs";
+
 const execFileAsync = promisify(execFile);
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const baseUrl = process.env.CONTRACT_TEST_BASE_URL?.replace(/\/$/, "");
+const databaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
+const databaseTarget = databaseUrl ? assertLocalDatabaseTarget(databaseUrl) : null;
+const databaseContainer = process.env.CONTRACT_TEST_DATABASE_CONTAINER?.trim();
+
+if (baseUrl) assertLocalTestServerTarget(baseUrl);
+if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  assertLocalSupabaseTarget(process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
+if (databaseContainer && !databaseTarget) {
+  throw new Error("CONTRACT_TEST_DATABASE_CONTAINER 必須搭配 CONTRACT_TEST_DATABASE_URL。");
+}
+
+let databaseContainerChecked = false;
+
+async function ensureDatabaseContainer() {
+  if (!databaseContainer || databaseContainerChecked) return;
+
+  const { stdout } = await execFileAsync("docker", [
+    "inspect",
+    "--format",
+    "{{json .NetworkSettings.Ports}}",
+    databaseContainer,
+  ]);
+  const ports = JSON.parse(stdout);
+  const publishedPorts = (ports?.["5432/tcp"] ?? []).map((binding) => binding.HostPort);
+  assert.ok(
+    publishedPorts.includes(databaseTarget.port || "5432"),
+    `CONTRACT_TEST_DATABASE_CONTAINER 必須發布 ${databaseTarget.port || "5432"} port。`,
+  );
+  databaseContainerChecked = true;
+}
+
+async function runDatabaseCommand(args) {
+  if (!databaseContainer) {
+    return execFileAsync("psql", [databaseUrl, ...args]);
+  }
+
+  await ensureDatabaseContainer();
+  const containerArgs = [...args];
+  const fileIndex = containerArgs.indexOf("-f");
+  if (fileIndex >= 0 && containerArgs[fileIndex + 1]) {
+    const filePath = resolve(ROOT, containerArgs[fileIndex + 1]);
+    containerArgs.splice(fileIndex, 2, "-c", readFileSync(filePath, "utf8"));
+  }
+
+  return execFileAsync("docker", [
+    "exec",
+    "-i",
+    databaseContainer,
+    "psql",
+    "-U",
+    "postgres",
+    "-d",
+    "postgres",
+    ...containerArgs,
+  ]);
+}
 
 const EVENT_NAMES = [
   "b2b_login_success",
@@ -1347,11 +1414,10 @@ test(
 
 test(
   "seed rerun preserves Auth identity binding",
-  { skip: process.env.CONTRACT_TEST_DATABASE_URL ? false : "set CONTRACT_TEST_DATABASE_URL to an isolated local/test database" },
+  { skip: databaseUrl ? false : "set CONTRACT_TEST_DATABASE_URL to an isolated local/test database" },
   async () => {
-    const databaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
     const query = "select coalesce(auth_user_id::text, '<null>') from public.companies where client_code = 'Z232113';";
-    const run = async (args) => execFileAsync("psql", [databaseUrl, "-At", "-v", "ON_ERROR_STOP=1", ...args]);
+    const run = async (args) => runDatabaseCommand(["-At", "-v", "ON_ERROR_STOP=1", ...args]);
     const before = (await run(["-c", query])).stdout.trim();
     await run(["-f", "supabase/seed.sql"]);
     await run(["-f", "supabase/seed.sql"]);

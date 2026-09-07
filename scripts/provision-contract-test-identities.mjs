@@ -1,46 +1,9 @@
-import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 
-const ROOT = new URL("..", import.meta.url);
-
-async function readEnvFile(name) {
-  try {
-    return await readFile(new URL(name, ROOT), "utf8");
-  } catch (error) {
-    if (error.code === "ENOENT") return "";
-    throw error;
-  }
-}
-
-function parseEnv(contents) {
-  const values = {};
-  for (const rawLine of contents.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (!match) continue;
-    let value = match[2].trim();
-    if (
-      value.length >= 2 &&
-      ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'")))
-    ) {
-      value = value.slice(1, -1);
-    }
-    values[match[1]] = value;
-  }
-  return values;
-}
-
-async function loadEnv() {
-  const values = {
-    ...parseEnv(await readEnvFile(".env.local")),
-    ...parseEnv(await readEnvFile(".env.test.local")),
-  };
-  for (const [name, value] of Object.entries(values)) {
-    if (process.env[name] === undefined) process.env[name] = value;
-  }
-}
+import {
+  assertLocalSupabaseTarget,
+  loadContractTestEnv,
+} from "./contract-test-env.mjs";
 
 function requireValue(name) {
   const value = process.env[name]?.trim();
@@ -48,17 +11,10 @@ function requireValue(name) {
   return value;
 }
 
-function assertLocalTarget(url) {
-  const hostname = new URL(url).hostname;
-  if (hostname !== "127.0.0.1" && hostname !== "localhost") {
-    throw new Error("Refusing a non-local Supabase target for contract test identities.");
-  }
-}
-
-await loadEnv();
+await loadContractTestEnv();
 const supabaseUrl = requireValue("NEXT_PUBLIC_SUPABASE_URL");
 const secretKey = requireValue("SUPABASE_SECRET_KEY");
-assertLocalTarget(supabaseUrl);
+assertLocalSupabaseTarget(supabaseUrl);
 
 const admin = createClient(supabaseUrl, secretKey, {
   auth: { autoRefreshToken: false, persistSession: false },
