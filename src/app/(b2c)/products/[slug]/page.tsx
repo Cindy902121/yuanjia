@@ -11,6 +11,7 @@ import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialAddToCartWithQuantity } from "@/components/editorial/AddToCartWithQuantity";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * /products/[slug] 頁面。
@@ -58,6 +59,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
 }
 
 export default async function ProductDetailPage({ params }: PageProps<"/products/[slug]">) {
+  await requireB2cAccess();
   const { slug } = await params;
   const supabase = await createClient();
   const product = await getProductBySlug(supabase, slug);

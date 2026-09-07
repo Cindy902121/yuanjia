@@ -12,7 +12,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
-import { B2bCsvImportPanel, CustomerPrefixRulePanel } from "./admin-catalog-tools";
+import { B2bCsvImportPanel } from "./admin-catalog-tools";
 import AnalyticsReportPanel from "./analytics-report-panel";
 import { OperationsOverview } from "./operations-overview";
 import styles from "./admin-workspace.module.css";
@@ -25,8 +25,7 @@ type AdminTab =
   | "b2b-products"
   | "b2b-companies"
   | "b2b-rfqs"
-  | "admin-staff"
-  | "customer-prefix-rules";
+  | "admin-staff";
 type AdminScope = "admin" | "business";
 
 type Channel = "b2c" | "b2b";
@@ -90,7 +89,6 @@ type CompanyForm = {
   password: string;
   passwordAgain: string;
 };
-
 
 const statusLabels = {
   created: "已建立",
@@ -423,7 +421,6 @@ export function AdminDashboard({
                 {activeTab === "b2b-products" ? (
                   <B2bProductPanel key={params.toString()} revision={revision} busyKey={busyKey} />
                 ) : null}
-                {activeTab === "customer-prefix-rules" ? <CustomerPrefixRulePanel /> : null}
                 {activeTab === "b2c-orders" ? (
                   <OrderPanel
                     busyKey={busyKey}

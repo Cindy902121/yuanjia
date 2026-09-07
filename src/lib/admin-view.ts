@@ -1,4 +1,4 @@
-export const ADMIN_TABS = ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff", "customer-prefix-rules"] as const;
+export const ADMIN_TABS = ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff"] as const;
 export type AdminTab = typeof ADMIN_TABS[number];
 export type AdminScope = "admin" | "business";
 export const BUSINESS_TABS: readonly AdminTab[] = ["b2b-products", "b2b-rfqs"];

@@ -8,9 +8,11 @@
 --
 -- B2B 展示客戶代碼範例：Z232113（20 萬以下）。
 -- 另外兩組測試代碼 E853699／W483038 由 optional fixture 提供。
--- 目前展示集包含 5 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、10／15 個標籤，
--- 以及 15／31 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
--- 軟體類、肉類與調理食品。
+-- 目前展示集包含 6 筆 B2C、8 筆 B2B、10 筆 B2B 規格選項、17／27 個標籤，
+-- 以及 31／50 筆標籤關聯；B2B 展示分類依 FDD 涵蓋蝦蟹類、魚類、貝類、
+-- 軟體類、肉類與調理食品。B2C 已補齊 docs/fixed-questionnaire-gap.md
+-- 記錄的固定問卷缺口：清蒸、煮湯、生食、方便料理、少刺／無刺、份量剛好、原味
+-- 標籤，以及「其他海鮮」分類（新增台灣鮮甜小卷示範商品）。
 
 begin;
 
@@ -40,8 +42,15 @@ values
   ('料理方式', 'hot-pot', '火鍋', true),
   ('料理方式', 'pan-fry', '煎烤', true),
   ('料理方式', 'air-fry', '氣炸', true),
+  ('料理方式', 'steam', '清蒸', true),
+  ('料理方式', 'soup', '煮湯', true),
+  ('料理方式', 'raw', '生食', true),
   ('需求特性', 'high-protein', '高蛋白', true),
   ('需求特性', 'kid-friendly', '適合小孩', true),
+  ('需求特性', 'easy-cook', '方便料理', true),
+  ('需求特性', 'boneless', '少刺／無刺', true),
+  ('需求特性', 'right-portion', '份量剛好', true),
+  ('加工方式', 'plain', '原味', true),
   ('加工方式', 'ready-to-cook', '即煮', true),
   ('加工方式', 'seasoned', '調味', true)
 on conflict (slug) do update
@@ -65,7 +74,19 @@ values
   ('用途', 'restaurant', '餐飲料理', true),
   ('用途', 'retail', '零售販售', true),
   ('用途', 'bulk-supply', '團膳／大量供應', true),
-  ('保存／包裝', 'frozen', '冷凍保存', true)
+  ('保存／包裝', 'frozen', '冷凍保存', true),
+  ('通路', 'wholesale_small', '小盤', true),
+  ('通路', 'wholesale_mid_large', '中大型盤商', true),
+  ('通路', 'ecommerce_group_buy', '團購', true),
+  ('通路', 'ecommerce_live', '直播', true),
+  ('通路', 'ecommerce_marketplace', '網購平台', true),
+  ('通路', 'mass_retail', '量販／超市', true),
+  ('通路', 'traditional_market', '傳統菜市場', true),
+  ('通路', 'seafood_specialty_store', '海鮮專賣店', true),
+  ('通路', 'foodservice_general', '一般餐飲', true),
+  ('通路', 'foodservice_chain', '連鎖', true),
+  ('通路', 'foodservice_banquet_catering', '宴會・外燴', true),
+  ('通路', 'foodservice_hotel', '飯店', true)
 on conflict (slug) do update
 set group_name = excluded.group_name,
     name = excluded.name,
@@ -80,7 +101,8 @@ values
   ('taiwan-milkfish-belly', '台灣虱目魚肚', '宅鮮配', '魚類', '180g/包', 169, '台灣', '冷凍 -18°C 以下', '台灣本地養殖，取魚腹油脂最豐厚的部位，肉質細緻軟嫩、油脂香氣足。傳統做法適合香煎或煮成虱目魚肚粥，也能簡單清蒸保留原味。', '契約養殖來源可追溯，全程冷凍保存配送，出貨前經自主性品質檢測。', '選用魚腹部位，去刺處理，質地軟嫩，適合長輩與小孩食用。', 25, true),
   ('argentine-red-shrimp', '阿根廷天使紅蝦', '宅鮮配', '蝦類', '500g/盒', 329, '阿根廷', '冷凍 -18°C 以下', '捕撈自南大西洋阿根廷海域的天使紅蝦，肉質鮮甜彈牙、蝦膏飽滿，天然紅色外殼帶有淡淡海味甜香。適合涮火鍋、鹽烤或簡單白灼，保留原始鮮甜。', '捕撈後急速冷凍鎖住鮮度，全程 -18°C 以下冷鏈配送，出貨前經自主性品質檢測。', '單尾規格均勻，適合宴客或家庭聚餐份量。', 15, true),
   ('taiwan-clam', '台灣鮮甜蛤蜊', '宅鮮配', '貝類', '500g/包', 139, '台灣', '冷凍 -18°C 以下', '台灣沿海養殖，殼薄肉厚、湯汁鮮甜。適合煮湯、蒜蓉爆炒或做成義式蛤蜊麵，簡單烹調就能帶出天然鮮甜滋味。', '全程冷凍保存配送，出貨前經自主性品質與溫度檢測。', '個體大小均勻，方便料理時掌握份量。', 30, true),
-  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '以日式手法調味醃漬，鹹香入味、油脂豐富，退冰後簡單煎烤或氣炸即可上桌，適合忙碌日常快速準備一餐。', '調味完成後即急速冷凍鎖住風味，全程冷鏈配送，出貨前經自主性品質檢測。', '已完成醃漬調味，免加額外調味料，新手也能輕鬆上手。', 18, true)
+  ('seasoned-mackerel', '日式調味鯖魚', '宅鮮配', '魚類', '140g/片', 119, '挪威', '冷凍 -18°C 以下', '以日式手法調味醃漬，鹹香入味、油脂豐富，退冰後簡單煎烤或氣炸即可上桌，適合忙碌日常快速準備一餐。', '調味完成後即急速冷凍鎖住風味，全程冷鏈配送，出貨前經自主性品質檢測。', '已完成醃漬調味，免加額外調味料，新手也能輕鬆上手。', 18, true),
+  ('taiwan-squid', '台灣鮮甜小卷', '宅鮮配', '其他海鮮', '300g/盒', 189, '台灣', '冷凍 -18°C 以下', '肉質鮮甜有嚼勁，適合火鍋與快炒。', '低溫冷鏈配送。', '展示用品質資訊。', 20, true)
 on conflict (slug) do update
 set name = excluded.name,
     brand = excluded.brand,
@@ -157,18 +179,34 @@ join public.b2c_tags tag on (product.slug, tag.slug) in (
   ('norwegian-salmon-fillet', 'fish'),
   ('norwegian-salmon-fillet', 'pan-fry'),
   ('norwegian-salmon-fillet', 'air-fry'),
+  ('norwegian-salmon-fillet', 'raw'),
+  ('norwegian-salmon-fillet', 'boneless'),
   ('norwegian-salmon-fillet', 'high-protein'),
+  ('norwegian-salmon-fillet', 'plain'),
   ('taiwan-milkfish-belly', 'fish'),
   ('taiwan-milkfish-belly', 'pan-fry'),
+  ('taiwan-milkfish-belly', 'steam'),
+  ('taiwan-milkfish-belly', 'soup'),
+  ('taiwan-milkfish-belly', 'boneless'),
   ('taiwan-milkfish-belly', 'kid-friendly'),
+  ('taiwan-milkfish-belly', 'plain'),
   ('argentine-red-shrimp', 'shrimp'),
   ('argentine-red-shrimp', 'hot-pot'),
   ('argentine-red-shrimp', 'high-protein'),
+  ('argentine-red-shrimp', 'plain'),
   ('taiwan-clam', 'shellfish'),
   ('taiwan-clam', 'hot-pot'),
+  ('taiwan-clam', 'soup'),
+  ('taiwan-clam', 'plain'),
   ('seasoned-mackerel', 'fish'),
   ('seasoned-mackerel', 'seasoned'),
-  ('seasoned-mackerel', 'ready-to-cook')
+  ('seasoned-mackerel', 'ready-to-cook'),
+  ('seasoned-mackerel', 'easy-cook'),
+  ('seasoned-mackerel', 'boneless'),
+  ('seasoned-mackerel', 'right-portion'),
+  ('taiwan-squid', 'hot-pot'),
+  ('taiwan-squid', 'high-protein'),
+  ('taiwan-squid', 'plain')
 )
 on conflict (product_id, tag_id) do nothing;
 
@@ -206,7 +244,26 @@ join public.b2b_tags tag on (product.product_code, tag.slug) in (
   ('B2B-PREP-001', 'processed-food'),
   ('B2B-PREP-001', 'seasoned'),
   ('B2B-PREP-001', 'restaurant'),
-  ('B2B-PREP-001', 'frozen')
+  ('B2B-PREP-001', 'frozen'),
+  ('B2B-SHRIMP-001', 'wholesale_small'),
+  ('B2B-SHRIMP-001', 'wholesale_mid_large'),
+  ('B2B-MEAT-001', 'wholesale_mid_large'),
+  ('B2B-PREP-001', 'ecommerce_group_buy'),
+  ('B2B-PREP-001', 'ecommerce_live'),
+  ('B2B-PREP-001', 'ecommerce_marketplace'),
+  ('B2B-SHELL-001', 'mass_retail'),
+  ('B2B-FISH-001', 'traditional_market'),
+  ('B2B-FISH-002', 'traditional_market'),
+  ('B2B-FISH-002', 'seafood_specialty_store'),
+  ('B2B-SHELL-001', 'seafood_specialty_store'),
+  ('B2B-FISH-001', 'foodservice_general'),
+  ('B2B-FISH-002', 'foodservice_general'),
+  ('B2B-FISH-003', 'foodservice_general'),
+  ('B2B-SOFT-001', 'foodservice_general'),
+  ('B2B-PREP-001', 'foodservice_general'),
+  ('B2B-FISH-003', 'foodservice_chain'),
+  ('B2B-SOFT-001', 'foodservice_banquet_catering'),
+  ('B2B-SOFT-001', 'foodservice_hotel')
 )
 on conflict (product_id, tag_id) do nothing;
 

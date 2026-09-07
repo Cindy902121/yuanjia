@@ -30,8 +30,8 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const purpose = url.searchParams.get("purpose");
-  const purposeValue = purpose as (typeof EXPORT_PURPOSES)[number][0];
-  if (!EXPORT_PURPOSES.some(([value]) => value === purposeValue)) {
+  const purposeValue = purpose as (typeof EXPORT_PURPOSES)[number];
+  if (!EXPORT_PURPOSES.some((value) => value === purposeValue)) {
     return apiError("請選擇報表下載用途。", 400);
   }
   const note = url.searchParams.get("note")?.trim() ?? "";

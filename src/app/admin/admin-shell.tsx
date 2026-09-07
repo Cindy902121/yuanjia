@@ -8,7 +8,7 @@ const modules: Array<{ id: AdminTab; label: string; group: string }> = [
   { id: "overview", label: "營運總覽", group: "工作台" }, { id: "analytics", label: "分析報表", group: "工作台" },
   { id: "b2b-rfqs", label: "企業詢價", group: "B2B 企業業務" }, { id: "b2b-products", label: "商品型錄", group: "B2B 企業業務" }, { id: "b2b-companies", label: "企業會員", group: "B2B 企業業務" },
   { id: "b2c-products", label: "商品管理", group: "B2C 商品與展示" }, { id: "b2c-orders", label: "展示訂單", group: "B2C 商品與展示" },
-  { id: "admin-staff", label: "管理帳號", group: "系統管理" }, { id: "customer-prefix-rules", label: "客戶代碼規則", group: "系統管理" },
+  { id: "admin-staff", label: "管理帳號", group: "系統管理" },
 ];
 export function AdminShell({ children, scope, activeTab, onSelect, onRefresh, busy }: { children: ReactNode; scope: AdminScope; activeTab: AdminTab; onSelect: (tab: AdminTab) => void; onRefresh: () => void; busy: boolean }) {
   const [access, setAccess] = useState(0), [notice, setNotice] = useState("");

@@ -7,6 +7,7 @@ import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialProductList } from "@/components/editorial/ProductList";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 const TITLE = "商品列表 | 元家";
 const DESCRIPTION = "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。";
@@ -44,6 +45,7 @@ export const metadata: Metadata = {
  * 還沒重新設計的頁面繼續沿用，等之後也改版了才會是真的可以清掉舊元件的時候。
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
+  await requireB2cAccess();
   const params = await searchParams;
   const supabase = await createClient();
   const [products, categories] = await Promise.all([

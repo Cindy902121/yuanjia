@@ -24,8 +24,6 @@ const routes = {
   adminProductStatus: read("src/app/api/admin/products/[channel]/[productId]/route.ts"),
   adminProductImages: read("src/app/api/admin/products/[channel]/[productId]/images/route.ts"),
   adminProductImage: read("src/app/api/admin/products/[channel]/[productId]/images/[imageId]/route.ts"),
-  adminPrefixRules: read("src/app/api/admin/customer-prefix-rules/route.ts"),
-  adminPrefixRule: read("src/app/api/admin/customer-prefix-rules/[ruleId]/route.ts"),
   adminSpecOptions: read("src/app/api/admin/products/b2b/[productId]/spec-options/route.ts"),
   adminSpecOption: read("src/app/api/admin/products/b2b/[productId]/spec-options/[optionId]/route.ts"),
   adminProductImport: read("src/app/api/admin/products/b2b/import/route.ts"),
@@ -36,6 +34,17 @@ const routes = {
   adminCompany: read("src/app/api/admin/companies/[companyId]/route.ts"),
   adminRfqs: read("src/app/api/admin/rfqs/route.ts"),
 };
+
+const b2cPages = [
+  read("src/app/(b2c)/page.tsx"),
+  read("src/app/(b2c)/products/page.tsx"),
+  read("src/app/(b2c)/products/categories/[slug]/page.tsx"),
+  read("src/app/(b2c)/products/tags/[slug]/page.tsx"),
+  read("src/app/(b2c)/products/[slug]/page.tsx"),
+  read("src/app/(b2c)/cart/page.tsx"),
+  read("src/app/(b2c)/checkout/page.tsx"),
+];
+const cartPage = read("src/app/(b2c)/cart/page.tsx");
 
 const adminDashboard = read("src/app/admin/admin-dashboard.tsx");
 const productEditor = read("src/app/admin/business/products/product-editor.tsx");
@@ -84,7 +93,7 @@ test("the API permission matrix remains explicit", () => {
   const matrix = [
     ["/api/b2c/products", "GET", "anonymous", "allow"],
     ["/api/b2c/products", "GET", "b2c", "allow"],
-    ["/api/b2c/products", "GET", "b2b", "allow"],
+    ["/api/b2c/products", "GET", "b2b", "deny"],
     ["/api/b2c/products", "GET", "admin", "allow"],
     ["/api/b2c/product-finder", "GET", "anonymous", "allow"],
     ["/api/b2c/product-finder", "GET", "b2c", "allow"],
@@ -150,6 +159,16 @@ test("B2C and B2B guards are not interchangeable", () => {
   assert.doesNotMatch(routes.b2bProducts, /b2c_products/);
 });
 
+test("B2B sessions are blocked from every B2C shopping page", () => {
+  for (const page of b2cPages) {
+    assert.match(page, /requireB2cAccess/);
+    assert.match(page, /await requireB2cAccess\(\)/);
+  }
+  assert.match(cartPage, /robots: \{ index: false, follow: false \}/);
+  assert.match(routes.b2cProducts, /context\.company/);
+  assert.match(routes.b2cProducts, /不可讀取 B2C 商品/);
+});
+
 test("mock order permissions match the route specification", () => {
   assert.match(routes.b2cOrders, /if \(b2bContext\.company\)/);
   assert.match(routes.b2cOrders, /if \(adminContext\.isAdmin\)/);
@@ -182,6 +201,28 @@ test("B2B catalog and RFQ contracts preserve multi-spec selections", () => {
   }
   assert.doesNotMatch(routes.b2bRfqs, /seenProductIds/);
   assert.match(routes.b2bRfqs, /same product.*same specification|相同規格/);
+});
+
+test("B2B product finder exposes the fixed channel/category backend contract", () => {
+  const finderConfig = read("src/lib/product-finder.ts");
+  for (const value of [
+    "wholesale",
+    "wholesale_small",
+    "ecommerce",
+    "ecommerce_group_buy",
+    "mass_retail",
+    "traditional_retail_specialty",
+    "seafood_specialty_store",
+    "foodservice",
+    "foodservice_chain",
+  ]) {
+    assert.match(finderConfig, new RegExp(value));
+  }
+  assert.match(finderConfig, /parseB2bChannelSelection/);
+  assert.match(routes.b2bFinder, /searchParams\.get\("channel"\)/);
+  assert.match(routes.b2bFinder, /searchParams\.get\("category"\)/);
+  assert.match(routes.b2bFinder, /parseB2bChannelSelection/);
+  assert.match(routes.b2bFinder, /findProductIdsByTags/);
 });
 
 test("all 24 analytics event names and server-derived payload fields are preserved", () => {
@@ -219,8 +260,6 @@ test("admin product, company and RFQ management routes stay server-authorized", 
     routes.adminProductStatus,
     routes.adminProductImages,
     routes.adminProductImage,
-    routes.adminPrefixRules,
-    routes.adminPrefixRule,
     routes.adminSpecOptions,
     routes.adminSpecOption,
     routes.adminProductImport,
@@ -251,8 +290,6 @@ test("admin catalog management includes media, prefix, option and batch contract
   assert.match(routes.adminProductImages, /export async function PATCH/);
   assert.match(routes.adminProductImage, /export async function PUT/);
   assert.match(routes.adminProductImage, /storage_cleanup/);
-  assert.match(routes.adminPrefixRules, /prefix/);
-  assert.match(routes.adminPrefixRule, /前綴建立後不可修改/);
   assert.match(routes.adminSpecOptions, /option_code/);
   assert.match(routes.adminSpecOption, /代碼建立後不可修改/);
   assert.match(routes.adminProductImport, /TextDecoder\("utf-8", \{ fatal: true \}\)/);
@@ -296,8 +333,7 @@ test("customer prefix matching keeps the longest rule and falls back safely", ()
 test("admin UI exposes the complete B2B catalog workflow in the correct scopes", () => {
   assert.match(adminDashboard, /href="\/admin\/business\/products\/new"/);
   assert.match(adminDashboard, /B2bCsvImportPanel/);
-  assert.match(adminDashboard, /CustomerPrefixRulePanel/);
-  assert.match(adminDashboard, /customer-prefix-rules/);
+  assert.doesNotMatch(adminDashboard, /CustomerPrefixRulePanel|customer-prefix-rules/);
   assert.match(read("src/lib/admin-view.ts"), /BUSINESS_TABS[^=]*= \["b2b-products", "b2b-rfqs"\]/);
 
   assert.match(productPage, /requireAdminPage\(`\/admin\/business\/products\/\$\{productId\}`\)/);
@@ -317,18 +353,12 @@ test("admin UI exposes the complete B2B catalog workflow in the correct scopes",
   assert.match(productEditor, /alt_text: item\.altText\.trim\(\) }/);
 });
 
-test("admin UI wires CSV import and customer prefix rule CRUD to their APIs", () => {
+test("admin UI wires CSV import without exposing prefix rule CRUD", () => {
   assert.match(adminCatalogTools, /accept="\.csv,text\/csv"/);
   assert.match(adminCatalogTools, /body\.append\("file", file\)/);
   assert.match(adminCatalogTools, /\/api\/admin\/products\/b2b\/import/);
   assert.match(adminCatalogTools, /created_count/);
   assert.match(adminCatalogTools, /整批未寫入|整批新增/);
 
-  assert.match(adminCatalogTools, /\/api\/admin\/customer-prefix-rules/);
-  assert.match(adminCatalogTools, /method: "POST"/);
-  assert.match(adminCatalogTools, /method: "PATCH"/);
-  assert.match(adminCatalogTools, /method: "DELETE"/);
-  assert.match(adminCatalogTools, /tier_label/);
-  assert.match(adminCatalogTools, /channel_label/);
-  assert.match(adminCatalogTools, /前綴建立後不可修改/);
+  assert.doesNotMatch(adminCatalogTools, /customer-prefix-rules|CustomerPrefixRule/);
 });
