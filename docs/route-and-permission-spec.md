@@ -57,10 +57,10 @@
 | `/business/lead` | B2C 新客企業合作展示表單 | 允許 | 允許 | 可直接進入；導覽不顯示入口 | 允許 | 可索引／加入 |
 | `/login` | B2C、B2B、管理者統一登入 | 顯示登入表單 | 導向 `/` | 導向 `/business/catalog` | 導向 `/admin` | `noindex`／不加入 |
 | `/user` | B2C 會員中心 | 導向 `/login` | 允許 | 登出確認[^1] | 導向 `/admin` | `noindex`／不加入 |
-| `/business` | B2B 自動分流入口 | 導向 `/login` | 提示後導向 `/` | 導向 `/business/catalog` | 導向 `/admin/business` | `noindex`／不加入 |
-| `/business/catalog` | B2B 私有型錄 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin/business` 商品頁籤 | `noindex`／不加入 |
-| `/business/product-finder` | B2B 固定需求篩選器 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin/business` 篩選器頁籤 | `noindex`／不加入 |
-| `/business/rfq` | 詢價籃與過往詢價紀錄 | 導向 `/login` | 提示後導向 `/` | 僅同公司資料 | 導向 `/admin/business` 詢價頁籤 | `noindex`／不加入 |
+| `/business` | B2B 自動分流入口 | 導向 `/login` | 提示後導向 `/` | 導向 `/business/catalog` | 導向 `/admin` | `noindex`／不加入 |
+| `/business/catalog` | B2B 私有型錄 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin` | `noindex`／不加入 |
+| `/business/product-finder` | B2B 固定需求篩選器 | 導向 `/login` | 提示後導向 `/` | 允許 | 導向 `/admin` | `noindex`／不加入 |
+| `/business/rfq` | 詢價籃與過往詢價紀錄 | 導向 `/login` | 提示後導向 `/` | 僅同公司資料 | 導向 `/admin` | `noindex`／不加入 |
 | `/admin` | 管理後台 | 導向 `/login` | 導向 `/` | 導向 `/business` | 允許 | `noindex`／不加入 |
 | `/admin/business` | B2B 管理功能 | 導向 `/login` | 導向 `/` | 導向 `/business` | 允許 | `noindex`／不加入 |
 | `/admin/business/products/new` | 新增 B2B 商品 | 導向 `/login` | 導向 `/` | 導向 `/business` | admin／business_staff | `noindex`／不加入 |
