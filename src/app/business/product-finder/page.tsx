@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import BusinessHeader from "../catalog/business-header";
 import ProductFinderClient from "./product-finder-client";
+
+/**
+ * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」）：這頁登入
+ * 前就會被導回 /login（見下面 redirect 判斷），內容本身也是 B2B 私有型錄的
+ * 一部分，跟 /business/catalog 同一個道理不該被索引——但一直沒有 export
+ * `metadata`，等於沒有明確的 `robots` 設定。照 /business/catalog/page.tsx
+ * 已經在用的做法補上，不需要另外設計新的模式。
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "需求篩選器 | 元家",
+};
 
 export default async function ProductFinderPage() {
   const access = await getB2BAccess();
