@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 function load(relative, mocks = {}, cache = new Map()) {
   const path = resolve(root, relative);
   if (cache.has(path)) return cache.get(path).exports;
-  const module = { exports: {} }; cache.set(path, module);
+  const moduleRecord = { exports: {} }; cache.set(path, moduleRecord);
   const source = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const localRequire = (id) => {
     if (id in mocks) return mocks[id];
@@ -20,8 +20,8 @@ function load(relative, mocks = {}, cache = new Map()) {
     const candidate = existsSync(base + '.ts') ? base + '.ts' : base;
     return load(candidate, mocks, cache);
   };
-  new Function('exports', 'require', 'module', source)(module.exports, localRequire, module);
-  return module.exports;
+  new Function('exports', 'require', 'module', source)(moduleRecord.exports, localRequire, moduleRecord);
+  return moduleRecord.exports;
 }
 const dates = load('src/lib/admin-dates.ts');
 const views = load('src/lib/admin-view.ts');
