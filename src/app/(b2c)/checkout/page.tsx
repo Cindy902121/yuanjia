@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CheckoutForm } from "./checkout-form";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * FDD §9.1：「/checkout 的 title 與 H1 使用「結帳」，但不加入 sitemap 且設定
@@ -22,7 +23,9 @@ export const metadata: Metadata = {
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 checkout-form.tsx。
  */
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  await requireB2cAccess();
+
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 bg-[#FAF9F6] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8 lg:py-20">
       <CheckoutForm />

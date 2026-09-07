@@ -8,6 +8,8 @@ const DEFAULT_PORT = process.env.CONTRACT_TEST_PORT ?? "3100";
 const testFiles = [
   "tests/contracts/api-contract.test.mjs",
   "tests/contracts/database-contract.test.mjs",
+  "tests/contracts/analytics-report.test.mjs",
+  "tests/contracts/analytics-report.integration.test.mjs",
   "tests/contracts/integration.test.mjs",
 ];
 
@@ -78,6 +80,14 @@ function missingEnvironment() {
   ].filter((name) => !process.env[name]);
 }
 
+function isLocalUrl(value) {
+  try {
+    return ["127.0.0.1", "localhost", "::1"].includes(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function run(command, args, options = {}) {
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(command, args, {
@@ -134,6 +144,11 @@ async function main() {
 
   const port = process.env.CONTRACT_TEST_PORT ?? DEFAULT_PORT;
   const baseUrl = (process.env.CONTRACT_TEST_BASE_URL ?? `http://127.0.0.1:${port}`).replace(/\/$/, "");
+  if (!isLocalUrl(process.env.NEXT_PUBLIC_SUPABASE_URL) || !isLocalUrl(baseUrl)) {
+    console.error("Refusing real contract tests against a non-local Supabase or test server.");
+    process.exitCode = 2;
+    return;
+  }
   process.env.CONTRACT_TEST_BASE_URL = baseUrl;
 
   let server;

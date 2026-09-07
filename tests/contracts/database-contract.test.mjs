@@ -13,8 +13,11 @@ function read(relativePath) {
 }
 
 const seed = read("supabase/seed.sql");
+const b2cFixtures = read("src/lib/fixtures/products.ts");
 const b2bTestFixtures = read("supabase/seed.b2b-test-fixtures.sql");
 const b2bTestCleanup = read("supabase/cleanup.b2b-test-fixtures.sql");
+const b2bAnalyticsFixtures = read("supabase/seed.b2b-analytics-test-fixtures.sql");
+const b2bAnalyticsCleanup = read("supabase/cleanup.b2b-analytics-test-fixtures.sql");
 const b2bCatalogAlignmentMigration = read("supabase/migrations/20260814032613_align_b2b_demo_catalog.sql");
 const b2bSpecOptionsMigrationFile = migrationFiles.find((file) => file.includes("b2b_product_spec_options"));
 const b2bSpecOptionsMigration = b2bSpecOptionsMigrationFile
@@ -34,6 +37,12 @@ const adminRolesStatusMigration = adminRolesStatusMigrationFile
 const adminBulkStatusFixFile = migrationFiles.find((file) => file.includes("fix_admin_bulk_status_ambiguity"));
 const adminBulkStatusFix = adminBulkStatusFixFile
   ? read(`supabase/migrations/${adminBulkStatusFixFile}`)
+  : "";
+const b2bFinderChannelMigrationFile = migrationFiles.find((file) =>
+  file.includes("b2b_product_finder_channel_tags"),
+);
+const b2bFinderChannelMigration = b2bFinderChannelMigrationFile
+  ? read(`supabase/migrations/${b2bFinderChannelMigrationFile}`)
   : "";
 const databasePlan = read("docs/database-plan.md");
 const normalizedBaseline = migrationFiles.find((file) => file.includes("20260812150000_baseline_remote_schema"));
@@ -79,6 +88,21 @@ test("seed is a non-destructive, repeatable display-data contract", () => {
   assert.doesNotMatch(seed, /password/i);
   assert.match(seed, /auth_user_id 永不被/);
   assert.match(seed, /seed 覆蓋/);
+});
+
+test("B2C plain processing data stays aligned across seed and fixtures", () => {
+  assert.match(seed, /\('加工方式', 'plain', '原味', true\)/);
+  for (const productSlug of [
+    "norwegian-salmon-fillet",
+    "taiwan-milkfish-belly",
+    "argentine-red-shrimp",
+    "taiwan-clam",
+    "taiwan-squid",
+  ]) {
+    assert.match(seed, new RegExp(`\\('${productSlug}', 'plain'\\)`));
+  }
+  assert.match(b2cFixtures, /slug: "plain", name: "原味"/);
+  assert.doesNotMatch(b2cFixtures, /slug: "original"/);
 });
 
 test("the P2 migration covers exactly the three remote unindexed foreign keys", () => {
@@ -150,8 +174,6 @@ test("server-only tables keep RLS, no client policy, and privileged server acces
       sources: [
         read("src/lib/customer-rules.ts"),
         read("src/app/api/admin/companies/route.ts"),
-        read("src/app/api/admin/customer-prefix-rules/route.ts"),
-        read("src/app/api/admin/customer-prefix-rules/[ruleId]/route.ts"),
       ],
     },
     {
@@ -290,6 +312,32 @@ test("B2B authorization fixtures are isolated, repeatable and safely removable",
   assert.match(b2bTestCleanup, /not exists/);
 });
 
+test("B2B Analytics fixtures are isolated, complete and safely removable", () => {
+  assert.match(b2bAnalyticsFixtures, /^begin;$/m);
+  assert.match(b2bAnalyticsFixtures, /^commit;$/m);
+  assert.match(b2bAnalyticsFixtures, /W483038/);
+  assert.match(b2bAnalyticsFixtures, /auth_user_id is not null/);
+  assert.match(b2bAnalyticsFixtures, /fixture-b2b-analytics-/);
+  assert.match(b2bAnalyticsFixtures, /fixture:b2b-analytics:rfq-1/);
+  for (const eventName of [
+    "b2b_login_success",
+    "b2b_catalog_view",
+    "b2b_product_view",
+    "b2b_search_filter",
+    "b2b_product_finder_start",
+    "b2b_product_finder_answer",
+    "b2b_product_finder_complete",
+    "b2b_product_finder_result_click",
+    "b2b_rfq_add",
+    "b2b_rfq_submit",
+  ]) {
+    assert.match(b2bAnalyticsFixtures, new RegExp(eventName));
+  }
+  assert.doesNotMatch(b2bAnalyticsFixtures, /auth\.users|auth\.admin|password/i);
+  assert.match(b2bAnalyticsCleanup, /fixture-b2b-analytics-/);
+  assert.match(b2bAnalyticsCleanup, /fixture:b2b-analytics:rfq-1/);
+});
+
 test("B2B demo seed matches the approved group names and category coverage", () => {
   const expectedGroups = ["食材", "加工／規格", "用途", "保存／包裝"];
   for (const group of expectedGroups) {
@@ -316,5 +364,43 @@ test("B2B demo seed matches the approved group names and category coverage", () 
   ]) {
     assert.match(seed, new RegExp(association.replaceAll("'", "\\'")));
     assert.match(b2bCatalogAlignmentMigration, new RegExp(association.replaceAll("'", "\\'")));
+  }
+});
+
+test("B2B product finder stores the approved channel leaves as product tags", () => {
+  assert.ok(b2bFinderChannelMigrationFile, "B2B finder channel migration should exist");
+  const leafSlugs = [
+    "wholesale_small",
+    "wholesale_mid_large",
+    "ecommerce_group_buy",
+    "ecommerce_live",
+    "ecommerce_marketplace",
+    "mass_retail",
+    "traditional_market",
+    "seafood_specialty_store",
+    "foodservice_general",
+    "foodservice_chain",
+    "foodservice_banquet_catering",
+    "foodservice_hotel",
+  ];
+
+  assert.match(b2bFinderChannelMigration, /insert into public\.b2b_tags/);
+  assert.match(b2bFinderChannelMigration, /group_name, slug, name, is_active/);
+  assert.match(b2bFinderChannelMigration, /on conflict \(slug\) do update/);
+  assert.match(b2bFinderChannelMigration, /insert into public\.b2b_product_tags/);
+  assert.match(b2bFinderChannelMigration, /on conflict \(product_id, tag_id\) do nothing/);
+  for (const slug of leafSlugs) {
+    assert.match(b2bFinderChannelMigration, new RegExp(`'${slug}'`));
+    assert.match(seed, new RegExp(`'${slug}'`));
+  }
+  for (const mapping of [
+    "B2B-SHRIMP-001', 'wholesale_small",
+    "B2B-PREP-001', 'ecommerce_group_buy",
+    "B2B-SHELL-001', 'mass_retail",
+    "B2B-FISH-003', 'foodservice_chain",
+  ]) {
+    const pattern = new RegExp(mapping.replaceAll("'", "\\'"));
+    assert.match(b2bFinderChannelMigration, pattern);
+    assert.match(seed, pattern);
   }
 });
