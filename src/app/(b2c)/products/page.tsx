@@ -7,8 +7,7 @@ import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialProductList } from "@/components/editorial/ProductList";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
-import { getB2BAccess } from "@/lib/b2b/catalog";
-import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 const TITLE = "商品列表 | 元家";
 const DESCRIPTION = "瀏覽元家精選冷凍海鮮與調理食品，依分類與標籤篩選商品。";
@@ -45,9 +44,12 @@ export const metadata: Metadata = {
  * **沒有刪除**——`/products/categories/[slug]`、`/products/tags/[slug]` 這兩個
  * 還沒重新設計的頁面繼續沿用，等之後也改版了才會是真的可以清掉舊元件的時候。
  *
- * 2026-09-03：路由規格註 1，B2B 公司 session 進來要顯示「請先登出企業帳號」
- * 守門畫面，不是商品列表。放在商品／分類資料查詢之前判斷，B2B 進來時直接
- * short-circuit，不需要多打這幾個 Supabase 查詢。
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：B2B 誤入的守門原本
+ * 這裡是「顯示請先登出企業帳號的確認選項」（B2BShoppingGuard），main 上
+ * B 已經改成 requireB2cAccess() 直接 redirect("/business")，沒有確認選項。
+ * 兩邊在同一批頁面上各自做了一版，合併時面對面撞上，這裡採用已經併進 main
+ * 的版本，B2BShoppingGuard 元件本身先保留沒刪，這條路由規格細節（要不要有
+ * 確認選項）留給團隊後續決定。
  *
  * 2026-09（C 提出 P1-1「B2C Finder 多筆結果導流」發現並修正）：`?tag=` 原本
  * 用 `typeof params.tag === "string"` 判斷，網址帶多個 `?tag=` 時
@@ -59,15 +61,7 @@ export const metadata: Metadata = {
  * 等）行為不變。
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
-  const access = await getB2BAccess();
-  if (access.role === "b2b") {
-    return (
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-        <B2BShoppingGuard />
-      </main>
-    );
-  }
-
+  await requireB2cAccess();
   const params = await searchParams;
   const supabase = await createClient();
   const [products, categories] = await Promise.all([

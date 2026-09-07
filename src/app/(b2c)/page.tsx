@@ -5,6 +5,7 @@ import { buildOpenGraph, canonicalFor, SITE_URL } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { requireB2cAccess } from "@/lib/b2c/access";
 import { editorialButtonDark } from "@/lib/editorial/styles";
 import { OceanStyles } from "./_ocean/ocean-styles";
 import { OceanLineArt } from "./_ocean/ocean-line-art";
@@ -112,7 +113,9 @@ const QUALITY_FACTS = [
  *   touch 到的、homepage 以外的正式檔案，純粹一個顏色 token，Footer 的
  *   內容／連結／版面沒有變。
  */
-export default function HomePage() {
+export default async function HomePage() {
+  await requireB2cAccess();
+
   return (
     <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={organizationJsonLd} />

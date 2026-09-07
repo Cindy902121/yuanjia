@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { CartPageClient } from "./cart-page-client";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
-import { getB2BAccess } from "@/lib/b2b/catalog";
-import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 const TITLE = "購物車 | 元家";
 const DESCRIPTION = "查看購物車內容，調整數量後前往結帳。";
@@ -11,6 +10,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: canonicalFor("/cart"),
+  robots: { index: false, follow: false },
   openGraph: buildOpenGraph({
     title: TITLE,
     description: DESCRIPTION,
@@ -24,21 +24,23 @@ export const metadata: Metadata = {
  *
  * 這個檔案只負責 metadata（Server Component 才能 export metadata）；實際互動內容
  * 在 cart-page-client.tsx（購物車存瀏覽器 localStorage，見 src/lib/cart/store.ts，
- * 一定要是 Client Component）。/cart 不在 FDD §9.1 的 noindex 清單裡，所以這裡
- * 沒有設定 noindex。
+ * 一定要是 Client Component）。B2B session 由 Server Component 先導回企業型錄，
+ * /cart 依路由規格設定 noindex。
  *
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 cart-page-client.tsx。
  *
- * 2026-09-03：補上路由規格註 1「B2B 誤入 B2C 購物路由」的守門畫面——B2B 公司
- * session 進來時不渲染購物車，改顯示 B2BShoppingGuard（見該元件檔頭說明）。
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：這裡原本是顯示
+ * B2BShoppingGuard（請先登出企業帳號的確認選項），main 上 B 已經改成
+ * requireB2cAccess() 直接 redirect("/business")，兩邊各自做了一版、合併時
+ * 撞上，採用已經併進 main 的版本，細節見 products/page.tsx 同批說明。
  */
 export default async function CartPage() {
-  const access = await getB2BAccess();
+  await requireB2cAccess();
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-      {access.role === "b2b" ? <B2BShoppingGuard /> : <CartPageClient />}
+      <CartPageClient />
     </main>
   );
 }

@@ -7,8 +7,7 @@ import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { EditorialProductGrid } from "@/components/editorial/ProductGrid";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { getCategoryIntro } from "@/lib/content/category-intros";
-import { getB2BAccess } from "@/lib/b2b/catalog";
-import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * /products/categories/[slug] 頁面。
@@ -29,8 +28,7 @@ import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
  * 當 meta description，維持「畫面上看得到的文字」跟「meta 裡宣稱的內容」
  * 一致（避免 description 寫一套、頁面內容是另一套的常見 SEO 反模式）。
  *
- * 2026-09-03：路由規格註 1，B2B 公司 session 進來顯示「請先登出企業帳號」
- * 守門畫面，同 /products。
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：同 /products。
  */
 export async function generateMetadata({
   params,
@@ -54,15 +52,7 @@ export async function generateMetadata({
 }
 
 export default async function ProductCategoryPage({ params }: PageProps<"/products/categories/[slug]">) {
-  const access = await getB2BAccess();
-  if (access.role === "b2b") {
-    return (
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-        <B2BShoppingGuard />
-      </main>
-    );
-  }
-
+  await requireB2cAccess();
   const { slug } = await params;
   const categoryName = decodeURIComponent(slug);
   const supabase = await createClient();

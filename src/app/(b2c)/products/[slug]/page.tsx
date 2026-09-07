@@ -12,8 +12,7 @@ import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialAddToCartWithQuantity } from "@/components/editorial/AddToCartWithQuantity";
 import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
-import { getB2BAccess } from "@/lib/b2b/catalog";
-import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
+import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * /products/[slug] 頁面。
@@ -33,9 +32,10 @@ import { B2BShoppingGuard } from "@/components/B2BShoppingGuard";
  * 舊元件（ProductDetail、ProductDetailTabs、Breadcrumb、RecommendedProducts、
  * AddToCartWithQuantity）**沒有刪除**，如果之後有其他地方還在用。
  *
- * 2026-09-03：路由規格註 1，B2B 公司 session 進來要顯示「請先登出企業帳號」
- * 守門畫面，不是商品詳情——放在讀商品資料之前判斷，不管 slug 是否存在都不
- * 需要查。generateMetadata() 不用擋，商品名稱／描述本身不是敏感資料。
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：B2B 誤入的守門原本
+ * 是顯示 B2BShoppingGuard 確認選項，main 上 B 已改成直接 redirect("/business")，
+ * 兩邊各自做了一版、合併時撞上，採用已併進 main 的版本，細節見
+ * products/page.tsx 同批說明。generateMetadata() 一樣不用擋。
  */
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -65,15 +65,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
 }
 
 export default async function ProductDetailPage({ params }: PageProps<"/products/[slug]">) {
-  const access = await getB2BAccess();
-  if (access.role === "b2b") {
-    return (
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-        <B2BShoppingGuard />
-      </main>
-    );
-  }
-
+  await requireB2cAccess();
   const { slug } = await params;
   const supabase = await createClient();
   const product = await getProductBySlug(supabase, slug);

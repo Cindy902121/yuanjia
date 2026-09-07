@@ -37,6 +37,69 @@ export const B2B_FINDER_CONDITIONS = {
   "pack-10kg": { type: "specification", value: "10kg/箱" },
 } as const;
 
+export const B2B_FINDER_CHANNELS = {
+  wholesale: {
+    label: "盤商／批發",
+    categories: {
+      wholesale_small: { label: "小盤", tagSlug: "wholesale_small" },
+      wholesale_mid_large: { label: "中大型盤商", tagSlug: "wholesale_mid_large" },
+    },
+  },
+  ecommerce: {
+    label: "電子商務",
+    categories: {
+      ecommerce_group_buy: { label: "團購", tagSlug: "ecommerce_group_buy" },
+      ecommerce_live: { label: "直播", tagSlug: "ecommerce_live" },
+      ecommerce_marketplace: { label: "網購平台", tagSlug: "ecommerce_marketplace" },
+    },
+  },
+  mass_retail: { label: "量販／超市", tagSlug: "mass_retail" },
+  traditional_retail_specialty: {
+    label: "傳統零售／專賣",
+    categories: {
+      traditional_market: { label: "傳統菜市場", tagSlug: "traditional_market" },
+      seafood_specialty_store: { label: "海鮮專賣店", tagSlug: "seafood_specialty_store" },
+    },
+  },
+  foodservice: {
+    label: "餐飲",
+    categories: {
+      foodservice_general: { label: "一般餐飲", tagSlug: "foodservice_general" },
+      foodservice_chain: { label: "連鎖", tagSlug: "foodservice_chain" },
+      foodservice_banquet_catering: {
+        label: "宴會・外燴",
+        tagSlug: "foodservice_banquet_catering",
+      },
+      foodservice_hotel: { label: "飯店", tagSlug: "foodservice_hotel" },
+    },
+  },
+} as const;
+
+export function parseB2bChannelSelection(
+  channel: string | null,
+  category: string | null,
+) {
+  if (!channel) return null;
+
+  const channelKey = channel as keyof typeof B2B_FINDER_CHANNELS;
+  const channelDefinition = B2B_FINDER_CHANNELS[channelKey];
+  if (!channelDefinition) return null;
+
+  if ("tagSlug" in channelDefinition) {
+    return category
+      ? null
+      : { channel: channelKey, category: null, tagSlug: channelDefinition.tagSlug };
+  }
+
+  if (!category || !("categories" in channelDefinition)) return null;
+  const categoryDefinition = Object.values(channelDefinition.categories).find(
+    (definition) => definition.tagSlug === category,
+  );
+  return categoryDefinition
+    ? { channel: channelKey, category, tagSlug: categoryDefinition.tagSlug }
+    : null;
+}
+
 export function parseFinderConditions(
   raw: string | null,
   definitions:
