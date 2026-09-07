@@ -5,6 +5,7 @@ import { buildOpenGraph, canonicalFor, SITE_URL } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { requireB2cAccess } from "@/lib/b2c/access";
 import { editorialButtonDark } from "@/lib/editorial/styles";
 
 const TITLE = "元家｜新鮮海鮮與調理食品";
@@ -87,7 +88,9 @@ const QUALITY_FACTS = [
  * 分類瀏覽已經有 Header「商品分類」連到 /products 頁面本身的篩選欄可以做，
  * 如果之後覺得還是需要首頁快速入口，可以再加回來，不是技術上做不到。
  */
-export default function HomePage() {
+export default async function HomePage() {
+  await requireB2cAccess();
+
   return (
     <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
       <JsonLd data={organizationJsonLd} />

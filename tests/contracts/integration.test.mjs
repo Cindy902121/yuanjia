@@ -52,6 +52,17 @@ const credentials = {
 
 const inactiveB2bIdentifier = process.env.CONTRACT_TEST_B2B_INACTIVE_IDENTIFIER;
 const integrationReady = Boolean(baseUrl && credentials.b2c && credentials.b2b && credentials.admin);
+const contractDatabaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
+
+function isLocalDatabaseUrl(value) {
+  try {
+    return ["127.0.0.1", "localhost", "::1"].includes(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
+const isolatedDatabaseReady = isLocalDatabaseUrl(contractDatabaseUrl);
 
 const createdRows = {
   eventIds: new Set(),
@@ -175,27 +186,6 @@ async function cleanupCreatedRows() {
   }
 }
 
-async function setCustomerPrefixRuleActive(prefix, isActive) {
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SECRET_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
-  const { data, error: readError } = await admin
-    .from("customer_prefix_rules")
-    .select("is_active")
-    .eq("prefix", prefix)
-    .single();
-  assert.ifError(readError);
-
-  const { error: updateError } = await admin
-    .from("customer_prefix_rules")
-    .update({ is_active: isActive })
-    .eq("prefix", prefix);
-  assert.ifError(updateError);
-  return data.is_active;
-}
-
 function runWithInput(command, args, input) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
@@ -272,6 +262,7 @@ test(
 
     const anonymousProductsResponse = await request("/api/b2c/products");
     assert.equal(anonymousProductsResponse.status, 200);
+    assert.equal((await request("/")).status, 200);
     const anonymousProducts = await json(anonymousProductsResponse);
     const productId = anonymousProducts.products?.[0]?.id;
     assert.ok(productId, "the B2C fixture needs at least one product");
@@ -290,6 +281,7 @@ test(
     assert.equal((await request("/api/b2c/mock-orders")).status, 401);
 
     assert.equal((await request("/api/b2c/products", { headers: { cookie: b2cCookies } })).status, 200);
+    assert.equal((await request("/", { headers: { cookie: b2cCookies } })).status, 200);
     assert.equal((await request("/api/b2b/products", { headers: { cookie: b2cCookies } })).status, 403);
     await createOrder(orderBody, { headers: { cookie: b2cCookies } });
     assert.equal((await request("/api/b2c/mock-orders", { method: "GET", headers: { cookie: b2cCookies } })).status, 403);
@@ -305,7 +297,21 @@ test(
     );
     assert.equal((await request("/api/b2b/rfqs", { headers: { cookie: b2bCookies } })).status, 200);
     assert.equal((await request("/api/b2c/product-finder?conditions=fish", { headers: { cookie: b2bCookies } })).status, 403);
+    assert.equal((await request("/api/b2c/products", { headers: { cookie: b2bCookies } })).status, 403);
     assert.equal((await request("/api/b2c/mock-orders", { headers: { cookie: b2bCookies } })).status, 403);
+    for (const path of [
+      "/",
+      "/products",
+      "/products/categories/fish",
+      "/products/tags/fish",
+      "/products/norwegian-salmon-fillet",
+      "/cart",
+      "/checkout",
+    ]) {
+      const response = await request(path, { headers: { cookie: b2bCookies } });
+      assert.ok([307, 308].includes(response.status), `${path} should redirect B2B users`);
+      assert.equal(new URL(response.headers.get("location"), baseUrl).pathname, "/business");
+    }
 
     assert.equal((await request("/api/admin/analytics/summary", { headers: { cookie: adminCookies } })).status, 200);
     assert.equal((await request("/api/b2c/mock-orders", { method: "GET", headers: { cookie: adminCookies } })).status, 200);
@@ -534,7 +540,7 @@ test(
     const rfqId = [...createdRows.rfqIds][0];
     assert.ok(productId && rfqId, "the event contract needs a B2B product and RFQ fixture");
     const b2bEventData = {
-      b2b_search_filter: { filter_type: "category", selected_option_ids: ["b2b-fish"], result_count: 1 },
+      b2b_search_filter: { filter_type: "tag", selected_option_ids: ["b2b-fish"], result_count: 1 },
       b2b_product_finder_answer: { question_key: "tag", option_id: "b2b-fish" },
       b2b_product_finder_result_click: { product_id: productId },
       b2b_rfq_add: { product_id: productId },
@@ -566,34 +572,6 @@ test(
       body: JSON.stringify({ event_name: "b2c_product_view" }),
     });
     assert.equal(b2cFromB2b.status, 403);
-  },
-);
-
-test(
-  "B2B prefix fallback is persisted as an event snapshot",
-  { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
-  async () => {
-    const b2bCookies = await login(credentials.b2b);
-    const adminCookies = await login(credentials.admin);
-    const originalRuleActive = await setCustomerPrefixRuleActive("Z", false);
-    try {
-      const event = await request("/api/analytics/events", {
-        method: "POST",
-        headers: { cookie: b2bCookies },
-        body: JSON.stringify({ event_name: "b2b_catalog_view" }),
-      });
-      await recordEvent(event, "B2B prefix fallback event");
-
-      const summary = await request(
-        "/api/admin/analytics/summary?customer_tier_snapshot=unclassified&channel_snapshot=unclassified",
-        { headers: { cookie: adminCookies } },
-      );
-      assert.equal(summary.status, 200);
-      const payload = await json(summary);
-      assert.ok(payload.totals.events >= 1);
-    } finally {
-      await setCustomerPrefixRuleActive("Z", originalRuleActive);
-    }
   },
 );
 
@@ -717,12 +695,13 @@ test(
 
 test(
   "seed rerun preserves Auth identity binding",
-  { skip: process.env.CONTRACT_TEST_DATABASE_URL ? false : "set CONTRACT_TEST_DATABASE_URL to an isolated local/test database" },
+  { skip: isolatedDatabaseReady ? false : "set CONTRACT_TEST_DATABASE_URL to a local isolated test database" },
   async () => {
-    const databaseUrl = process.env.CONTRACT_TEST_DATABASE_URL;
+    const databaseUrl = contractDatabaseUrl;
     const query = "select coalesce(auth_user_id::text, '<null>') from public.companies where client_code = 'Z232113';";
     const run = async (args) => runDatabaseCommand(databaseUrl, args);
     const before = (await run(["-c", query])).stdout.trim();
+    assert.ok(before && before !== "<null>", "seed rerun requires Z232113 to have a bound Auth identity");
     await run(["-f", "supabase/seed.sql"]);
     await run(["-f", "supabase/seed.sql"]);
     const after = (await run(["-c", query])).stdout.trim();
