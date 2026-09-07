@@ -3,8 +3,10 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { adminRequest, AdminRequestError } from "../../admin-request";
 
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
@@ -37,6 +39,7 @@ type NewImage = {
 };
 type MediaItem = ExistingImage | NewImage;
 type CleanupWarning = { imageId: string; storagePath: string };
+type ValidationError = { id: string; label: string };
 type ProductForm = {
   product_code: string;
   name: string;
@@ -49,7 +52,7 @@ type ProductForm = {
   description: string;
   status: B2bProductStatus;
 };
-type ApiPayload = { error?: string };
+
 
 const STATUS_OPTIONS: Array<{ value: B2bProductStatus; label: string }> = [
   { value: "draft", label: "草稿" },
@@ -93,20 +96,14 @@ function validateImage(file: File) {
   return null;
 }
 
-async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit) {
-  const response = await fetch(input, { ...init, cache: "no-store" });
-  let payload: T & ApiPayload;
-  try {
-    payload = (await response.json()) as T & ApiPayload;
-  } catch {
-    payload = {} as T & ApiPayload;
-  }
-  if (!response.ok) throw new Error(payload.error ?? "操作失敗，請稍後再試。");
-  return payload;
-}
+const requestJson = adminRequest;
 
 export function ProductEditor({ productId }: { productId: string | null }) {
   const router = useRouter();
+  const [version, setVersion] = useState("");
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [needsReload, setNeedsReload] = useState(false);
+  const saving = useRef(false), allowLeave = useRef(false);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -118,9 +115,32 @@ export function ProductEditor({ productId }: { productId: string | null }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => { if (error) document.getElementById("product-save-error")?.focus(); }, [error]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [notice, setNotice] = useState("");
   const [cleanupWarnings, setCleanupWarnings] = useState<CleanupWarning[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const snapshot = JSON.stringify({ form, selectedTagIds: [...selectedTagIds].sort(), options, removedOptionIds, media, removedImageIds });
+  const dirty = baseline !== null && baseline !== snapshot;
+  useEffect(() => {
+    if (!isLoading && baseline === null) { const timer = window.setTimeout(() => setBaseline(snapshot), 0); return () => window.clearTimeout(timer); }
+  }, [isLoading, baseline, snapshot]);
+  useEffect(() => {
+    const guard = (event: BeforeUnloadEvent) => { if (!allowLeave.current && (dirty || saving.current)) { event.preventDefault(); event.returnValue = ""; } };
+    const navigation = (window as Window & { navigation?: EventTarget }).navigation;
+    const navigate = (event: Event) => {
+      if (!event.cancelable || allowLeave.current) return;
+      if (saving.current || (dirty && !window.confirm("尚有未儲存的變更，確定放棄並離開？"))) event.preventDefault();
+    };
+    navigation?.addEventListener("navigate", navigate);
+    window.addEventListener("beforeunload", guard);
+    return () => { navigation?.removeEventListener("navigate", navigate); window.removeEventListener("beforeunload", guard); };
+  }, [dirty]);
+  function leave(event: { preventDefault: () => void }) {
+    if ((window as Window & { navigation?: EventTarget }).navigation) return;
+    if (saving.current || (dirty && !window.confirm("尚有未儲存的變更，確定放棄並離開？"))) event.preventDefault();
+  }
+
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +149,7 @@ export function ProductEditor({ productId }: { productId: string | null }) {
       productId
         ? requestJson<{
             product: {
+              updated_at: string;
               product_code: string;
               name: string;
               brand: string;
@@ -158,6 +179,7 @@ export function ProductEditor({ productId }: { productId: string | null }) {
         setTags(tagPayload.tags ?? []);
         if (productPayload) {
           const product = productPayload.product;
+          setVersion(product.updated_at);
           setForm({
             product_code: product.product_code,
             name: product.name,
@@ -185,7 +207,7 @@ export function ProductEditor({ productId }: { productId: string | null }) {
         }
       })
       .catch((loadError) => {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "目前無法讀取商品。");
+        if (!cancelled) { setNeedsReload(true); setError(loadError instanceof Error ? loadError.message : "目前無法讀取商品。"); }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -405,30 +427,57 @@ export function ProductEditor({ productId }: { productId: string | null }) {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving.current || needsReload) return;
+    const errors: ValidationError[] = [];
+    const requiredFields: Array<[keyof ProductForm, string, string]> = [
+      ["product_code", "product-code", "商品代碼"], ["name", "product-name", "商品名稱"], ["brand", "product-brand", "品牌"],
+      ["category", "product-category", "分類"], ["specification", "product-specification", "規格"], ["origin", "product-origin", "產地"],
+      ["storage_method", "product-storage", "保存方式"], ["description", "product-description", "商品描述"],
+    ];
+    for (const [field, id, label] of requiredFields) if (!form[field].trim()) errors.push({ id, label });
+    options.forEach((option, index) => {
+      if (!option.option_code.trim()) errors.push({ id: `option-${index}-code`, label: `第 ${index + 1} 個規格選項的代碼` });
+      if (!option.specification_text.trim()) errors.push({ id: `option-${index}-specification`, label: `第 ${index + 1} 個規格選項的規格` });
+      if (!option.packaging_text.trim()) errors.push({ id: `option-${index}-packaging`, label: `第 ${index + 1} 個規格選項的包裝` });
+    });
+    activeMedia.forEach((item, index) => {
+      if (!item.altText.trim()) errors.push({ id: `image-${index}-alt`, label: `第 ${index + 1} 張圖片的替代文字` });
+    });
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setError("請先修正以下欄位，再儲存商品。");
+      return;
+    }
+    setValidationErrors([]);
+    saving.current = true;
     setIsSaving(true);
     setError("");
     setNotice("");
     let id = savedProductId;
+    let baseSaved = false;
     try {
       const productBody = { ...form };
       if (!id) {
-        const payload = await requestJson<{ product: { id: string } }>("/api/admin/products/b2b", {
+        const payload = await requestJson<{ product: { id: string; updated_at: string } }>("/api/admin/products/b2b", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(productBody),
         });
         id = payload.product.id;
         setSavedProductId(id);
+        setVersion(payload.product.updated_at);
       } else {
-        const updateBody: Record<string, unknown> = { ...productBody };
+        const updateBody: Record<string, unknown> = { ...productBody, expected_updated_at: version };
         delete updateBody.product_code;
-        await requestJson(`/api/admin/products/b2b/${id}`, {
+        const payload = await requestJson<{ product: { updated_at: string } }>(`/api/admin/products/b2b/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateBody),
         });
+        setVersion(payload.product.updated_at);
       }
 
+      baseSaved = true;
       await saveTags(id);
       const savedOptions = await saveOptions(id);
       const imageResult = await saveImages(id);
@@ -448,11 +497,17 @@ export function ProductEditor({ productId }: { productId: string | null }) {
         ? "商品資料已保存；部分舊圖片檔案清理失敗，請重試清理。"
         : "商品資料、標籤、規格與圖片已保存。重新整理後仍會保留。");
       setRemovedImageIds([]);
+      setBaseline(null);
+      allowLeave.current = true;
       if (!productId) router.replace(`/admin/business/products/${id}`);
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "商品保存失敗；舊圖片仍會保留。" );
+      const uncertain = saveError instanceof AdminRequestError && [0, 409].includes(saveError.status);
+      setNeedsReload(baseSaved || uncertain);
+      setError(`${baseSaved ? "商品主資料已儲存，附屬資料未全部完成。" : ""}${saveError instanceof Error ? saveError.message : "商品保存失敗。"}${baseSaved || uncertain ? "請先重新讀取核對結果，再繼續編輯。" : ""}`);
     } finally {
+      saving.current = false;
+      allowLeave.current = false;
       setIsSaving(false);
     }
   }
@@ -466,14 +521,18 @@ export function ProductEditor({ productId }: { productId: string | null }) {
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="mb-6 flex flex-col gap-4 border-b border-[#D8E1E5] pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Link className="text-sm font-semibold text-[#005DAA] hover:underline" href="/admin/business">← 回到 B2B 商品</Link>
+            <Link className="text-sm font-semibold text-[#005DAA] hover:underline" href="/admin/business" onNavigate={leave}>← 回到 B2B 商品</Link>
             <h1 className="mt-3 text-3xl font-bold">{productId ? "編輯 B2B 商品" : "新增 B2B 商品"}</h1>
             <p className="mt-2 text-sm text-[#536168]">商品先保存為草稿；圖片可在同一個保存動作中新增或替換。</p>
           </div>
           {savedProductId ? <span className="font-mono text-xs text-[#809099]">{savedProductId}</span> : null}
         </header>
 
-        {error ? <div className="mb-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert">{error}</div> : null}
+        {error ? <div className="mb-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert" id="product-save-error" aria-labelledby="product-save-error-title" tabIndex={-1}>
+          <h2 id="product-save-error-title" className="font-bold">{error}</h2>
+          {validationErrors.length > 0 ? <ul className="mt-2 list-disc space-y-1 pl-5">{validationErrors.map((item) => <li key={item.id}><a className="underline" href={`#${item.id}`}>{item.label}</a></li>)}</ul> : null}
+          {needsReload ? <button className={`${buttonClass} mt-3`} type="button" onClick={() => { if (window.confirm("重新讀取將捨棄本頁未儲存內容，是否繼續？")) { allowLeave.current = true; window.location.assign(savedProductId ? `/admin/business/products/${savedProductId}` : "/admin/business?tab=b2b-products"); } }}>重新讀取核對</button> : null}
+        </div> : null}
         {notice ? <div className="mb-4 rounded-xl border border-[#B8E1CB] bg-[#F0FBF4] px-4 py-3 text-sm text-[#18794E]" role="status">{notice}</div> : null}
         {cleanupWarnings.length > 0 ? (
           <div className="mb-4 rounded-xl border border-[#F1D8A5] bg-[#FFF9E9] px-4 py-3 text-sm text-[#8A5A00]" role="status">
@@ -493,19 +552,19 @@ export function ProductEditor({ productId }: { productId: string | null }) {
           </div>
         ) : null}
 
-        <form className="space-y-6" onSubmit={save}>
+        <form className="space-y-6" noValidate onChangeCapture={() => { if (validationErrors.length > 0) setValidationErrors([]); }} onSubmit={save}><fieldset disabled={isSaving} className="space-y-6">
           <section className="rounded-2xl border border-[#D8E1E5] bg-white p-5 shadow-[0_8px_24px_rgba(23,36,42,0.04)] sm:p-6">
             <h2 className="text-xl font-bold">基本資料</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="text-sm font-semibold">商品代碼<input className={inputClass} disabled={Boolean(productId)} onChange={(event) => updateField("product_code", event.target.value)} required value={form.product_code} /></label>
-              <label className="text-sm font-semibold">商品名稱<input className={inputClass} onChange={(event) => updateField("name", event.target.value)} required value={form.name} /></label>
-              <label className="text-sm font-semibold">品牌<input className={inputClass} onChange={(event) => updateField("brand", event.target.value)} required value={form.brand} /></label>
-              <label className="text-sm font-semibold">分類<input className={inputClass} onChange={(event) => updateField("category", event.target.value)} required value={form.category} /></label>
-              <label className="text-sm font-semibold">規格<input className={inputClass} onChange={(event) => updateField("specification", event.target.value)} required value={form.specification} /></label>
+              <label className="text-sm font-semibold">商品代碼<input id="product-code" className={inputClass} disabled={Boolean(productId)} onChange={(event) => updateField("product_code", event.target.value)} required value={form.product_code} /></label>
+              <label className="text-sm font-semibold">商品名稱<input id="product-name" className={inputClass} onChange={(event) => updateField("name", event.target.value)} required value={form.name} /></label>
+              <label className="text-sm font-semibold">品牌<input id="product-brand" className={inputClass} onChange={(event) => updateField("brand", event.target.value)} required value={form.brand} /></label>
+              <label className="text-sm font-semibold">分類<input id="product-category" className={inputClass} onChange={(event) => updateField("category", event.target.value)} required value={form.category} /></label>
+              <label className="text-sm font-semibold">規格<input id="product-specification" className={inputClass} onChange={(event) => updateField("specification", event.target.value)} required value={form.specification} /></label>
               <label className="text-sm font-semibold">包裝<input className={inputClass} onChange={(event) => updateField("packaging", event.target.value)} value={form.packaging} /></label>
-              <label className="text-sm font-semibold">產地<input className={inputClass} onChange={(event) => updateField("origin", event.target.value)} required value={form.origin} /></label>
-              <label className="text-sm font-semibold">保存方式<input className={inputClass} onChange={(event) => updateField("storage_method", event.target.value)} required value={form.storage_method} /></label>
-              <label className="text-sm font-semibold md:col-span-2">商品描述<textarea className={`${inputClass} min-h-32`} onChange={(event) => updateField("description", event.target.value)} required value={form.description} /></label>
+              <label className="text-sm font-semibold">產地<input id="product-origin" className={inputClass} onChange={(event) => updateField("origin", event.target.value)} required value={form.origin} /></label>
+              <label className="text-sm font-semibold">保存方式<input id="product-storage" className={inputClass} onChange={(event) => updateField("storage_method", event.target.value)} required value={form.storage_method} /></label>
+              <label className="text-sm font-semibold md:col-span-2">商品描述<textarea id="product-description" className={`${inputClass} min-h-32`} onChange={(event) => updateField("description", event.target.value)} required value={form.description} /></label>
               <label className="text-sm font-semibold">商品狀態<select className={inputClass} onChange={(event) => updateField("status", event.target.value)} value={form.status}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
             </div>
           </section>
@@ -528,9 +587,9 @@ export function ProductEditor({ productId }: { productId: string | null }) {
             <div className="mt-4 space-y-3">
               {options.map((option, index) => (
                 <div className="grid gap-3 rounded-xl border border-[#E7EDF0] p-4 md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_80px_auto]" key={option.id ?? `new-${index}`}>
-                  <label className="text-xs font-bold text-[#536168]">代碼<input className={inputClass} disabled={Boolean(option.id)} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, option_code: event.target.value.toUpperCase() } : candidate))} required value={option.option_code} /></label>
-                  <label className="text-xs font-bold text-[#536168]">規格<input className={inputClass} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, specification_text: event.target.value } : candidate))} required value={option.specification_text} /></label>
-                  <label className="text-xs font-bold text-[#536168]">包裝<input className={inputClass} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, packaging_text: event.target.value } : candidate))} required value={option.packaging_text} /></label>
+                  <label className="text-xs font-bold text-[#536168]">代碼<input id={`option-${index}-code`} className={inputClass} disabled={Boolean(option.id)} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, option_code: event.target.value.toUpperCase() } : candidate))} required value={option.option_code} /></label>
+                  <label className="text-xs font-bold text-[#536168]">規格<input id={`option-${index}-specification`} className={inputClass} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, specification_text: event.target.value } : candidate))} required value={option.specification_text} /></label>
+                  <label className="text-xs font-bold text-[#536168]">包裝<input id={`option-${index}-packaging`} className={inputClass} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, packaging_text: event.target.value } : candidate))} required value={option.packaging_text} /></label>
                   <label className="flex items-center gap-2 pt-7 text-xs font-semibold"><input checked={option.is_active} onChange={(event) => setOptions((current) => current.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, is_active: event.target.checked } : candidate))} type="checkbox" />啟用</label>
                   <button className={`${buttonClass} mt-5 border border-[#E5D2D0] bg-white text-[#A43B34] hover:bg-[#FFF5F4]`} onClick={() => { if (option.id) setRemovedOptionIds((current) => [...new Set([...current, option.id!])]); setOptions((current) => current.filter((_, candidateIndex) => candidateIndex !== index)); }} type="button">移除</button>
                 </div>
@@ -550,7 +609,7 @@ export function ProductEditor({ productId }: { productId: string | null }) {
                   <article className={`rounded-xl border p-3 ${removed ? "border-[#E5D2D0] bg-[#FFF5F4] opacity-70" : "border-[#D8E1E5] bg-white"}`} draggable={!removed} key={item.kind === "new" ? item.localId : item.id} onDragOver={(event) => event.preventDefault()} onDragStart={() => setDragIndex(index)} onDrop={() => { if (dragIndex !== null) reorderMedia(dragIndex, index); setDragIndex(null); }}>
                     <div className="aspect-[4/3] overflow-hidden rounded-lg bg-[#F4F7F8]"><img alt={item.altText || "圖片預覽"} className="h-full w-full object-cover" src={preview} /></div>
                     <div className="mt-3 flex items-center justify-between gap-2"><select aria-label="圖片角色" className="rounded-lg border border-[#D8E1E5] px-2 py-2 text-xs" disabled={removed} onChange={(event) => updateRole(item, event.target.value as "cover" | "detail")} value={item.role}><option disabled={hasOtherCover && item.role !== "cover"} value="cover">封面</option><option value="detail">細節</option></select><span className="text-xs text-[#809099]">拖曳排序</span></div>
-                    <input aria-label="圖片替代文字" className={inputClass} disabled={removed} maxLength={200} onChange={(event) => setMedia((current) => current.map((candidate) => candidate === item ? { ...candidate, altText: event.target.value } : candidate))} placeholder="圖片替代文字" required value={item.altText} />
+                    <input id={`image-${index}-alt`} aria-label="圖片替代文字" className={inputClass} disabled={removed} maxLength={200} onChange={(event) => setMedia((current) => current.map((candidate) => candidate === item ? { ...candidate, altText: event.target.value } : candidate))} placeholder="圖片替代文字" required value={item.altText} />
                     <div className="mt-3 flex flex-wrap gap-2"><label className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB] ${removed || item.kind === "new" ? "pointer-events-none opacity-50" : "cursor-pointer"}`}>替換<input accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={removed || item.kind === "new"} onChange={(event) => { if (item.kind === "existing") replaceMedia(item, event.target.files?.[0]); }} type="file" /></label>{removed ? <button className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F]`} onClick={() => { if (item.kind === "existing") restoreMedia(item); }} type="button">復原</button> : <button className={`${buttonClass} border border-[#E5D2D0] bg-white text-[#A43B34] hover:bg-[#FFF5F4]`} onClick={() => removeMedia(item)} type="button">刪除</button>}</div>
                     {removed ? <p className="mt-2 text-xs text-[#A43B34]">儲存後刪除</p> : null}
                   </article>
@@ -560,8 +619,8 @@ export function ProductEditor({ productId }: { productId: string | null }) {
             {media.length === 0 ? <div className="mt-5 rounded-xl border border-dashed border-[#B8CBD4] p-8 text-center text-sm text-[#809099]">尚無圖片</div> : null}
           </section>
 
-          <div className="flex flex-wrap justify-end gap-3"><Link className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`} href="/admin/business">取消</Link><button className={`${buttonClass} bg-[#005DAA] px-6 text-white hover:bg-[#00457F]`} disabled={isSaving} type="submit">{isSaving ? "保存中…" : "保存商品"}</button></div>
-        </form>
+          <div className="flex flex-wrap justify-end gap-3"><Link className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`} href="/admin/business" onNavigate={leave}>取消</Link><button className={`${buttonClass} bg-[#005DAA] px-6 text-white hover:bg-[#00457F]`} disabled={isSaving || needsReload} type="submit">{isSaving ? "保存中…" : "保存商品"}</button></div>
+        </fieldset></form>
       </div>
     </main>
   );

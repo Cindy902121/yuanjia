@@ -356,13 +356,16 @@ test(
     const b2cProduct = b2cProductsPayload.products?.[0];
     assert.ok(b2cProduct?.id, "the B2C admin catalog needs a product id");
     const originalB2cStatus = b2cProduct.is_active;
+    let b2cUpdatedAt = b2cProduct.updated_at;
     try {
       const disableB2c = await request(`/api/admin/products/b2c/${b2cProduct.id}`, {
         method: "PATCH",
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: false }),
+        body: JSON.stringify({ is_active: false, expected_updated_at: b2cProduct.updated_at }),
       });
       assert.equal(disableB2c.status, 200);
+      const disableB2cPayload = await json(disableB2c);
+      b2cUpdatedAt = disableB2cPayload.product.updated_at;
       const disabledB2cList = await request("/api/admin/products/b2c?include_inactive=false", {
         headers: { cookie: adminCookies },
       });
@@ -372,7 +375,7 @@ test(
       const restoreB2c = await request(`/api/admin/products/b2c/${b2cProduct.id}`, {
         method: "PATCH",
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: originalB2cStatus }),
+        body: JSON.stringify({ is_active: originalB2cStatus, expected_updated_at: b2cUpdatedAt }),
       });
       assert.equal(restoreB2c.status, 200);
     }
@@ -385,21 +388,24 @@ test(
     assert.ok(b2bProduct?.id, "the B2B admin catalog needs a product id");
     const originalB2bStatus = b2bProduct.is_active;
     const b2bStatus = b2bProduct.status ?? (b2bProduct.is_active ? "published" : "offline");
+    let b2bUpdatedAt = b2bProduct.updated_at;
     try {
       if (b2bStatus === "published") {
         const invalidB2bTransition = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
           method: "PATCH",
           headers: { cookie: adminCookies },
-          body: JSON.stringify({ status: "draft" }),
+          body: JSON.stringify({ status: "draft", expected_updated_at: b2bProduct.updated_at }),
         });
         assert.equal(invalidB2bTransition.status, 409);
       }
       const disableB2b = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
         method: "PATCH",
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: false }),
+        body: JSON.stringify({ is_active: false, expected_updated_at: b2bProduct.updated_at }),
       });
       assert.equal(disableB2b.status, 200);
+      const disableB2bPayload = await json(disableB2b);
+      b2bUpdatedAt = disableB2bPayload.product.updated_at;
       const disabledB2bList = await request("/api/admin/products/b2b?include_inactive=false", {
         headers: { cookie: adminCookies },
       });
@@ -409,7 +415,7 @@ test(
       const restoreB2b = await request(`/api/admin/products/b2b/${b2bProduct.id}`, {
         method: "PATCH",
         headers: { cookie: adminCookies },
-        body: JSON.stringify({ is_active: originalB2bStatus }),
+        body: JSON.stringify({ is_active: originalB2bStatus, expected_updated_at: b2bUpdatedAt }),
       });
       assert.equal(restoreB2b.status, 200);
     }
@@ -426,10 +432,15 @@ test(
       privacy_consent_at: new Date().toISOString(),
       items: [{ product_id: orderProductId, quantity: 1 }],
     }));
+    const ordersBeforeUpdate = await request("/api/b2c/mock-orders", {
+      headers: { cookie: adminCookies },
+    });
+    const orderBeforeUpdate = (await json(ordersBeforeUpdate)).orders?.find((candidate) => candidate.id === order.orderId);
+    assert.ok(orderBeforeUpdate?.updated_at, "the created order needs an updated_at version");
     const orderUpdate = await request("/api/b2c/mock-orders", {
       method: "PATCH",
       headers: { cookie: adminCookies },
-      body: JSON.stringify({ order_id: order.orderId, status: "processing" }),
+      body: JSON.stringify({ order_id: order.orderId, status: "processing", expected_updated_at: orderBeforeUpdate.updated_at }),
     });
     assert.equal(orderUpdate.status, 200);
     const ordersResponse = await request("/api/b2c/mock-orders", {
@@ -468,9 +479,10 @@ test(
     const disableCompany = await request(`/api/admin/companies/${companyPayload.company.id}`, {
       method: "PATCH",
       headers: { cookie: adminCookies },
-      body: JSON.stringify({ is_active: false }),
+      body: JSON.stringify({ is_active: false, expected_updated_at: companyPayload.company.updated_at }),
     });
     assert.equal(disableCompany.status, 200);
+    const disabledCompanyPayload = await json(disableCompany);
     const disabledCompanyLogin = await request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ identifier: createdCompanyCode, password: generatedPassword }),
@@ -481,7 +493,7 @@ test(
     const enableCompany = await request(`/api/admin/companies/${companyPayload.company.id}`, {
       method: "PATCH",
       headers: { cookie: adminCookies },
-      body: JSON.stringify({ is_active: true }),
+      body: JSON.stringify({ is_active: true, expected_updated_at: disabledCompanyPayload.company.updated_at }),
     });
     assert.equal(enableCompany.status, 200);
     assert.equal(

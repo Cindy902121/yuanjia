@@ -8,14 +8,24 @@ import { ResourceState } from "./resource-state";
 import { AnalyticsOverview } from "./overview-analytics";
 import s from "./admin-workspace.module.css";
 
-type Summary = { metrics: Record<string, number | null>; updated_at: string };
+type Summary = { metrics: Record<string, number | null>; updated_at: string; metricTimes?: Record<string, string>; failedKeys?: string[] };
+function mergeSummary(previous: Summary | undefined, incoming: Summary, at: string): Summary {
+  const metrics = { ...incoming.metrics }, metricTimes: Record<string, string> = {}, failedKeys: string[] = [];
+  for (const key of Object.keys(metrics)) {
+    if (metrics[key] === null) {
+      failedKeys.push(key); metrics[key] = previous?.metrics[key] ?? null;
+      if (previous?.metricTimes?.[key]) metricTimes[key] = previous.metricTimes[key];
+    } else metricTimes[key] = at;
+  }
+  return { ...incoming, metrics, metricTimes, failedKeys };
+}
 type RfqResponse = { rfqs: Array<{ id: string; created_at: string; company: { name: string } | null; items: Array<{ product: { name: string } | null }> }> };
 const catalogStates = [["draft", "草稿"], ["review", "待審核"], ["published", "已發布"], ["offline", "已下架"]] as const;
 
 export function OperationsOverview({ revision, scope }: { revision: number; scope: "admin" | "business" }) {
   const params = useSearchParams();
   const queueStatus = params.get("queue") === "processing" ? "processing" : "new";
-  const summary = useAdminResource<Summary>("/api/admin/workspace-summary", revision);
+  const summary = useAdminResource<Summary>("/api/admin/workspace-summary", revision, mergeSummary);
   const queue = useAdminResource<RfqResponse>(`/api/admin/rfqs?status=${queueStatus}&sort=oldest&page_size=5`, revision);
   const base = scope === "business" ? "/admin/business" : "/admin";
   const cards = [
@@ -23,16 +33,20 @@ export function OperationsOverview({ revision, scope }: { revision: number; scop
     { key: "processing", label: "處理中詢價", note: "持續追蹤", href: `${base}?tab=b2b-rfqs&rfq_status=processing&rfq_sort=oldest` },
     { key: "review", label: "待審商品", note: "檢視商品內容", href: `${base}?tab=b2b-products&product_status=review` },
   ];
-  const failed = summary.data && Object.values(summary.data.metrics).some((value) => value === null);
+  const failed = !!summary.data?.failedKeys?.length;
+  function metricNote(key: string) { return summary.data?.failedKeys?.includes(key) ? <small className={s.caption}>{summary.data.metrics[key] === null ? "讀取失敗，尚無數值" : `上次資料：${adminDate(summary.data.metricTimes?.[key])}`}</small> : null; }
+  const dates = new URLSearchParams();
+  for (const key of ["date_from", "date_to"]) if (params.has(key)) dates.set(key, params.get(key)!);
+  function keepDates(href: string) { return `${href}${dates.size ? `${href.includes("?") ? "&" : "?"}${dates}` : ""}`; }
   return <div className={s.stack}>
     <section aria-label="目前待辦" aria-busy={summary.pending}>
       <div className={s.headingRow}><h2 className={s.heading}>目前待辦</h2><span className={s.muted}>全部未完成工作 · 不受報表日期影響</span></div>
-      <div className={s.metrics}>{cards.map((card) => <Link className={s.metric} href={card.href} key={card.key} scroll={false}>
+      <div className={s.metrics}>{cards.map((card) => <Link className={s.metric} href={keepDates(card.href)} key={card.key} scroll={false}>
         <span className={s.metricLabel}>{card.label}</span>
         <strong className={s.metricValue}>{summary.data?.metrics[card.key]?.toLocaleString("zh-TW") ?? "—"}<small>筆</small></strong>
-        <span className={s.metricFoot}><span>{card.note}</span><span aria-hidden="true">↗</span></span>
+        {metricNote(card.key)}<span className={s.metricFoot}><span>{card.note}</span><span aria-hidden="true">↗</span></span>
       </Link>)}</div>
-      <ResourceState {...summary} hasData={!!summary.data} error={summary.error ?? (failed ? "部分統計無法讀取，暫以 — 顯示。" : undefined)} />
+      <ResourceState {...summary} hasData={!!summary.data} error={summary.error ?? (failed ? "部分統計更新失敗；失敗指標保留其標示時間的舊值，尚無成功值則顯示 —。" : undefined)} />
     </section>
     <div className={s.columns}>
       <section className={s.panel} aria-busy={queue.pending}>
@@ -48,8 +62,8 @@ export function OperationsOverview({ revision, scope }: { revision: number; scop
       </section>
       <section className={s.panel}>
         <div className={s.headingRow}><h2 className={s.heading}>型錄狀態</h2><span className={s.badge}>B2B</span></div>
-        {catalogStates.map(([key, label]) => <Link key={key} className={s.catalogRow} href={`${base}?tab=b2b-products&product_status=${key}`}><span className={s.badge} data-status={key}>{label}</span><strong>{summary.data?.metrics[key]?.toLocaleString("zh-TW") ?? "—"}</strong></Link>)}
-        <Link className={s.catalogRow} href={`${base}?tab=b2b-products&missing_images=true`}><span>尚無圖片</span><strong>{summary.data?.metrics.missing_images?.toLocaleString("zh-TW") ?? "—"}</strong></Link>
+        {catalogStates.map(([key, label]) => <Link key={key} className={s.catalogRow} href={keepDates(`${base}?tab=b2b-products&product_status=${key}`)}><span className={s.badge} data-status={key}>{label}</span><strong>{summary.data?.metrics[key]?.toLocaleString("zh-TW") ?? "—"}</strong>{metricNote(key)}</Link>)}
+        <Link className={s.catalogRow} href={keepDates(`${base}?tab=b2b-products&missing_images=true`)}><span>尚無圖片</span><strong>{summary.data?.metrics.missing_images?.toLocaleString("zh-TW") ?? "—"}</strong>{metricNote("missing_images")}</Link>
         <p className={s.caption}>點擊狀態查看商品。尚無圖片可能與上述狀態重疊。</p>
         <Link className={s.textButton} href="/admin/business/products/new">新增 B2B 商品 <span aria-hidden="true">＋</span></Link>
       </section>

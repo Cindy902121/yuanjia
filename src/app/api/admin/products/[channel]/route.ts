@@ -1,3 +1,4 @@
+import { parsePage } from "@/lib/admin-view";
 import { apiError, json, readJson } from "@/lib/api";
 import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
@@ -21,17 +22,21 @@ export async function GET(
   if (guard.response) return guard.response;
 
   const url = new URL(request.url);
-  const includeInactive = url.searchParams.get("include_inactive") === "true";
+  const includeInactiveValue = url.searchParams.get("include_inactive");
+  if (includeInactiveValue !== null && !["true", "false"].includes(includeInactiveValue)) {
+    return apiError("商品啟用篩選不正確。", 400);
+  }
+  const includeInactive = includeInactiveValue === "true";
   const search = url.searchParams.get("q")?.trim();
   const status = url.searchParams.get("status")?.trim();
   if (channel === "b2b" && status && !isB2bProductStatus(status)) {
     return apiError("B2B 商品狀態不正確。", 400);
   }
-  const pageValue = url.searchParams.get("page") ?? "1";
-  const sizeValue = url.searchParams.get("page_size") ?? "500";
-  const page = Number(pageValue), pageSize = Number(sizeValue);
-  const missingImages = channel === "b2b" && url.searchParams.get("missing_images") === "true";
-  if (!/^\d+$/.test(pageValue) || !/^\d+$/.test(sizeValue) || !Number.isSafeInteger(page) || page < 1 || page > 100000 || pageSize < 1 || pageSize > 500) return apiError("商品頁碼不正確。", 400);
+  const pagination = parsePage(url.searchParams, 500, 500);
+  const missingValue = url.searchParams.get("missing_images");
+  if (!pagination || (missingValue !== null && !["true", "false"].includes(missingValue))) return apiError("商品篩選或頁碼不正確。", 400);
+  const { page, pageSize } = pagination;
+  const missingImages = channel === "b2b" && missingValue === "true";
   const admin = createAdminClient();
   let query = admin
     .from(PRODUCT_TABLES[channel])
