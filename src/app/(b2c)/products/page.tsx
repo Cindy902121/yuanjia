@@ -48,6 +48,15 @@ export const metadata: Metadata = {
  * 2026-09-03：路由規格註 1，B2B 公司 session 進來要顯示「請先登出企業帳號」
  * 守門畫面，不是商品列表。放在商品／分類資料查詢之前判斷，B2B 進來時直接
  * short-circuit，不需要多打這幾個 Supabase 查詢。
+ *
+ * 2026-09（C 提出 P1-1「B2C Finder 多筆結果導流」發現並修正）：`?tag=` 原本
+ * 用 `typeof params.tag === "string"` 判斷，網址帶多個 `?tag=` 時
+ * `params.tag` 會是陣列，這個判斷會整個判 false、直接把使用者選的標籤全部
+ * 丟掉——只要網址帶超過一個 tag 就完全不生效，不是「只取第一個」這種還算
+ * 合理的降級，是整組失效。改成用陣列統一處理（單一字串也正規化成長度 1
+ * 的陣列），並且只留下真的存在於這批商品標籤裡的值，用法跟下面 `category`
+ * 的驗證邏輯一致。單一 `?tag=` 的舊連結（商品詳情頁篩選欄、標籤頁「查看更多」
+ * 等）行為不變。
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
   const access = await getB2BAccess();
@@ -71,9 +80,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
     ? categoryParam
     : undefined;
 
-  const tagParam = typeof params.tag === "string" ? params.tag : undefined;
+  const tagParams = params.tag === undefined ? [] : Array.isArray(params.tag) ? params.tag : [params.tag];
   const allTagSlugs = collectTagGroups(products).flatMap(([, tags]) => tags.map((tag) => tag.slug));
-  const initialTagSlug = allTagSlugs.includes(tagParam ?? "") ? tagParam : undefined;
+  const initialTagSlugs = [...new Set(tagParams.filter((tag) => allTagSlugs.includes(tag)))];
 
   return (
     <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
@@ -110,7 +119,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
             products={products}
             categories={categories}
             initialCategorySlug={initialCategorySlug}
-            initialTagSlug={initialTagSlug}
+            initialTagSlugs={initialTagSlugs}
           />
         </div>
       </section>

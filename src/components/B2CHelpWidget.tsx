@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/analytics/track";
 import { FINDER_STEPS } from "@/lib/product-finder/config";
 import { findProductsByAnswers, type FinderResultProduct } from "@/lib/product-finder/match";
+import { buildProductsUrl } from "@/lib/product-finder/build-url";
 import { AI_DEMO_ENTRIES } from "@/lib/product-finder/ai-demo";
 
 const LINE_URL = "https://page.line.me/cdd6667c?openQrModal=true";
@@ -138,19 +139,27 @@ export function B2CHelpWidget() {
     !isB2cException &&
     EXCLUDED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
+  /**
+   * 2026-09（P1-1，C 提出）：原本這個 filter 只在下面「查結果」的 effect 裡
+   * 算一次，結果畫面（下方 JSX）要組「查看全部」連結時沒有現成的值可用。
+   * 抽成一個共用的 derived value，兩邊算的是同一份東西，不是分開各自維護
+   * 一次容易兜不起來的邏輯。
+   */
+  const selectedAnswerKeys = useMemo(
+    () => FINDER_STEPS.map((s) => answers[s.key]).filter((key): key is string => Boolean(key) && key !== "any"),
+    [answers],
+  );
+
   useEffect(() => {
     if (step < FINDER_STEPS.length) {
       return;
     }
-    const selectedKeys = FINDER_STEPS.map((s) => answers[s.key]).filter(
-      (key): key is string => Boolean(key) && key !== "any",
-    );
 
     // resultsLoading 已經在 selectAnswer()（使用者點擊送出最後一題答案的那個
     // handler）裡設成 true，這裡不用也不應該再呼叫一次 setResultsLoading(true)
     // ——effect 本身只負責非同步查詢與 cancelled 的競態保護。
     let cancelled = false;
-    findProductsByAnswers(selectedKeys).then((products) => {
+    findProductsByAnswers(selectedAnswerKeys).then((products) => {
       if (!cancelled) {
         setResults(products);
         setResultsLoading(false);
@@ -159,7 +168,7 @@ export function B2CHelpWidget() {
     return () => {
       cancelled = true;
     };
-  }, [step, answers]);
+  }, [step, selectedAnswerKeys]);
 
   useEffect(() => {
     if (!open) {
@@ -381,28 +390,59 @@ export function B2CHelpWidget() {
                         無符合商品
                       </p>
                     ) : (
-                      <ul className="flex flex-col gap-2">
-                        {results.slice(0, 6).map((product) => (
-                          <li key={product.id}>
-                            <Link
-                              href={`/products/${product.slug}`}
-                              onClick={() => {
-                                trackEvent({
-                                  event_name: "b2c_product_finder_result_click",
-                                  product_id: product.id,
-                                });
-                                closePanel();
-                              }}
-                              className="flex items-center justify-between gap-2 border border-[#0B1620]/20 px-3 py-2 text-sm transition-colors hover:border-[#FF5A36]"
-                            >
-                              <span className="text-[#0B1620]">{product.name}</span>
-                              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
-                                NT$ {product.price}
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                      /**
+                       * 2026-09（P1-1，C 提出「B2C Finder 多筆結果導流」）：0／1／
+                       * 多筆分開處理。
+                       *
+                       * 1 筆維持原本「面板內顯示連結卡片，使用者自己點」，**不**
+                       * 改成答完自動導頁——上面檔頭註解（47-49 行）已經記錄過這是
+                       * 刻意的無障礙決定（自動導頁對鍵盤／螢幕閱讀器使用者是不可
+                       * 預期的畫面跳動），P1-1 沒有要求要推翻這個決定，只是要求
+                       * 「進入商品詳細頁」——現在唯一的互動路徑本來就是點這張卡片
+                       * 進商品詳情頁，語意上已經滿足，不需要另外加自動跳轉。
+                       *
+                       * 2 筆以上才是這次真正要補的：原本結果裁到最多 6 筆、裁掉
+                       * 的部分完全看不到、也沒有任何回到完整列表的路。現在多筆時
+                       * 額外加一個「查看全部 N 件商品」連結，用
+                       * buildProductsUrl()（src/lib/product-finder/build-url.ts）
+                       * 把已選答案轉成 `/products?category=..&tag=..&tag=..`，
+                       * 落地後篩選側欄會正確顯示這些條件為已選（不需要另外處理，
+                       * /products 頁本身已經會呈現），達成「保留使用者選擇條件」
+                       * ＋「多筆結果頁的篩選顯示」兩項待補。
+                       */
+                      <div className="flex flex-col gap-3">
+                        <ul className="flex flex-col gap-2">
+                          {results.slice(0, 6).map((product) => (
+                            <li key={product.id}>
+                              <Link
+                                href={`/products/${product.slug}`}
+                                onClick={() => {
+                                  trackEvent({
+                                    event_name: "b2c_product_finder_result_click",
+                                    product_id: product.id,
+                                  });
+                                  closePanel();
+                                }}
+                                className="flex items-center justify-between gap-2 border border-[#0B1620]/20 px-3 py-2 text-sm transition-colors hover:border-[#FF5A36]"
+                              >
+                                <span className="text-[#0B1620]">{product.name}</span>
+                                <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+                                  NT$ {product.price}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                        {results.length > 1 ? (
+                          <Link
+                            href={buildProductsUrl(selectedAnswerKeys)}
+                            onClick={closePanel}
+                            className="flex min-h-11 items-center justify-center border border-[#0B1620]/25 text-xs tracking-widest text-[#0B1620] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
+                          >
+                            查看全部 {results.length} 件商品 →
+                          </Link>
+                        ) : null}
+                      </div>
                     )}
                     <button
                       type="button"

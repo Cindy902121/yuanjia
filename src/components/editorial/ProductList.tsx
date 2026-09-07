@@ -36,10 +36,16 @@ const GROUP_LABEL_COLOR = "#35515E";
  * 邏輯），只是透過 `className` prop 換掉視覺樣式。商品卡整體點擊用
  * stretched-link（跟正式 ProductCard 同一個無障礙模式）。
  *
- * `initialCategorySlug`／`initialTagSlug`：接住 `?category=`／`?tag=` 查詢
+ * `initialCategorySlug`／`initialTagSlugs`：接住 `?category=`／`?tag=` 查詢
  * 字串（跟 ProductListWithFilters 的 `initialCategorySlug` 同一個模式，見
- * src/app/products/page.tsx）——商品詳情頁左側的篩選連結會用這個查詢字串導
- * 過來。
+ * src/app/(b2c)/products/page.tsx）——商品詳情頁左側的篩選連結、B2CHelpWidget
+ * 需求釐清完成後的「查看全部」都會用這個查詢字串導過來。
+ *
+ * 2026-09（C 提出 P1-1「B2C Finder 多筆結果導流」，順手發現並修正）：
+ * `initialTagSlug` 原本只接單一字串，`?tag=` 這個查詢字串只要在網址上出現
+ * 兩次以上就會整組失效（見 products/page.tsx 同批修改的說明）——這裡改成
+ * `initialTagSlugs: string[]`，呼叫端已經在頁面層做過「只留下真的存在於這批
+ * 商品標籤裡的值」的過濾，這裡直接拿來當初始狀態即可，不用重複驗證一次。
  *
  * 2026-08-21（補回退版時遺漏的事件）：8/15 就做好的「搜尋字串或篩選條件變動
  * 後，防抖動 500ms 送出 b2c_search_category」邏輯，改版搬到這個檔案時漏掉
@@ -72,7 +78,7 @@ interface EditorialProductListProps {
   products: ProductDetailData[];
   categories: ProductCategoryOption[];
   initialCategorySlug?: string;
-  initialTagSlug?: string;
+  initialTagSlugs?: string[];
 }
 
 function toggle(list: string[], value: string): string[] {
@@ -83,13 +89,13 @@ export function EditorialProductList({
   products,
   categories,
   initialCategorySlug,
-  initialTagSlug,
+  initialTagSlugs,
 }: EditorialProductListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>(
     initialCategorySlug ? [initialCategorySlug] : [],
   );
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>(initialTagSlug ? [initialTagSlug] : []);
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>(initialTagSlugs ?? []);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
