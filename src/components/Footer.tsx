@@ -119,7 +119,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-[1300px] px-5 py-5 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/40 sm:px-8 lg:px-10">
+        <p className="mx-auto max-w-[1300px] px-5 py-5 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50 sm:px-8 lg:px-10">
           © {year} YEN &amp; BROTHERS ENTERPRISE CO., LTD. ALL RIGHTS RESERVED.
         </p>
       </div>
@@ -130,7 +130,7 @@ export function Footer() {
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/40">{title}</h3>
+      <h3 className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50">{title}</h3>
       <div className="flex flex-col gap-3 text-sm font-light">{children}</div>
     </div>
   );
@@ -158,7 +158,16 @@ function FooterAnchor({ href, children }: { href: string; children: React.ReactN
   );
 }
 
-/** 還沒有對應頁面的項目，刻意不做成連結，避免死連結——跟 Header 的「即將推出」慣例一致。 */
+/**
+ * 還沒有對應頁面的項目，刻意不做成連結，避免死連結——跟 Header 的「即將推出」慣例一致。
+ *
+ * 2026-09（Lighthouse 行動裝置稽核發現並修正）：這裡原本跟上面 `FooterColumn`
+ * 標題、版權列一起用 `text-white/30`～`/40`，在 Footer 底色 `#071923` 上對比
+ * 只有 2.67～3.79，WCAG AA 文字最低要求 4.5:1。用 sRGB 相對亮度公式實際算過：
+ * `white/50` 在同一個底色上是 5.22，超過門檻留一點餘裕；改深一階不影響「非
+ * 連結、視覺降權」的原始設計意圖，三處（這裡、版權列、FooterColumn 標題）
+ * 統一改成 `/50`。
+ */
 function FooterPlaceholder({ children }: { children: React.ReactNode }) {
-  return <span className="text-white/30">{children}</span>;
+  return <span className="text-white/50">{children}</span>;
 }
