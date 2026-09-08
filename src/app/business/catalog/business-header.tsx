@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -59,10 +60,12 @@ export default function BusinessHeader({ companyName, transparent = true }: Busi
       <div className="mx-auto flex min-h-[72px] max-w-[1300px] flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-3 sm:px-8 lg:h-[76px] lg:min-h-0 lg:px-10 lg:py-0">
         <div className="flex min-w-0 items-center gap-4">
           <Link aria-label="前往企業首頁" className="flex min-w-0 items-center gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]" href="/business">
-            <img
+            <Image
               alt="元家"
               className="h-8 w-auto shrink-0 object-contain sm:h-9"
-              src="https://www.yens.com.tw/proimages/logo/logo_ch.png"
+              height={42}
+              src="/yens-logo.png"
+              width={140}
             />
             <div className="min-w-0">
               <p className={`text-[10px] font-bold tracking-[0.18em] ${transparent ? "text-white/90" : "text-[#3E5C6B]"}`}>YUANJIA BUSINESS</p>
