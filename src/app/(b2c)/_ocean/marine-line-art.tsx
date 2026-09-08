@@ -30,7 +30,7 @@
  */
 
 const TONE_STROKE = {
-  light: "#5C7383", // slate／ocean blue，呼應淺色背景
+  light: "#536168", // slate／ocean blue，呼應淺色背景
   dark: "#EAF4F8", // 冰藍／近白，呼應深色背景
 } as const;
 

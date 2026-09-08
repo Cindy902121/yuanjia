@@ -34,7 +34,7 @@ export function CartPageClient() {
         <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           購物車是空的
         </h1>
-        <p className="text-sm font-light text-[#5C7383]">先去看看有哪些商品，喜歡的話加入購物車吧。</p>
+        <p className="text-sm font-light text-[#536168]">先去看看有哪些商品，喜歡的話加入購物車吧。</p>
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>
           瀏覽商品
         </Link>
@@ -46,7 +46,7 @@ export function CartPageClient() {
     <>
       <div className="flex items-baseline justify-between border-b border-[#0B1620]/15 pb-6">
         <div className="flex flex-col gap-1">
-          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
             CART
           </span>
           <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
@@ -56,7 +56,7 @@ export function CartPageClient() {
         <button
           type="button"
           onClick={clearCart}
-          className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] transition-colors hover:text-[#FF5A36]"
+          className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#FF5A36]"
         >
           CLEAR
         </button>
@@ -67,7 +67,7 @@ export function CartPageClient() {
           <li key={item.productId} className="flex flex-wrap items-center gap-4 border-b border-[#0B1620]/10 py-6">
             <div
               aria-hidden="true"
-              className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#5C7383]"
+              className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
             >
               無商品圖片
             </div>
@@ -79,7 +79,7 @@ export function CartPageClient() {
               >
                 {item.name}
               </Link>
-              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                 NT$ {item.price}
               </span>
             </div>
@@ -113,7 +113,7 @@ export function CartPageClient() {
               type="button"
               onClick={() => removeItem(item.productId)}
               aria-label={`移除 ${item.name}`}
-              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] transition-colors hover:text-[#B42318]"
+              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#B42318]"
             >
               REMOVE
             </button>
@@ -128,7 +128,7 @@ export function CartPageClient() {
             NT$ {totalPrice}
           </span>
         </div>
-        <p className="text-xs font-light text-[#5C7383]">
+        <p className="text-xs font-light text-[#536168]">
           本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
         </p>
         <Link href="/checkout" className={`w-fit ${editorialButtonSolid}`}>

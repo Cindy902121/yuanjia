@@ -141,7 +141,7 @@ export function CartDrawer() {
                 type="button"
                 onClick={close}
                 aria-label="關閉購物車"
-                className="flex h-9 w-9 items-center justify-center border border-[#0B1620]/20 text-[#5C7383] transition-colors hover:border-[#0B1620] hover:text-[#0B1620]"
+                className="flex h-9 w-9 items-center justify-center border border-[#0B1620]/20 text-[#536168] transition-colors hover:border-[#0B1620] hover:text-[#0B1620]"
               >
                 ✕
               </button>
@@ -149,11 +149,11 @@ export function CartDrawer() {
 
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="text-sm font-light text-[#5C7383]">購物車是空的。</p>
+                <p className="text-sm font-light text-[#536168]">購物車是空的。</p>
                 <Link
                   href="/products"
                   onClick={close}
-                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#FF5A36] hover:text-[#0B1620]"
+                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#C2401D] hover:text-[#0B1620]"
                 >
                   去看看商品
                 </Link>
@@ -165,7 +165,7 @@ export function CartDrawer() {
                     <li key={item.productId} className="flex gap-3 border-b border-[#0B1620]/10 pb-5 last:border-0 last:pb-0">
                       <div
                         aria-hidden="true"
-                        className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#5C7383]"
+                        className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
                       >
                         無圖片
                       </div>
@@ -209,7 +209,7 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => removeItem(item.productId)}
                         aria-label={`移除 ${item.name}`}
-                        className="self-start text-[#5C7383] transition-colors hover:text-[#B42318]"
+                        className="self-start text-[#536168] transition-colors hover:text-[#B42318]"
                       >
                         🗑
                       </button>

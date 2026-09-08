@@ -28,7 +28,7 @@ export function B2BShoppingGuard() {
   return (
     <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-8 py-16 text-center sm:px-12 sm:py-20">
       <p className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">請先登出企業帳號</p>
-      <p className="max-w-md text-sm font-light leading-[1.8] text-[#5C7383]">
+      <p className="max-w-md text-sm font-light leading-[1.8] text-[#536168]">
         這裡是一般會員的購物頁面，您目前是用企業客戶身分登入。請選擇要登出企業帳號繼續購物，還是返回企業型錄。
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

@@ -40,13 +40,13 @@ export default function BusinessLeadPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-24">
       <div className="flex flex-col gap-3 border-b border-[#0B1620]/15 pb-6">
-        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
           BUSINESS
         </span>
         <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620] sm:text-3xl">
           企業合作
         </h1>
-        <p className="text-sm font-light leading-7 text-[#5C7383]">
+        <p className="text-sm font-light leading-7 text-[#536168]">
           元家企業提供餐飲通路、零售經銷、電商平台等多元合作方式。留下您的公司與需求資訊，我們的業務團隊將盡快與您聯繫。
         </p>
       </div>

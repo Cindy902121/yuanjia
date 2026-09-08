@@ -30,12 +30,12 @@
  *
  * 文字對比（使用者要求「深色背景時文字必須自動變淺」）：品牌故事／企業
  * 優勢兩個 Section 落在漸層前段（還是很淺），文字維持原本的深色（沿用全站
- * 既有的 `#0B1620`／`#5C7383`）；食安品質／媒體報導／收尾引言三個 Section
+ * 既有的 `#0B1620`／`#536168`）；食安品質／媒體報導／收尾引言三個 Section
  * 落在漸層中後段（已經是明顯的深藍灰到近黑），這三個 Section 的
  * `<section>` 標籤上多加一個 `op-zone-dark` class（純粹是一個標記用的
  * class name，不影響任何版面／間距），下面用「class 屬性字串包含某個
  * Tailwind 任意值 class 名稱」的方式（`[class*="..."]`）把這些 Section
- * 底下既有的 `text-[#0B1620]`／`text-[#5C7383]`／相關 border／底色全部覆寫
+ * 底下既有的 `text-[#0B1620]`／`text-[#536168]`／相關 border／底色全部覆寫
  * 成淺色系——完全不需要動 page.tsx 裡任何一個 className 字串本身。
  *
  * 2026-09（使用者第四輪回饋：新增少量真實攝影，改善「過度依賴文字／漸層／
@@ -97,7 +97,7 @@ export function OceanStyles() {
          的 Section 底下的內容，見上方檔頭說明。順序：一般規則在前、更精確
          的透明度變體在後，確保後者正確覆蓋前者（CSS 同特異度時後宣告的贏）。 */
       .op-zone-dark [class*="text-[#0B1620]"] { color: #F3F8FA !important; }
-      .op-zone-dark [class*="text-[#5C7383]"] { color: #B9CBD6 !important; }
+      .op-zone-dark [class*="text-[#536168]"] { color: #B9CBD6 !important; }
       .op-zone-dark [class*="bg-[#0B1620]"] { background-color: #EAF4F8 !important; }
       .op-zone-dark [class*="bg-[#0B1620]/20"] { background-color: rgba(234, 244, 248, 0.32) !important; }
       .op-zone-dark [class*="border-[#0B1620]/10"] { border-color: rgba(234, 244, 248, 0.14) !important; }

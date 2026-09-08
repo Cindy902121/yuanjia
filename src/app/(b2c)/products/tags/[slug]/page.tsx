@@ -67,12 +67,12 @@ export default async function ProductTagPage({ params }: PageProps<"/products/ta
         <div className="flex flex-col gap-4">
           <Link
             href="/products"
-            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
+            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
           >
             ← ALL PRODUCTS
           </Link>
           <div>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               TAG
             </span>
             <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620]">

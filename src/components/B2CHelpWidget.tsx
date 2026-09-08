@@ -292,7 +292,7 @@ export function B2CHelpWidget() {
               type="button"
               onClick={closePanel}
               aria-label="關閉"
-              className="flex h-8 w-8 items-center justify-center text-[#5C7383] transition-colors hover:text-[#0B1620]"
+              className="flex h-8 w-8 items-center justify-center text-[#536168] transition-colors hover:text-[#0B1620]"
             >
               ✕
             </button>
@@ -345,7 +345,7 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
@@ -361,7 +361,7 @@ export function B2CHelpWidget() {
                           key={option.key}
                           type="button"
                           onClick={() => selectAnswer(option.key)}
-                          className="border border-[#0B1620]/25 px-3 py-1.5 text-xs text-[#5C7383] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
+                          className="border border-[#0B1620]/25 px-3 py-1.5 text-xs text-[#536168] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
                         >
                           {option.label}
                         </button>
@@ -371,21 +371,21 @@ export function B2CHelpWidget() {
                       <button
                         type="button"
                         onClick={skipOptionalStep}
-                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
+                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                       >
                         SKIP
                       </button>
                     ) : null}
-                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                       STEP {step + 1} / {FINDER_STEPS.length}
                     </p>
                   </>
                 ) : (
                   <>
                     {resultsLoading ? (
-                      <p className="text-center text-sm font-light text-[#5C7383]">搜尋中…</p>
+                      <p className="text-center text-sm font-light text-[#536168]">搜尋中…</p>
                     ) : results.length === 0 ? (
-                      <p className="border border-dashed border-[#0B1620]/20 p-4 text-center text-sm font-light text-[#5C7383]">
+                      <p className="border border-dashed border-[#0B1620]/20 p-4 text-center text-sm font-light text-[#536168]">
                         無符合商品
                       </p>
                     ) : (
@@ -425,7 +425,7 @@ export function B2CHelpWidget() {
                                 className="flex items-center justify-between gap-2 border border-[#0B1620]/20 px-3 py-2 text-sm transition-colors hover:border-[#FF5A36]"
                               >
                                 <span className="text-[#0B1620]">{product.name}</span>
-                                <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+                                <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                                   NT$ {product.price}
                                 </span>
                               </Link>
@@ -446,7 +446,7 @@ export function B2CHelpWidget() {
                     <button
                       type="button"
                       onClick={resetFinder}
-                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#FF5A36] hover:text-[#0B1620]"
+                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#C2401D] hover:text-[#0B1620]"
                     >
                       RESTART
                     </button>
@@ -460,18 +460,18 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={() => setView("menu")}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] hover:text-[#FF5A36]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
-                <p className="text-xs font-light text-[#5C7383]">
+                <p className="text-xs font-light text-[#536168]">
                   以下是固定的常見問答內容，僅供展示，不會呼叫真正的 AI，也不會保存對話。
                 </p>
                 <dl className="flex flex-col gap-4">
                   {AI_DEMO_ENTRIES.map((entry) => (
                     <div key={entry.question} className="flex flex-col gap-1 border-t border-[#0B1620]/10 pt-3 first:border-t-0 first:pt-0">
                       <dt className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">Q：{entry.question}</dt>
-                      <dd className="text-sm font-light leading-6 text-[#5C7383]">A：{entry.answer}</dd>
+                      <dd className="text-sm font-light leading-6 text-[#536168]">A：{entry.answer}</dd>
                     </div>
                   ))}
                 </dl>

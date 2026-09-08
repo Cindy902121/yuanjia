@@ -64,7 +64,7 @@ export default function AboutPage() {
       <section className="border-b border-[#D4DEE2]">
         <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1fr] lg:gap-20 lg:px-10 lg:py-32">
           <FadeInSection className="flex flex-col gap-8">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               01 · BRAND STORY
             </span>
             <span className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
@@ -73,12 +73,12 @@ export default function AboutPage() {
           </FadeInSection>
 
           <FadeInSection className="flex flex-col gap-6 lg:pt-16">
-            <p className="text-[15px] font-light leading-[2] text-[#5C7383]">
+            <p className="text-[15px] font-light leading-[2] text-[#536168]">
               元家企業的故事，最早可追溯到 1968 年於澎湖草創的「元進行」商行；1979
               年於台北正式成立元家企業股份有限公司，隔年在高雄設立冷凍草蝦外銷廠，以自創品牌行銷日本、美國，奠定日後發展的基礎。此後陸續拓展冷凍水產的進口、銷售與生產加工，並跨足調理食品領域，2012
               年起積極開拓海外市場，成為橫跨零售、餐飲、電商與國際貿易的水產食品供應商。
             </p>
-            <p className="text-[15px] font-light leading-[2] text-[#5C7383]">
+            <p className="text-[15px] font-light leading-[2] text-[#536168]">
               我們期望透過食的流通，將幸福傳遞給世界——提供穩定、值得信賴的商品與服務，同時關懷生態環境的平衡，引領安心的飲食文化。
             </p>
           </FadeInSection>
@@ -89,7 +89,7 @@ export default function AboutPage() {
       <section className="border-b border-[#D4DEE2] bg-[#F6FBFC]">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               02 · STRENGTHS
             </span>
             <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
@@ -101,13 +101,13 @@ export default function AboutPage() {
             {ADVANTAGES.map((item, index) => (
               <FadeInSection key={item.title}>
                 <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 py-8 sm:flex-row sm:items-baseline sm:gap-10 lg:py-10">
-                  <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#FF5A36] sm:w-24 sm:shrink-0">
+                  <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#C2401D] sm:w-24 sm:shrink-0">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <h3 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#0B1620] sm:w-48 sm:shrink-0">
                     {item.title}
                   </h3>
-                  <p className="max-w-xl text-sm font-light leading-[1.9] text-[#5C7383]">{item.description}</p>
+                  <p className="max-w-xl text-sm font-light leading-[1.9] text-[#536168]">{item.description}</p>
                 </div>
               </FadeInSection>
             ))}
@@ -122,9 +122,9 @@ export default function AboutPage() {
             <p className="font-[family-name:var(--ep-font-serif)] text-lg text-[#0B1620]">
               元家企業股份有限公司
               <br />
-              <span className="text-sm text-[#5C7383]">YEN &amp; Brothers Enterprise CO., LTD.</span>
+              <span className="text-sm text-[#536168]">YEN &amp; Brothers Enterprise CO., LTD.</span>
             </p>
-            <p className="mt-4 text-sm font-light leading-7 text-[#5C7383]">
+            <p className="mt-4 text-sm font-light leading-7 text-[#536168]">
               地址：242 新北市新莊區新北大道二段 217 號 14 樓
               <br />
               代表號：(02)8521-1230

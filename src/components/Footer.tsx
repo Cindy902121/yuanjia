@@ -127,10 +127,23 @@ export function Footer() {
   );
 }
 
+/**
+ * 2026-09（P1-4 Lighthouse／WCAG 稽核發現並修正）：欄位標題原本是 `<h3>`——
+ * Footer 跟 Header 一樣掛在 root layout、每一頁都會出現，內容深的頁面
+ * （首頁、商品列表）自己本文有 `<h2>` 銜接得上，但內容淺的頁面（`/cart`、
+ * `/checkout` 只有一個 `<h1>`）就會變成 `<h1>` 直接跳 `<h3>`、中間漏掉
+ * `<h2>`，違反 WCAG 1.3.1／2.4.6 標題階層不能跳級的要求，而且會因為
+ * 「這一頁本文寫得夠不夠深」而時好時壞，不是穩固的做法。
+ *
+ * 改成 `<p>`——這幾個其實是「商品探索」「服務與政策」這種重複出現在每一頁的
+ * 導覽欄位標籤，本來就不是這一頁「內容」的一部分，不需要被螢幕閱讀器的
+ * 標題導覽列出來（使用者用標題跳頁時，通常只想看到頁面本身的內容區塊，不是
+ * 每頁都一樣的頁尾樣板），語意上用純文字段落更精確，視覺完全不變。
+ */
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50">{title}</h3>
+      <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50">{title}</p>
       <div className="flex flex-col gap-3 text-sm font-light">{children}</div>
     </div>
   );

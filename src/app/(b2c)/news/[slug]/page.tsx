@@ -114,25 +114,25 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
       <article className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection className="flex flex-col gap-4">
-            <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               <Link href="/news" className="hover:text-[#FF5A36]">
                 ← ALL NEWS
               </Link>
             </nav>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               NEWS
             </span>
             <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light leading-[1.5] tracking-[0.02em] text-[#0B1620] sm:text-3xl">
               {article.title}
             </h1>
-            <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               {article.publishDate}
             </time>
           </FadeInSection>
 
           {/* 活動速報／30 秒摘要：AEO 精選摘要，故意放在文章最前面。 */}
           <FadeInSection className="flex flex-col gap-3 border-l-2 border-[#FF5A36] bg-[#F6FBFC] px-6 py-6">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               活動速報
             </span>
             <ul className="flex flex-col gap-2">
@@ -155,7 +155,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
           </FadeInSection>
           <FadeInSection className="flex flex-col gap-4">
             {article.backgroundParagraphs.map((paragraph) => (
-              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#5C7383]">
+              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#536168]">
                 {paragraph}
               </p>
             ))}
@@ -189,7 +189,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
                     {row.map((cell, cellIndex) => (
                       <td
                         key={cellIndex}
-                        className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#5C7383]"
+                        className="border-b border-[#0B1620]/10 px-3 py-3 align-top text-sm font-light leading-[1.8] text-[#536168]"
                       >
                         {cell}
                       </td>
@@ -210,7 +210,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
           </FadeInSection>
           <FadeInSection className="flex flex-col gap-4">
             {article.participationParagraphs.map((paragraph) => (
-              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#5C7383]">
+              <p key={paragraph} className="text-sm font-light leading-[1.9] text-[#536168]">
                 {paragraph}
               </p>
             ))}
@@ -231,7 +231,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
                   <h3 className="font-[family-name:var(--ep-font-serif)] text-base font-medium text-[#0B1620]">
                     {item.question}
                   </h3>
-                  <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{item.answer}</p>
+                  <p className="text-sm font-light leading-[1.9] text-[#536168]">{item.answer}</p>
                 </div>
               ))}
             </FadeInSection>

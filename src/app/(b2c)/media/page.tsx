@@ -52,7 +52,7 @@ export default function MediaPage() {
       <section className="border-b border-[#D4DEE2]">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               PRESS
             </span>
             <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620] sm:text-4xl">
@@ -78,19 +78,19 @@ export default function MediaPage() {
                   ) : null}
                 </div>
                 <div className="flex flex-col gap-4">
-                  <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#FF5A36]">
+                  <span className="font-[family-name:var(--ep-font-en)] text-2xl font-thin text-[#C2401D]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className="flex items-baseline gap-3">
-                    <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+                    <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                       {item.date.replaceAll("-", ".")}
                     </time>
-                    <span className="text-xs tracking-widest text-[#5C7383]">{item.outlet}</span>
+                    <span className="text-xs tracking-widest text-[#536168]">{item.outlet}</span>
                   </div>
                   <h2 className="font-[family-name:var(--ep-font-serif)] text-xl leading-[1.6] text-[#0B1620]">
                     {item.title}
                   </h2>
-                  <p className="text-sm font-light leading-[1.9] text-[#5C7383]">{item.summary}</p>
+                  <p className="text-sm font-light leading-[1.9] text-[#536168]">{item.summary}</p>
                   {item.slug ? (
                     <Link
                       href={`/media/${item.slug}`}
@@ -121,7 +121,7 @@ export default function MediaPage() {
       <section className="border-t border-[#D4DEE2] bg-[#F6FBFC]">
         <div className="mx-auto flex w-full max-w-[900px] flex-col gap-8 px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
           <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               MORE COVERAGE
             </span>
           </FadeInSection>
@@ -131,10 +131,10 @@ export default function MediaPage() {
                 "group flex flex-col gap-2 border-t border-[#0B1620]/15 py-6 sm:flex-row sm:items-baseline sm:gap-8";
               const rowContent = (
                 <>
-                  <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383] sm:w-24 sm:shrink-0">
+                  <time className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] sm:w-24 sm:shrink-0">
                     {item.date.replaceAll("-", ".")}
                   </time>
-                  <span className="text-xs tracking-widest text-[#5C7383] sm:w-24 sm:shrink-0">{item.outlet}</span>
+                  <span className="text-xs tracking-widest text-[#536168] sm:w-24 sm:shrink-0">{item.outlet}</span>
                   <span className="font-[family-name:var(--ep-font-serif)] text-sm leading-[1.7] text-[#0B1620] group-hover:text-[#FF5A36]">
                     {item.title}
                   </span>
@@ -161,7 +161,7 @@ export default function MediaPage() {
               href="https://www.yens.com.tw/msg/message-%E5%AA%92%E9%AB%94%E5%A0%B1%E5%B0%8E-18.html"
               target="_blank"
               rel="noreferrer"
-              className="font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#5C7383] hover:text-[#FF5A36]"
+              className="font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#536168] hover:text-[#FF5A36]"
             >
               查看完整媒體報導列表（元家官網）↗
             </a>

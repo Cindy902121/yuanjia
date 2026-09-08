@@ -15,7 +15,7 @@ import { editorialButtonLight } from "@/lib/editorial/styles";
  */
 export function EditorialProductGrid({ products }: { products: ProductCardData[] }) {
   if (products.length === 0) {
-    return <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#5C7383]">無符合商品</p>;
+    return <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#536168]">無符合商品</p>;
   }
 
   return (
@@ -32,7 +32,7 @@ export function EditorialProductGrid({ products }: { products: ProductCardData[]
                 className="object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#5C7383]">
+              <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#536168]">
                 無商品圖片
               </div>
             )}
@@ -47,13 +47,13 @@ export function EditorialProductGrid({ products }: { products: ProductCardData[]
                 {product.name}
               </h2>
             </Link>
-            <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#5C7383]">{product.shortDescription}</p>
+            <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#536168]">{product.shortDescription}</p>
             <div className="mt-1 flex flex-wrap items-center gap-4">
               <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                 NT$ {product.price}
               </span>
               {product.inventoryStatus === "out_of_stock" ? (
-                <span className="text-xs tracking-widest text-[#5C7383]">缺貨</span>
+                <span className="text-xs tracking-widest text-[#536168]">缺貨</span>
               ) : null}
             </div>
             <div className="relative z-10 mt-1">

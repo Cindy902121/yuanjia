@@ -7,7 +7,7 @@ import { editorialButtonSolid } from "@/lib/editorial/styles";
 type SubmitState = { status: "idle" } | { status: "success" };
 
 const inputClass =
-  "min-h-11 border border-[#0B1620]/25 bg-transparent px-3 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#5C7383] focus:border-[#0B1620]";
+  "min-h-11 border border-[#0B1620]/25 bg-transparent px-3 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#536168] focus:border-[#0B1620]";
 const sectionLabelClass = "text-sm text-[#0B1620]";
 
 /**
@@ -68,10 +68,10 @@ export function LeadForm() {
         <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-light tracking-[0.03em] text-[#0B1620]">
           需求已送出
         </h2>
-        <p className="text-sm font-light text-[#5C7383]">
+        <p className="text-sm font-light text-[#536168]">
           感謝您留下合作需求，我們的業務團隊將盡快與您聯繫。
         </p>
-        <p className="text-xs font-light text-[#5C7383]">
+        <p className="text-xs font-light text-[#536168]">
           本網站為 MVP 展示，此表單僅展示前端驗證與成功流程，不會實際保存或寄出您填寫的資料。
         </p>
         <Link href="/" className={`mt-2 ${editorialButtonSolid}`}>
@@ -83,7 +83,7 @@ export function LeadForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-      <p className="border-l-2 border-[#FF5A36] py-1 pl-4 text-xs font-light leading-6 text-[#5C7383]">
+      <p className="border-l-2 border-[#FF5A36] py-1 pl-4 text-xs font-light leading-6 text-[#536168]">
         本網站為 MVP 展示，此表單僅展示前端驗證與成功流程，不會實際保存或寄出您填寫的資料。
       </p>
 
@@ -135,7 +135,7 @@ export function LeadForm() {
           rows={4}
           placeholder="例如：需要的品項、預估數量、合作頻率"
           aria-invalid={Boolean(fieldErrors.product_needs)}
-          className="border border-[#0B1620]/25 bg-transparent px-3 py-2 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#5C7383] focus:border-[#0B1620]"
+          className="border border-[#0B1620]/25 bg-transparent px-3 py-2 text-sm text-[#0B1620] outline-none transition-colors placeholder:text-[#536168] focus:border-[#0B1620]"
         />
         {fieldErrors.product_needs ? (
           <p role="alert" className="text-xs text-[#B42318]">

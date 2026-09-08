@@ -75,7 +75,7 @@ import { useEffect, useRef } from "react";
  * 藍色跳成白色」的硬切換。
  */
 const OP_FISH_DEEP: [number, number, number] = [18, 42, 58]; // Deep Ocean Blue（比 ink 更藍一階，避免跟純黑文字色混淆）
-const OP_FISH_MUTED: [number, number, number] = [92, 115, 131]; // #5C7383 Muted Blue Gray
+const OP_FISH_MUTED: [number, number, number] = [92, 115, 131]; // #536168 Muted Blue Gray
 const OP_FISH_ICE: [number, number, number] = [234, 244, 248]; // #EAF4F8 Ice White
 
 function lerpChannel(a: number, b: number, t: number) {

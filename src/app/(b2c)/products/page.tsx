@@ -101,10 +101,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
       <section>
         <div className="mx-auto flex w-full max-w-[1200px] flex-col px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection className="mb-14 flex flex-col gap-2">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               MENU · 商品一覽
             </span>
-            <p className="text-xs font-light text-[#5C7383]">
+            <p className="text-xs font-light text-[#536168]">
               本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
             </p>
           </FadeInSection>

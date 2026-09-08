@@ -17,7 +17,7 @@ const SEARCH_EVENT_DEBOUNCE_MS = 500;
 /** 「Ocean Blue」強調色——跟首頁 Ocean Gradient（src/app/(b2c)/_ocean/ocean-styles.tsx
  * 的 .op-descent）共用同一個色票，不是另外發明的新顏色。用在 hover／選取狀態的
  * 指示條、打勾記號、搜尋框 focus 底線；「Dark Blue Gray」用在篩選 Group 標籤，
- * 同樣是 Ocean Gradient 既有的一階，比目前全站慣用的 mist（#5C7383）再深一點。 */
+ * 同樣是 Ocean Gradient 既有的一階，比目前全站慣用的 mist（#536168）再深一點。 */
 const OCEAN_BLUE = "#1D3540";
 const GROUP_LABEL_COLOR = "#35515E";
 
@@ -238,7 +238,7 @@ export function EditorialProductList({
           className="flex items-center justify-between border-y border-[#0B1620]/15 py-3 text-left lg:hidden"
         >
           <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">篩選</span>
-          <span className="text-xs text-[#5C7383]">
+          <span className="text-xs text-[#536168]">
             {activeFilterList.length > 0 ? `目前 ${activeFilterList.length} 個條件` : "尚未套用條件"}
           </span>
         </button>
@@ -251,7 +251,7 @@ export function EditorialProductList({
               {hasActiveFilters ? "篩選結果" : "所有商品"}
             </p>
             <p
-              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]"
+              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]"
               aria-live="polite"
             >
               {filtered.length} {hasActiveFilters ? "RESULTS" : "ITEMS"}
@@ -268,7 +268,7 @@ export function EditorialProductList({
         </div>
 
         {filtered.length === 0 ? (
-          <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#5C7383]">無符合商品</p>
+          <p className="border-t border-[#0B1620]/15 py-16 text-center text-sm font-light text-[#536168]">無符合商品</p>
         ) : (
           <div className="grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2">
             {filtered.map((product) => {
@@ -280,7 +280,7 @@ export function EditorialProductList({
                       {card.coverImage ? (
                         <Image src={card.coverImage.url} alt={card.coverImage.alt} fill sizes="(min-width: 640px) 45vw, 90vw" className="object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#5C7383]">
+                        <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#536168]">
                           無商品圖片
                         </div>
                       )}
@@ -295,13 +295,13 @@ export function EditorialProductList({
                           {product.name}
                         </h2>
                       </Link>
-                      <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#5C7383]">{card.shortDescription}</p>
+                      <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#536168]">{card.shortDescription}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-4">
                         <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
                           NT$ {card.price}
                         </span>
                         {card.inventoryStatus === "out_of_stock" ? (
-                          <span className="text-xs tracking-widest text-[#5C7383]">缺貨</span>
+                          <span className="text-xs tracking-widest text-[#536168]">缺貨</span>
                         ) : null}
                       </div>
                       <div className="relative z-10 mt-1">
@@ -339,7 +339,7 @@ export function EditorialProductList({
                 type="button"
                 onClick={closeMobileFilters}
                 aria-label="關閉篩選"
-                className="flex h-9 w-9 items-center justify-center border border-[#0B1620]/20 text-[#5C7383] transition-colors hover:border-[#0B1620] hover:text-[#0B1620]"
+                className="flex h-9 w-9 items-center justify-center border border-[#0B1620]/20 text-[#536168] transition-colors hover:border-[#0B1620] hover:text-[#0B1620]"
               >
                 ✕
               </button>
@@ -391,12 +391,12 @@ function FilterPanel({
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="搜尋商品名稱"
           aria-label="搜尋商品名稱"
-          className="w-full border-b border-[#0B1620]/30 bg-transparent py-2 pr-6 text-sm text-[#0B1620] outline-none transition-colors duration-300 placeholder:text-[#5C7383] hover:border-[#1D3540] focus:border-[#1D3540]"
+          className="w-full border-b border-[#0B1620]/30 bg-transparent py-2 pr-6 text-sm text-[#0B1620] outline-none transition-colors duration-300 placeholder:text-[#536168] hover:border-[#1D3540] focus:border-[#1D3540]"
         />
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
-          className="pointer-events-none absolute bottom-2.5 right-0 h-3.5 w-3.5 text-[#5C7383]"
+          className="pointer-events-none absolute bottom-2.5 right-0 h-3.5 w-3.5 text-[#536168]"
         >
           <circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
           <line x1="9.8" y1="9.8" x2="14" y2="14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -415,7 +415,7 @@ function FilterPanel({
           onClick={onClearAll}
           disabled={!hasActiveFilters}
           className={`font-[family-name:var(--ep-font-en)] text-xs tracking-widest transition-colors ${
-            hasActiveFilters ? "text-[#FF5A36] hover:text-[#0B1620]" : "cursor-default text-[#5C7383]/40"
+            hasActiveFilters ? "text-[#C2401D] hover:text-[#0B1620]" : "cursor-default text-[#536168]/40"
           }`}
         >
           清除全部
@@ -488,7 +488,7 @@ function EditorialFilterToggle({
       onClick={onClick}
       aria-pressed={active}
       className={`group relative flex w-fit items-center gap-1.5 py-0.5 pl-3 text-left text-sm transition-colors ${
-        active ? "font-medium text-[#0B1620]" : "font-light text-[#5C7383] hover:text-[#0B1620]"
+        active ? "font-medium text-[#0B1620]" : "font-light text-[#536168] hover:text-[#0B1620]"
       }`}
     >
       <span
@@ -515,7 +515,7 @@ function ActiveFilterChip({ label, onRemove }: { label: string; onRemove: () => 
         type="button"
         onClick={onRemove}
         aria-label={`移除${label}篩選`}
-        className="text-[#5C7383] transition-colors hover:text-[#FF5A36]"
+        className="text-[#536168] transition-colors hover:text-[#FF5A36]"
       >
         ×
       </button>

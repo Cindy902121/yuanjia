@@ -45,7 +45,7 @@ export default async function UserPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-24">
       <div className="flex flex-col gap-1 border-b border-[#0B1620]/15 pb-6">
-        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#5C7383]">
+        <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
           ACCOUNT
         </span>
         <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
@@ -57,7 +57,7 @@ export default async function UserPage() {
         <B2BShoppingGuard />
       ) : !user ? (
         <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
-          <p className="text-sm font-light text-[#5C7383]">請先登入查看會員中心。</p>
+          <p className="text-sm font-light text-[#536168]">請先登入查看會員中心。</p>
           <Link href="/login" className={editorialButtonSolid}>
             前往登入
           </Link>
@@ -65,41 +65,41 @@ export default async function UserPage() {
       ) : (
         <>
           <div className="flex flex-col gap-2">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               登入帳號
             </span>
             <p className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">{user.email}</p>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               收件資料（展示用）
             </span>
-            <p className="text-xs font-light leading-6 text-[#5C7383]">
+            <p className="text-xs font-light leading-6 text-[#536168]">
               本網站為 MVP 展示，尚未串接真實會員個人資料儲存，以下為結帳頁「使用展示會員資料」帶入的同一組示範資料。
             </p>
             <dl className="flex flex-col gap-2 text-sm">
               <div className="flex gap-3">
-                <dt className="w-20 shrink-0 text-[#5C7383]">收件人</dt>
+                <dt className="w-20 shrink-0 text-[#536168]">收件人</dt>
                 <dd className="text-[#0B1620]">{DEMO_MEMBER_PROFILE.recipientName}</dd>
               </div>
               <div className="flex gap-3">
-                <dt className="w-20 shrink-0 text-[#5C7383]">電話</dt>
+                <dt className="w-20 shrink-0 text-[#536168]">電話</dt>
                 <dd className="text-[#0B1620]">{DEMO_MEMBER_PROFILE.recipientPhone}</dd>
               </div>
               <div className="flex gap-3">
-                <dt className="w-20 shrink-0 text-[#5C7383]">Email</dt>
+                <dt className="w-20 shrink-0 text-[#536168]">Email</dt>
                 <dd className="text-[#0B1620]">{DEMO_MEMBER_PROFILE.recipientEmail}</dd>
               </div>
               <div className="flex gap-3">
-                <dt className="w-20 shrink-0 text-[#5C7383]">地址</dt>
+                <dt className="w-20 shrink-0 text-[#536168]">地址</dt>
                 <dd className="text-[#0B1620]">{DEMO_MEMBER_PROFILE.deliveryAddress}</dd>
               </div>
             </dl>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
-            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#5C7383]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               快速連結
             </span>
             <div className="flex flex-wrap gap-4 text-sm">
