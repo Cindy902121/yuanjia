@@ -21,7 +21,6 @@ export function TrackPageView({ eventName, productId }: TrackPageViewProps) {
   useEffect(() => {
     trackEvent({ event_name: eventName, product_id: productId });
     // 只在 slug／productId 真的變化時重新觸發，避免同一頁重渲染就重複送出。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventName, productId]);
 
   return null;

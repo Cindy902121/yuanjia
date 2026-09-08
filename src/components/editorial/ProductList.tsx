@@ -204,7 +204,6 @@ export function EditorialProductList({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileFiltersOpen]);
 
   const filterPanelProps = {

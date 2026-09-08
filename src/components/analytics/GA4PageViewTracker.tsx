@@ -40,7 +40,6 @@ export function GA4PageViewTracker() {
       "page_view",
       { page_path: query ? `${pathname}?${query}` : pathname },
     ]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
   return null;
