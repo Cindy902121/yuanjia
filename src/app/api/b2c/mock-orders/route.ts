@@ -252,11 +252,14 @@ export async function PATCH(request: Request) {
   }
 
   const body = (await readJson(request)) as
-    | { order_id?: unknown; status?: unknown }
+    | { order_id?: unknown; status?: unknown; expected_updated_at?: unknown }
     | null;
   const orderId = body?.order_id;
   if (!isUuid(orderId) || !isOrderStatus(body?.status)) {
     return apiError("訂單編號或狀態不正確。", 400);
+  }
+  if (typeof body.expected_updated_at !== "string" || !Number.isFinite(Date.parse(body.expected_updated_at))) {
+    return apiError("請重新讀取展示訂單後再更新。", 428);
   }
 
   const admin = createAdminClient();
@@ -264,6 +267,7 @@ export async function PATCH(request: Request) {
     .from("b2c_orders")
     .update({ status: body.status })
     .eq("id", orderId)
+    .eq("updated_at", body.expected_updated_at)
     .select("id, status, updated_at")
     .maybeSingle();
 
@@ -271,7 +275,7 @@ export async function PATCH(request: Request) {
     return apiError("目前無法更新展示訂單。", 503);
   }
   if (!order) {
-    return apiError("找不到指定的展示訂單。", 404);
+    return apiError("此資料已被更新或已不存在，請重新讀取後再操作。", 409);
   }
 
   return json({ order });

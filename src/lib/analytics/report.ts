@@ -1,3 +1,4 @@
+import { earliestDay, resolvePeriod, shiftDay } from "../admin-dates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isUuid, parseCsv } from "@/lib/api";
@@ -132,17 +133,6 @@ export type AnalyticsResponse = AnalyticsReport & {
   };
 };
 
-function taipeiDateString(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Taipei",
-    year: "numeric",
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
 function parseCalendarDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [year, month, day] = value.split("-").map(Number);
@@ -166,11 +156,7 @@ function taipeiIso(value: string, days = 0) {
 }
 
 function isBeyondTwentyFourMonths(from: string, to: string) {
-  const date = parseCalendarDate(to);
-  const minimum = parseCalendarDate(from);
-  if (!date || !minimum) return true;
-  date.setUTCMonth(date.getUTCMonth() - 24);
-  return minimum < date;
+  return !earliestDay(to) || from < earliestDay(to);
 }
 
 type ParsedValues = { values: string[] } | { error: string };
@@ -189,10 +175,10 @@ function dimensionValues(params: URLSearchParams, key: string) {
 }
 
 export function parseAnalyticsFilters(params: URLSearchParams, now = new Date()): ParsedAnalyticsQuery {
-  const today = taipeiDateString(now);
-  const defaultFrom = addDays(today, -89) as string;
-  const dateFromValue = params.get("date_from") ?? defaultFrom;
-  const dateToValue = params.get("date_to") ?? today;
+  const period = resolvePeriod(params, now);
+  if (period.error) return { error: period.error };
+  const dateFromValue = period.from;
+  const dateToValue = period.to;
   const fromDate = parseCalendarDate(dateFromValue);
   const toDate = parseCalendarDate(dateToValue);
 
@@ -349,6 +335,7 @@ async function callSummary(
     p_filters: query.rpcFilters,
   });
   if (error) throw new Error(error.message);
+  if (!data || !Array.isArray(data.trend) || !data.totals || !data.rfq_summary) throw new Error("分析資料不完整，無法確認期間覆蓋。");
   return normalizeReport(data);
 }
 
@@ -368,6 +355,21 @@ export async function getB2bAnalyticsReport(
     callSummary(admin, query, query.dateFrom, query.dateTo),
     callSummary(admin, query, query.previousDateFrom, query.previousDateTo),
   ]);
+
+  const buckets = new Map(current.trend.map((row) => [row.date_bucket.slice(0, 10), row]));
+  let cursor = query.dateFromValue;
+  if (query.grain === "week") {
+    const weekday = new Date(`${cursor}T00:00:00Z`).getUTCDay();
+    cursor = shiftDay(cursor, -((weekday + 6) % 7));
+  } else if (query.grain === "month") cursor = `${cursor.slice(0, 7)}-01`;
+  const filled: AnalyticsReport["trend"] = [];
+  while (cursor <= query.dateToValue) {
+    filled.push(buckets.get(cursor) ?? { date_bucket: cursor, events: 0, active_companies: 0, active_sessions: 0 });
+    if (query.grain === "month") {
+      const date = new Date(`${cursor}T00:00:00Z`); date.setUTCMonth(date.getUTCMonth() + 1); cursor = date.toISOString().slice(0, 10);
+    } else cursor = shiftDay(cursor, query.grain === "week" ? 7 : 1);
+  }
+  current.trend = filled;
 
   const comparisonTotals = Object.fromEntries(
     Object.keys(ZERO_TOTALS).map((key) => [

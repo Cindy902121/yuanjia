@@ -16,7 +16,7 @@
 > 案例保留作為未來需求與元件驗收參考，現行實作以 remote 既有 5 筆與 active schema
 > 為準。完整決策與 revisit triggers 見 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
 
-> **過期項目（2026-09-02）**：本文件原定的 12 筆 B2C 展示商品需求已過期，不再作為 MVP seed 或驗收商品數量；現行展示資料以 `supabase/seed.sql` 的 6 筆為準。本文件保留 12 筆內容，僅供歷史案例與 UI 測試參考。
+> **過期項目（2026-09-02）**：本文件原定的 12 筆 B2C 展示商品需求已過期，不作為現行 MVP seed，也不作為現行 MVP 驗收依據；現行展示資料以 `supabase/seed.sql` 的 6 筆為準。本文件保留 12 筆內容，僅供歷史案例與 UI 測試參考。
 
 ---
 

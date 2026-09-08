@@ -1,3 +1,4 @@
+import { parsePage } from "@/lib/admin-view";
 import { apiError, isUuid, json, readJson } from "@/lib/api";
 import { requireBusinessAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,23 +21,31 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
-  if (status && !isRfqStatus(status)) {
+  if (status !== null && !isRfqStatus(status)) {
     return apiError("詢價狀態不正確。", 400);
   }
 
+  const pagination = parsePage(url.searchParams, 200, 200);
+  const sort = url.searchParams.get("sort") ?? "newest";
+  const id = url.searchParams.get("id");
+  if (!pagination || !["oldest", "newest"].includes(sort) || (id !== null && !isUuid(id))) return apiError("詢價篩選或頁碼不正確。", 400);
+  const { page, pageSize } = pagination;
   const admin = createAdminClient();
   let query = admin
     .from("b2b_rfqs")
     .select(
       "id, company_id, customer_tier_snapshot, channel_snapshot, status, total_note, created_at, updated_at",
+      { count: "exact" },
     )
-    .order("created_at", { ascending: false })
-    .limit(200);
-  if (status) {
+    .order("created_at", { ascending: sort === "oldest" })
+    .order("id", { ascending: true })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+  if (status && !id) {
     query = query.eq("status", status);
   }
 
-  const { data: rfqs, error: rfqError } = await query;
+  if (id) query = query.eq("id", id).range(0, 0);
+  const { data: rfqs, error: rfqError, count } = await query;
   if (rfqError) {
     return apiError("目前無法讀取企業詢價。", 503);
   }
@@ -90,6 +99,7 @@ export async function GET(request: Request) {
   }
 
   return json({
+    total: count, page, page_size: pageSize,
     rfqs: (rfqs ?? []).map((rfq) => ({
       ...rfq,
       company: companyById.get(rfq.company_id) ?? null,
@@ -107,16 +117,19 @@ export async function PATCH(request: Request) {
   const body = (await readJson(request)) as {
     rfq_id?: unknown;
     status?: unknown;
+    expected_updated_at?: unknown;
   } | null;
   if (!isUuid(body?.rfq_id) || !isRfqStatus(body?.status)) {
     return apiError("詢價編號或狀態不正確。", 400);
   }
 
+  if (typeof body.expected_updated_at !== "string" || !Number.isFinite(Date.parse(body.expected_updated_at))) return apiError("請重新讀取詢價後再更新。", 428);
   const admin = createAdminClient();
   const { data: rfq, error } = await admin
     .from("b2b_rfqs")
     .update({ status: body.status })
     .eq("id", body.rfq_id)
+    .eq("updated_at", body.expected_updated_at)
     .select("id, status, updated_at")
     .maybeSingle();
 
@@ -124,7 +137,7 @@ export async function PATCH(request: Request) {
     return apiError("目前無法更新詢價狀態。", 503);
   }
   if (!rfq) {
-    return apiError("找不到指定詢價。", 404);
+    return apiError("此資料已被更新或已不存在，請重新讀取後再操作。", 409);
   }
 
   return json({ rfq });

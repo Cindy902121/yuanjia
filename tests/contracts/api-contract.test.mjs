@@ -334,7 +334,7 @@ test("admin UI exposes the complete B2B catalog workflow in the correct scopes",
   assert.match(adminDashboard, /href="\/admin\/business\/products\/new"/);
   assert.match(adminDashboard, /B2bCsvImportPanel/);
   assert.doesNotMatch(adminDashboard, /CustomerPrefixRulePanel|customer-prefix-rules/);
-  assert.match(adminDashboard, /business: \["b2b-products", "b2b-rfqs"\]/);
+  assert.match(read("src/lib/admin-view.ts"), /BUSINESS_TABS[^=]*= \["b2b-products", "b2b-rfqs"\]/);
 
   assert.match(productPage, /requireAdminPage\(`\/admin\/business\/products\/\$\{productId\}`\)/);
   assert.match(newProductPage, /requireAdminPage\("\/admin\/business\/products\/new"\)/);

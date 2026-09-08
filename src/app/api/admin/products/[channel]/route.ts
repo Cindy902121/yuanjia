@@ -1,3 +1,4 @@
+import { parsePage } from "@/lib/admin-view";
 import { apiError, json, readJson } from "@/lib/api";
 import { requireAdmin, requireBusinessAdmin } from "@/lib/admin-auth";
 import {
@@ -21,18 +22,29 @@ export async function GET(
   if (guard.response) return guard.response;
 
   const url = new URL(request.url);
-  const includeInactive = url.searchParams.get("include_inactive") === "true";
+  const includeInactiveValue = url.searchParams.get("include_inactive");
+  if (includeInactiveValue !== null && !["true", "false"].includes(includeInactiveValue)) {
+    return apiError("商品啟用篩選不正確。", 400);
+  }
+  const includeInactive = includeInactiveValue === "true";
   const search = url.searchParams.get("q")?.trim();
   const status = url.searchParams.get("status")?.trim();
   if (channel === "b2b" && status && !isB2bProductStatus(status)) {
     return apiError("B2B 商品狀態不正確。", 400);
   }
+  const pagination = parsePage(url.searchParams, 500, 500);
+  const missingValue = url.searchParams.get("missing_images");
+  if (!pagination || (missingValue !== null && !["true", "false"].includes(missingValue))) return apiError("商品篩選或頁碼不正確。", 400);
+  const { page, pageSize } = pagination;
+  const missingImages = channel === "b2b" && missingValue === "true";
   const admin = createAdminClient();
   let query = admin
     .from(PRODUCT_TABLES[channel])
-    .select(ADMIN_PRODUCT_FIELDS[channel])
+    .select(`${ADMIN_PRODUCT_FIELDS[channel]}${missingImages ? ",b2b_product_images()" : ""}`, { count: "exact" })
     .order("updated_at", { ascending: false })
-    .limit(500);
+    .order("id", { ascending: true })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+  if (missingImages) query = query.is("b2b_product_images", null);
 
   if (channel === "b2b") {
     if (status) {
@@ -44,14 +56,15 @@ export async function GET(
     query = query.eq("is_active", true);
   }
   if (search) {
+    const safeSearch = search.replace(/[,%().\\"\n\r]/g, " ").trim();
     query = query.or(
       channel === "b2c"
-      ? `name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%`
-      : `name.ilike.%${search}%,product_code.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%`,
+      ? `name.ilike.%${safeSearch}%,brand.ilike.%${safeSearch}%,category.ilike.%${safeSearch}%`
+      : `name.ilike.%${safeSearch}%,product_code.ilike.%${safeSearch}%,brand.ilike.%${safeSearch}%,category.ilike.%${safeSearch}%`,
     );
   }
 
-  const { data: products, error } = await query;
+  const { data: products, error, count } = await query;
   if (error) {
     return apiError("目前無法讀取管理商品。", 503);
   }
@@ -70,7 +83,7 @@ export async function GET(
       imageCounts.set(image.product_id, (imageCounts.get(image.product_id) ?? 0) + 1);
     }
     return json({
-      channel,
+      channel, total: count, page, page_size: pageSize,
       products: productRows.map((product) => ({
         ...product,
         image_count: imageCounts.get(product.id) ?? 0,
@@ -78,7 +91,7 @@ export async function GET(
     });
   }
 
-  return json({ channel, products: productRows });
+  return json({ channel, products: productRows, total: count, page, page_size: pageSize });
 }
 
 export async function POST(
