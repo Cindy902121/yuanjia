@@ -23,6 +23,18 @@ type FinderProduct = {
 
 type FinderResult = { products: FinderProduct[]; error?: string };
 
+// 展示型錄已備妥的官方商品主圖。後台圖片尚未上傳時才使用，避免 Finder 出現空白圖卡。
+const DEMO_PRODUCT_COVERS: Record<string, string> = {
+  "B2B-FISH-001": "/products/b2b/B2B-FISH-001/main.jpg",
+  "B2B-FISH-002": "/products/b2b/B2B-FISH-002/main.jpg",
+  "B2B-FISH-003": "/products/b2b/B2B-FISH-003/main.jpg",
+  "B2B-MEAT-001": "/products/b2b/B2B-MEAT-001/main.jpg",
+  "B2B-PREP-001": "/products/b2b/B2B-PREP-001/main.jpg",
+  "B2B-SHELL-001": "/products/b2b/B2B-SHELL-001/main.jpg",
+  "B2B-SHRIMP-001": "/products/b2b/B2B-SHRIMP-001/main.jpg",
+  "B2B-SOFT-001": "/products/b2b/B2B-SOFT-001/main.jpg",
+};
+
 function channelFor(key: string | null) {
   return B2B_FINDER_CHANNELS.find((channel) => channel.key === key) ?? null;
 }
@@ -152,7 +164,10 @@ function FinderResults({ loading, onBack, onReset, path, result, showCategoryBac
 
 function FinderProductCard({ product }: { product: FinderProduct }) {
   const cover = product.images?.find((image) => image.image_role === "cover") ?? product.images?.[0];
-  return <article className="overflow-hidden rounded-xl border border-[#D8E5EA] bg-white">{cover ? <img alt={cover.alt_text || `${product.name}商品圖片`} className="aspect-[16/9] w-full object-cover" src={cover.url} /> : <div className="grid aspect-[16/9] place-items-center bg-[#EAF5FB] text-sm font-bold text-[#005DAA]">企業商品</div>}<div className="p-5"><p className="text-xs font-bold tracking-[.1em] text-[#005DAA]">{product.product_code}</p><h3 className="mt-2 text-lg font-bold">{product.name}</h3><p className="mt-1 text-sm text-[#536168]">{product.brand}・{product.category}</p><dl className="mt-4 space-y-2 border-t border-[#E2E8EB] pt-4 text-sm"><div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">規格</dt><dd>{product.specification}</dd></div>{product.packaging ? <div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">包裝</dt><dd>{product.packaging}</dd></div> : null}<div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">產地</dt><dd>{product.origin}</dd></div><div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">保存</dt><dd>{product.storage_method}</dd></div></dl><Link className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[#8FB8CD] px-3 text-sm font-bold text-[#005DAA] hover:bg-[#EAF5FB]" href={`/business/catalog?q=${encodeURIComponent(product.product_code)}`} onClick={() => trackEvent({ event_name: "b2b_product_finder_result_click", product_id: product.id, event_data: { product_id: product.id } })}>查看詳情／選擇規格</Link></div></article>;
+  const coverUrl = cover?.url ?? DEMO_PRODUCT_COVERS[product.product_code];
+  const coverAlt = cover?.alt_text || `${product.name}商品圖片`;
+
+  return <article className="overflow-hidden rounded-xl border border-[#D8E5EA] bg-white">{coverUrl ? <img alt={coverAlt} className="aspect-[16/9] w-full object-cover" src={coverUrl} /> : <div className="grid aspect-[16/9] place-items-center bg-[#EAF5FB] text-sm font-bold text-[#005DAA]">企業商品</div>}<div className="p-5"><p className="text-xs font-bold tracking-[.1em] text-[#005DAA]">{product.product_code}</p><h3 className="mt-2 text-lg font-bold">{product.name}</h3><p className="mt-1 text-sm text-[#536168]">{product.brand}・{product.category}</p><dl className="mt-4 space-y-2 border-t border-[#E2E8EB] pt-4 text-sm"><div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">規格</dt><dd>{product.specification}</dd></div>{product.packaging ? <div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">包裝</dt><dd>{product.packaging}</dd></div> : null}<div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">產地</dt><dd>{product.origin}</dd></div><div className="grid grid-cols-[3.5rem_1fr] gap-2"><dt className="font-semibold text-[#536168]">保存</dt><dd>{product.storage_method}</dd></div></dl><Link className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[#8FB8CD] px-3 text-sm font-bold text-[#005DAA] hover:bg-[#EAF5FB]" href={`/business/catalog?q=${encodeURIComponent(product.product_code)}`} onClick={() => trackEvent({ event_name: "b2b_product_finder_result_click", product_id: product.id, event_data: { product_id: product.id } })}>查看詳情／選擇規格</Link></div></article>;
 }
 
 function EmptyResult({ onReset }: { onReset: () => void }) {

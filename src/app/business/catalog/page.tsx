@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import CatalogInquiryWorkspace from "./catalog-inquiry-workspace";
+import BusinessBreadcrumb from "./business-breadcrumb";
 import B2bCatalogTracker from "./catalog-tracker";
 import BusinessHeader from "./business-header";
 import CatalogJourneyPrototype from "./catalog-journey-prototype";
@@ -163,8 +164,11 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         <picture><source media="(max-width: 767px)" srcSet="/brand/yuanjia-banner-mobile.jpg" /><img alt="元家全球冷凍水產食材供應服務 Banner" className="h-[300px] w-full object-cover object-center sm:h-[350px]" src="/brand/yuanjia-banner.jpg" /></picture>
       </section>}
 
+      <div className="mx-auto max-w-[1440px] px-5 pt-6 lg:px-8">
+        <BusinessBreadcrumb current="企業型錄" />
+      </div>
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-8 lg:grid-cols-[17rem_1fr] lg:px-8 lg:py-10">
-        <aside aria-label="型錄篩選器" className="self-start rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)] lg:sticky lg:top-24">
+        <aside aria-label="型錄篩選器" className="self-start rounded-2xl border border-[#D9E1E5] bg-white p-5 shadow-[0_10px_24px_rgba(23,36,42,0.05)]">
           <form
             className="space-y-6"
             key={[params.q ?? "", category, brand, ...selectedTags].join("|")}
