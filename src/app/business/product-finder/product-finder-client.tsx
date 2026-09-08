@@ -56,10 +56,13 @@ export default function ProductFinderClient() {
     trackEvent({ event_name: "b2b_product_finder_start" });
   }, []);
 
-  async function loadResults(leafKey: string) {
+  async function loadResults(channel: string, category?: string) {
     setLoading(true);
     setResult(null);
-    const response = await fetch(`/api/b2b/product-finder?conditions=${encodeURIComponent(leafKey)}`);
+    const searchParams = new URLSearchParams({ channel });
+    if (category) searchParams.set("category", category);
+
+    const response = await fetch(`/api/b2b/product-finder?${searchParams.toString()}`);
     const body = await response.json().catch(() => ({}));
     setResult(response.ok ? body : { products: [], error: body.error ?? "篩選失敗，請稍後再試。" });
     if (response.ok) trackEvent({ event_name: "b2b_product_finder_complete" });
@@ -86,7 +89,7 @@ export default function ProductFinderClient() {
       event_data: { question_key: "channel_category", option_id: leafKey },
     });
     setSelectedLeaf(leafKey);
-    void loadResults(leafKey);
+    if (primaryChannel) void loadResults(primaryChannel, leafKey);
   }
 
   function reset() {
