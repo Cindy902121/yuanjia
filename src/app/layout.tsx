@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { buildOpenGraph, SITE_URL } from "@/lib/seo";
-import { editorialFontClassName } from "@/lib/editorial/fonts";
 import "./globals.css";
 
 const DEFAULT_TITLE = "元家｜新鮮海鮮與調理食品";
@@ -60,13 +59,10 @@ export const metadata: Metadata = {
  * Next 偵測到這個 CSS 設定但沒看到這個屬性時會印警告，怕它跟路由切換的捲動
  * 還原互相干擾；加上這個屬性等於明確告訴 Next「這是刻意的」。
  *
- * 2026-08-19：`editorialFontClassName`（見 src/lib/editorial/fonts.ts）掛在
- * `<html>` 上，讓 `var(--ep-font-serif)`／`var(--ep-font-sans)`／
- * `var(--ep-font-en)` 這三個 CSS 變數全站都能用——這裡只是「註冊」這些
- * CSS 變數，不代表全站文字都會被強制換成編輯風字體（實際套用字體的
- * `font-[family-name:...]` class 在下面的 `<body>` 已經拿掉，改到
- * src/app/(b2c)/layout.tsx，只有 B2C 頁面才會真的套用這個字體，B2B／Admin／
- * 登入頁可以自己決定要不要用）。
+ * 2026-09-08：編輯風三套字型改由 `src/app/(b2c)/layout.tsx` 註冊，而非掛在
+ * root layout。Next.js 會讓 root layout 字型預載到所有路由，導致 B2B Finder
+ * 下載不會使用的字型 CSS，影響行動版初始渲染；B2B／Admin／登入頁改用系統字型，
+ * B2C 才保留 Noto Serif TC、Noto Sans TC、Josefin Sans 的編輯風樣式。
  *
  * 2026-08-25（回應 B 回報 /business/catalog 同時顯示 B2C Header 與 B2B
  * BusinessHeader）：Header／Footer／B2CHelpWidget 原本直接掛在這個 root
@@ -79,7 +75,7 @@ export const metadata: Metadata = {
  * 專屬底色／字體／文字色，都搬到新的 src/app/(b2c)/layout.tsx，只套用在
  * `(b2c)` route group 底下的頁面（見該檔案的完整清單與理由）。這個 root
  * layout 現在只保留全站都需要的基礎 shell：`<html>`／`<body>` 標籤本身、
- * 字體 CSS 變數註冊、`globals.css`、全站 SEO 預設值——不含任何 B2C 專屬的
+ * `globals.css`、全站 SEO 預設值——不含任何 B2C 專屬的
  * 元件或視覺樣式，B2B／Admin／登入頁不會再被迫繼承這些。
  *
  * `<body>` 只留 `flex min-h-full flex-col`（純排版骨架，不含顏色／字體），
@@ -96,7 +92,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="zh-Hant"
       data-scroll-behavior="smooth"
-      className={`h-full antialiased ${editorialFontClassName}`}
+      className="h-full antialiased"
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
