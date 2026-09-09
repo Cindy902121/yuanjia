@@ -129,7 +129,7 @@ export function CartPageClient() {
           </span>
         </div>
         <p className="text-xs font-light text-[#536168]">
-          本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+          本網站商品資訊為 MVP 展示資料，商品照片為近似示意，包裝與規格請以商品詳情頁文字為準；實際價格與庫存請以正式商城公告為準。
         </p>
         <Link href="/checkout" className={`w-fit ${editorialButtonSolid}`}>
           前往結帳 →

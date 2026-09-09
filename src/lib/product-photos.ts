@@ -17,6 +17,18 @@ import type { ProductImageRef } from "@/lib/types/product";
  * 官網上找不到跟這些商品完全對應的真實商品（規格／產地／作法都有出入），
  * 使用者已確認「用接近的照片，注明不完全對應」——每筆都在 `mismatchNote` 記錄
  * 已知落差，之後有正式商品攝影就整批換掉。
+ *
+ * 2026-09（P2-2 二次確認）：實際把 6 張照片叫出來跟資料庫規格逐一核對，
+ * 發現其中 4 張（虱目魚肚、鮭魚菲力、天使紅蝦、蛤蜊）照片本身印著規格
+ * 重量色塊，且有 3 張（鮭魚菲力／天使紅蝦／蛤蜊）的重量色塊跟資料庫規格
+ * 不一致，這 3 筆先前只記錄了產地／品種／處理方式的落差，沒記錄到這個
+ * 印在照片上、比較容易被客人直接看出來的重量落差——這次一併補進各筆的
+ * `mismatchNote`。使用者確認的處理方式是「維持原圖，不裁圖也不換圖」，
+ * 改成在商品列表／詳情／購物車頁面把揭露文字寫更明確（見
+ * src/app/(b2c)/products/page.tsx、products/[slug]/page.tsx、
+ * cart/cart-page-client.tsx 的「商品照片為近似示意，包裝與規格請以...
+ * 文字為準」），不是靠裁圖或換圖解決。鯖魚、小卷這兩張照片沒有印刷規格，
+ * 沒有這個問題。
  */
 export interface ProductPhotoEntry {
   image: ProductImageRef;
@@ -46,7 +58,8 @@ export const PRODUCT_PHOTOS: Record<string, ProductPhotoEntry> = {
       url: "/product-photos-salmon-fillet.jpg",
       alt: "挪威鮭魚菲力示意照（近似商品，非正式商品攝影）",
     },
-    mismatchNote: "來源商品產地為智利，正式資料庫產地為挪威，產地不一致。",
+    mismatchNote:
+      "來源商品產地為智利，正式資料庫產地為挪威，產地不一致；照片本身印有「175g/包」規格色塊，正式資料庫規格為 200g/包，規格也不一致。",
   },
   "argentine-red-shrimp": {
     image: {
@@ -54,7 +67,7 @@ export const PRODUCT_PHOTOS: Record<string, ProductPhotoEntry> = {
       alt: "阿根廷天使紅蝦示意照（近似商品，非正式商品攝影）",
     },
     mismatchNote:
-      "來源商品產地為馬來西亞（完美紅-白蝦），正式資料庫產地為阿根廷，產地與蝦種皆不完全一致。",
+      "來源商品產地為馬來西亞（完美紅-白蝦），正式資料庫產地為阿根廷，產地與蝦種皆不完全一致；照片本身印有「600g/盒」規格色塊，正式資料庫規格為 500g/盒，規格也不一致。",
   },
   "taiwan-clam": {
     image: {
@@ -62,7 +75,7 @@ export const PRODUCT_PHOTOS: Record<string, ProductPhotoEntry> = {
       alt: "台灣鮮甜蛤蜊示意照（近似商品，非正式商品攝影）",
     },
     mismatchNote:
-      "來源照片為熟凍去殼花蛤肉的情境照，跟正式商品「台灣鮮甜蛤蜊」的帶殼／處理方式可能不完全一致。",
+      "來源照片為熟凍去殼花蛤肉的情境照，跟正式商品「台灣鮮甜蛤蜊」的帶殼／處理方式可能不完全一致；照片本身印有「1000g/包」規格色塊，正式資料庫規格為 500g/包，規格也不一致。",
   },
   /**
    * 2026-09-04：`taiwan-squid`（台灣鮮甜小卷）是 9/4 最終回歸測試時，發現
