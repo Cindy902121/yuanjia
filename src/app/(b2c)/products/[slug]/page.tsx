@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
 import { EditorialAddToCartWithQuantity } from "@/components/editorial/AddToCartWithQuantity";
+import { TrackedTagLink } from "@/components/analytics/TrackedTagLink";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
 import { requireB2cAccess } from "@/lib/b2c/access";
 
@@ -30,6 +31,11 @@ import { requireB2cAccess } from "@/lib/b2c/access";
  *
  * 舊元件（ProductDetail、ProductDetailTabs、Breadcrumb、RecommendedProducts、
  * AddToCartWithQuantity）**沒有刪除**，如果之後有其他地方還在用。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：B2B 誤入的守門原本
+ * 是顯示 B2BShoppingGuard 確認選項，main 上 B 已改成直接 redirect("/business")，
+ * 兩邊各自做了一版、合併時撞上，採用已併進 main 的版本，細節見
+ * products/page.tsx 同批說明。generateMetadata() 一樣不用擋。
  */
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -129,7 +135,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
   ];
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={productJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
       <EditorialStyles />
@@ -138,12 +144,12 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
       <div className="mx-auto flex w-full max-w-[1300px] flex-col gap-16 px-5 py-16 sm:px-8 lg:px-10 lg:py-24">
         {/* 麵包屑：純文字，斜線分隔取代 ">" 圖示。 */}
         <FadeInSection>
-          <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
-            <Link href="/" className="hover:text-[#3E5C6B]">
+          <nav aria-label="breadcrumb" className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
+            <Link href="/" className="hover:text-[#FF5A36]">
               HOME
             </Link>{" "}
             /{" "}
-            <Link href="/products" className="hover:text-[#3E5C6B]">
+            <Link href="/products" className="hover:text-[#FF5A36]">
               PRODUCTS
             </Link>
             {primaryCategory ? (
@@ -187,7 +193,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
             {product.coverImage ? (
               <Image src={product.coverImage.url} alt={product.coverImage.alt} fill sizes="(min-width: 1024px) 35vw, 100vw" className="object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#F3F1EB] text-sm text-[#8a8a8a]">
+              <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-sm text-[#536168]">
                 無商品圖片
               </div>
             )}
@@ -195,44 +201,52 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
 
           <FadeInSection className="order-2 flex flex-col gap-6 lg:order-3">
             {product.brand ? (
-              <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+              <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
                 {product.brand}
               </span>
             ) : null}
-            <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light leading-[1.4] tracking-[0.03em] text-[#2b2b2b]">
+            <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light leading-[1.4] tracking-[0.03em] text-[#0B1620]">
               {product.name}
             </h1>
-            <span className="font-[family-name:var(--ep-font-en)] text-xl tracking-widest text-[#2b2b2b]">
+            <span className="font-[family-name:var(--ep-font-en)] text-xl tracking-widest text-[#0B1620]">
               NT$ {product.price}
             </span>
             {product.inventoryStatus === "out_of_stock" ? (
-              <span className="w-fit text-xs tracking-widest text-[#8a8a8a]">缺貨中</span>
+              <span className="w-fit text-xs tracking-widest text-[#536168]">缺貨中</span>
             ) : null}
-            <p className="text-xs font-light leading-[1.8] text-[#8a8a8a]">
+            <p className="text-xs font-light leading-[1.8] text-[#536168]">
               本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
             </p>
 
-            <div className="h-px w-full bg-[#2b2b2b]/15" aria-hidden="true" />
+            <div className="h-px w-full bg-[#0B1620]/15" aria-hidden="true" />
 
             <EditorialAddToCartWithQuantity product={product} />
 
-            {/* 標籤：可點選連結，補滿加入購物車下面的留白。 */}
+            {/* 標籤：可點選連結，補滿加入購物車下面的留白。
+                2026-09-02（9/2 B2C QA 排程「確認 B2C 事件可正常送出」發現：
+                `b2c_tag_click`（FDD §6.7 白名單事件）從有 TrackedTagLink 這個
+                元件開始就沒有任何地方真的在用它——這裡本來是普通 <Link>，跟
+                左側篩選欄那些「導覽用」的分類／標籤連結（見上面 SidebarLink）
+                刻意不送事件不一樣：這裡的標籤 pill 是「使用者主動點一個標籤
+                去探索相關商品」，語意上就是白名單設計 b2c_tag_click 想量測的
+                動作，改用 TrackedTagLink 補上這個從未真正送出過的事件，行為
+                （導覽到 /products/tags/[slug]）完全不變，只多送一個事件。 */}
             {product.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {product.tags.map((tag) => (
-                  <Link
+                  <TrackedTagLink
                     key={tag.slug}
                     href={`/products/tags/${tag.slug}`}
-                    className="border border-[#2b2b2b]/25 px-3 py-1 text-xs text-[#4a4a4a] transition-colors hover:border-[#3E5C6B] hover:text-[#3E5C6B]"
+                    className="border border-[#0B1620]/25 px-3 py-1 text-xs text-[#536168] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
                   >
                     {tag.name}
-                  </Link>
+                  </TrackedTagLink>
                 ))}
               </div>
             ) : null}
 
             {/* 規格：搬到這裡，補滿留白，不再獨立成下方一個區塊。 */}
-            <dl className="flex flex-col gap-2 border-t border-[#2b2b2b]/15 pt-4 text-sm">
+            <dl className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-4 text-sm">
               {product.brand ? <SpecInline label="品牌" value={product.brand} /> : null}
               <SpecInline label="規格" value={product.specification} />
               <SpecInline label="產地" value={product.origin} />
@@ -245,12 +259,12 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
         {/* 商品詳情／食品認證：規格已搬到右欄，這裡只剩兩段。 */}
         <div className="flex flex-col gap-14 lg:pl-[calc(200px+3.5rem)]">
           <FadeInSection>
-            <nav aria-label="商品資訊區塊快速跳轉" className="flex gap-8 border-t border-b border-[#2b2b2b]/15 py-4">
+            <nav aria-label="商品資訊區塊快速跳轉" className="flex gap-8 border-t border-b border-[#0B1620]/15 py-4">
               {sections.map((section) => (
                 <a
                   key={section.key}
                   href={`#product-${section.key}`}
-                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#8a8a8a] hover:text-[#3E5C6B]"
+                  className="font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#536168] hover:text-[#FF5A36]"
                 >
                   {section.label.toUpperCase()}
                 </a>
@@ -260,7 +274,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
 
           <FadeInSection id="product-details" className="scroll-mt-24">
             <EditorialSectionHeading index={1} title="商品詳情" />
-            <p className="mt-4 max-w-2xl text-sm font-light leading-[1.9] text-[#4a4a4a]">{product.description}</p>
+            <p className="mt-4 max-w-2xl text-sm font-light leading-[1.9] text-[#536168]">{product.description}</p>
           </FadeInSection>
 
           {hasSafetyContent ? (
@@ -269,14 +283,14 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
               <div className="mt-4 flex flex-col gap-4">
                 {product.foodSafetyInfo ? (
                   <div>
-                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">食品安全</h3>
-                    <p className="mt-1 max-w-2xl text-sm font-light leading-[1.8] text-[#4a4a4a]">{product.foodSafetyInfo}</p>
+                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">食品安全</h3>
+                    <p className="mt-1 max-w-2xl text-sm font-light leading-[1.8] text-[#536168]">{product.foodSafetyInfo}</p>
                   </div>
                 ) : null}
                 {product.qualityInfo ? (
                   <div>
-                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">認證／品質</h3>
-                    <p className="mt-1 max-w-2xl text-sm font-light leading-[1.8] text-[#4a4a4a]">{product.qualityInfo}</p>
+                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">認證／品質</h3>
+                    <p className="mt-1 max-w-2xl text-sm font-light leading-[1.8] text-[#536168]">{product.qualityInfo}</p>
                   </div>
                 ) : null}
               </div>
@@ -286,9 +300,9 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
 
         {/* 推薦商品：同分類，簡化版雜誌清單。 */}
         {recommended.length > 0 ? (
-          <div className="border-t border-[#2b2b2b]/15 pt-14 lg:pl-[calc(200px+3.5rem)]">
+          <div className="border-t border-[#0B1620]/15 pt-14 lg:pl-[calc(200px+3.5rem)]">
             <FadeInSection className="mb-8">
-              <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+              <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
                 MORE · 推薦商品
               </span>
             </FadeInSection>
@@ -300,15 +314,15 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
                       {item.coverImage ? (
                         <Image src={item.coverImage.url} alt={item.coverImage.alt} fill sizes="33vw" className="object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#F3F1EB] text-xs text-[#8a8a8a]">
+                        <div className="flex h-full w-full items-center justify-center bg-[#F6FBFC] text-xs text-[#536168]">
                           無商品圖片
                         </div>
                       )}
                     </div>
-                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b] group-hover:text-[#3E5C6B]">
+                    <h3 className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620] group-hover:text-[#FF5A36]">
                       {item.name}
                     </h3>
-                    <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                    <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                       NT$ {item.price}
                     </span>
                   </Link>
@@ -325,10 +339,10 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
 function EditorialSectionHeading({ index, title }: { index: number; title: string }) {
   return (
     <div className="flex items-baseline gap-4">
-      <span className="font-[family-name:var(--ep-font-en)] text-xl font-thin text-[#3E5C6B]">
+      <span className="font-[family-name:var(--ep-font-en)] text-xl font-thin text-[#C2401D]">
         {String(index).padStart(2, "0")}
       </span>
-      <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-light tracking-[0.03em] text-[#2b2b2b]">{title}</h2>
+      <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-light tracking-[0.03em] text-[#0B1620]">{title}</h2>
     </div>
   );
 }
@@ -336,10 +350,10 @@ function EditorialSectionHeading({ index, title }: { index: number; title: strin
 function SpecInline({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <dt className="w-16 shrink-0 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+      <dt className="w-16 shrink-0 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
         {label.toUpperCase()}
       </dt>
-      <dd className="text-sm font-light text-[#2b2b2b]">{value}</dd>
+      <dd className="text-sm font-light text-[#0B1620]">{value}</dd>
     </div>
   );
 }
@@ -347,7 +361,7 @@ function SpecInline({ label, value }: { label: string; value: string }) {
 function SidebarLinkGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">{label}</span>
+      <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">{label}</span>
       <div className="flex flex-col gap-2">{children}</div>
     </div>
   );
@@ -357,7 +371,7 @@ function SidebarLink({ href, children }: { href: string; children: React.ReactNo
   return (
     <Link
       href={href}
-      className="w-fit border-b border-transparent pb-0.5 text-sm font-light text-[#4a4a4a] transition-colors hover:border-[#3E5C6B] hover:text-[#3E5C6B]"
+      className="w-fit border-b border-transparent pb-0.5 text-sm font-light text-[#536168] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
     >
       {children}
     </Link>

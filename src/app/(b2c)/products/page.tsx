@@ -43,6 +43,22 @@ export const metadata: Metadata = {
  * 舊版元件（ProductListWithFilters、ProductCard、FeaturedProductsBanner）
  * **沒有刪除**——`/products/categories/[slug]`、`/products/tags/[slug]` 這兩個
  * 還沒重新設計的頁面繼續沿用，等之後也改版了才會是真的可以清掉舊元件的時候。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：B2B 誤入的守門原本
+ * 這裡是「顯示請先登出企業帳號的確認選項」（B2BShoppingGuard），main 上
+ * B 已經改成 requireB2cAccess() 直接 redirect("/business")，沒有確認選項。
+ * 兩邊在同一批頁面上各自做了一版，合併時面對面撞上，這裡採用已經併進 main
+ * 的版本，B2BShoppingGuard 元件本身先保留沒刪，這條路由規格細節（要不要有
+ * 確認選項）留給團隊後續決定。
+ *
+ * 2026-09（C 提出 P1-1「B2C Finder 多筆結果導流」發現並修正）：`?tag=` 原本
+ * 用 `typeof params.tag === "string"` 判斷，網址帶多個 `?tag=` 時
+ * `params.tag` 會是陣列，這個判斷會整個判 false、直接把使用者選的標籤全部
+ * 丟掉——只要網址帶超過一個 tag 就完全不生效，不是「只取第一個」這種還算
+ * 合理的降級，是整組失效。改成用陣列統一處理（單一字串也正規化成長度 1
+ * 的陣列），並且只留下真的存在於這批商品標籤裡的值，用法跟下面 `category`
+ * 的驗證邏輯一致。單一 `?tag=` 的舊連結（商品詳情頁篩選欄、標籤頁「查看更多」
+ * 等）行為不變。
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
   await requireB2cAccess();
@@ -58,16 +74,16 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
     ? categoryParam
     : undefined;
 
-  const tagParam = typeof params.tag === "string" ? params.tag : undefined;
+  const tagParams = params.tag === undefined ? [] : Array.isArray(params.tag) ? params.tag : [params.tag];
   const allTagSlugs = collectTagGroups(products).flatMap(([, tags]) => tags.map((tag) => tag.slug));
-  const initialTagSlug = allTagSlugs.includes(tagParam ?? "") ? tagParam : undefined;
+  const initialTagSlugs = [...new Set(tagParams.filter((tag) => allTagSlugs.includes(tag)))];
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       {/* Banner：跟首頁 hero 同樣的「滿版圖片＋白字疊層」手法。 */}
-      <section className="relative flex min-h-[280px] items-end overflow-hidden border-b border-[#e5e2da] lg:min-h-[360px]">
+      <section className="relative flex min-h-[280px] items-end overflow-hidden border-b border-[#D4DEE2] lg:min-h-[360px]">
         <div className="absolute inset-0" aria-hidden="true">
           <Image src="/products-banner.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
@@ -85,10 +101,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
       <section>
         <div className="mx-auto flex w-full max-w-[1200px] flex-col px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
           <FadeInSection className="mb-14 flex flex-col gap-2">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               MENU · 商品一覽
             </span>
-            <p className="text-xs font-light text-[#8a8a8a]">
+            <p className="text-xs font-light text-[#536168]">
               本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
             </p>
           </FadeInSection>
@@ -97,7 +113,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
             products={products}
             categories={categories}
             initialCategorySlug={initialCategorySlug}
-            initialTagSlug={initialTagSlug}
+            initialTagSlugs={initialTagSlugs}
           />
         </div>
       </section>
