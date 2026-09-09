@@ -19,9 +19,16 @@ import { SITE_URL } from "@/lib/seo";
  * ——避免列出資料庫裡存在、但目前沒有任何商品在用的標籤 slug（那種頁面點進去
  * 會是「無符合商品」空頁，不值得讓爬蟲花力氣爬）。
  *
- * `/checkout`、`/login` 沒有放進來——兩者都設定 `robots: { index: false }`（見
- * 各自的 page.tsx），不應該出現在 sitemap 裡（sitemap 的用途是「這些頁面希望被
- * 索引」，放進本來就不給索引的頁面互相矛盾）。
+ * `/checkout`、`/login`、`/cart` 沒有放進來——三者都設定
+ * `robots: { index: false, follow: false }`（見各自的 page.tsx），不應該出現
+ * 在 sitemap 裡（sitemap 的用途是「這些頁面希望被索引」，放進本來就不給索引的
+ * 頁面互相矛盾）。
+ *
+ * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」）：`/cart`
+ * 原本在下面 `staticEntries` 裡，但這段說明文字從一開始就只提
+ * `/checkout`、`/login` 兩個，沒提過 `/cart`——查了 `/cart` 的 `page.tsx`，
+ * `robots: { index: false, follow: false }` 早就設定了，這裡沒跟著拿掉，
+ * 明顯是漏改，不是刻意讓 `/cart` 又能索引又同時 noindex 這種矛盾設計，拿掉。
  *
  * 2026-08-18：補上 `/faq`、`/media`（新增的兩個 SEO 內容頁，見
  * src/app/faq/page.tsx、src/app/media/page.tsx），這兩頁是靜態內容、不用另外
@@ -65,7 +72,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/media`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/news`, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   const productEntries: MetadataRoute.Sitemap = products.map((product) => ({

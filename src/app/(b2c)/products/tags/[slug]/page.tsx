@@ -21,6 +21,8 @@ import { requireB2cAccess } from "@/lib/b2c/access";
  * （見 src/components/editorial/ProductGrid.tsx），跟 /products 用同一套卡片
  * 視覺，但沒有篩選欄——這頁本身就是「某個標籤的結果」，不需要在結果頁裡再篩
  * 一次。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：同 /products。
  */
 export async function generateMetadata({
   params,
@@ -57,7 +59,7 @@ export default async function ProductTagPage({ params }: PageProps<"/products/ta
   const matches = sortByAvailability(products.map(toCardData));
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
       <TrackPageView eventName="b2c_tag_view" />
 
@@ -65,15 +67,15 @@ export default async function ProductTagPage({ params }: PageProps<"/products/ta
         <div className="flex flex-col gap-4">
           <Link
             href="/products"
-            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
           >
             ← ALL PRODUCTS
           </Link>
           <div>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               TAG
             </span>
-            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#2b2b2b]">
+            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620]">
               {tagName}
             </h1>
           </div>

@@ -27,6 +27,8 @@ import { requireB2cAccess } from "@/lib/b2c/access";
  * 加一段分類導言（見 src/lib/content/category-intros.ts），同一段文字也拿來
  * 當 meta description，維持「畫面上看得到的文字」跟「meta 裡宣稱的內容」
  * 一致（避免 description 寫一套、頁面內容是另一套的常見 SEO 反模式）。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：同 /products。
  */
 export async function generateMetadata({
   params,
@@ -58,26 +60,26 @@ export default async function ProductCategoryPage({ params }: PageProps<"/produc
   const matches = sortByAvailability(products.map(toCardData));
 
   return (
-    <main className="flex flex-1 flex-col bg-[#FAF9F6] font-[family-name:var(--ep-font-sans)] text-[#2B2B2B]">
+    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-16 sm:px-8 lg:px-10 lg:py-24">
         <div className="flex flex-col gap-4">
           <Link
             href="/products"
-            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+            className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
           >
             ← ALL PRODUCTS
           </Link>
           <div>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
               CATEGORY
             </span>
-            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#2b2b2b]">
+            <h1 className="mt-2 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620]">
               {categoryName}
             </h1>
           </div>
-          <p className="max-w-2xl text-sm font-light leading-[1.9] text-[#4a4a4a]">
+          <p className="max-w-2xl text-sm font-light leading-[1.9] text-[#536168]">
             {getCategoryIntro(categoryName)}
           </p>
         </div>

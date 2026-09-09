@@ -16,17 +16,25 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * src/lib/editorial/styles.ts 的直角方框（跟商品詳情頁同一套），CTA 改用
  * `editorialButtonSolid`（常駐填滿墨色，強調這是頁面最主要的下一步動作，
  * hover 才變點綴色，取代原本的海洋藍實色按鈕）。
+ *
+ * 2026-09-02（9/2 B2C QA 排程「驗證購物車」發現）：REMOVE 按鈕補上
+ * `aria-label={移除 ${item.name}}`——原本只有文字「REMOVE」，購物車裡有兩件
+ * 以上商品時，畫面上會有多顆文字完全一樣的按鈕，螢幕閱讀器使用者 Tab 過去
+ * 只會聽到重複的「REMOVE, button」，沒辦法分辨是要移除哪一項；同購物車的
+ * 增減數量按鈕（見下方）本來就有 `減少／增加 {name} 數量` 這種帶商品名稱的
+ * aria-label，也是 CartDrawer.tsx 移除按鈕原本就有的寫法，這裡補齊讓兩處
+ * 一致。
  */
 export function CartPageClient() {
   const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 border border-dashed border-[#2b2b2b]/20 px-12 py-20 text-center">
-        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+      <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           購物車是空的
         </h1>
-        <p className="text-sm font-light text-[#4a4a4a]">先去看看有哪些商品，喜歡的話加入購物車吧。</p>
+        <p className="text-sm font-light text-[#536168]">先去看看有哪些商品，喜歡的話加入購物車吧。</p>
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>
           瀏覽商品
         </Link>
@@ -36,19 +44,19 @@ export function CartPageClient() {
 
   return (
     <>
-      <div className="flex items-baseline justify-between border-b border-[#2b2b2b]/15 pb-6">
+      <div className="flex items-baseline justify-between border-b border-[#0B1620]/15 pb-6">
         <div className="flex flex-col gap-1">
-          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#8a8a8a]">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
             CART
           </span>
-          <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#2b2b2b]">
+          <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
             購物車
           </h1>
         </div>
         <button
           type="button"
           onClick={clearCart}
-          className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] transition-colors hover:text-[#3E5C6B]"
+          className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#FF5A36]"
         >
           CLEAR
         </button>
@@ -56,10 +64,10 @@ export function CartPageClient() {
 
       <ul className="flex flex-col">
         {items.map((item) => (
-          <li key={item.productId} className="flex flex-wrap items-center gap-4 border-b border-[#2b2b2b]/10 py-6">
+          <li key={item.productId} className="flex flex-wrap items-center gap-4 border-b border-[#0B1620]/10 py-6">
             <div
               aria-hidden="true"
-              className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F3F1EB] text-[10px] text-[#8a8a8a]"
+              className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
             >
               無商品圖片
             </div>
@@ -67,11 +75,11 @@ export function CartPageClient() {
             <div className="flex min-w-[8rem] flex-1 flex-col gap-1">
               <Link
                 href={`/products/${item.slug}`}
-                className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b] hover:text-[#3E5C6B]"
+                className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620] hover:text-[#FF5A36]"
               >
                 {item.name}
               </Link>
-              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                 NT$ {item.price}
               </span>
             </div>
@@ -97,14 +105,15 @@ export function CartPageClient() {
               </button>
             </div>
 
-            <span className="w-20 text-right font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#2b2b2b]">
+            <span className="w-20 text-right font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
               NT$ {item.price * item.quantity}
             </span>
 
             <button
               type="button"
               onClick={() => removeItem(item.productId)}
-              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] transition-colors hover:text-[#B42318]"
+              aria-label={`移除 ${item.name}`}
+              className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#B42318]"
             >
               REMOVE
             </button>
@@ -112,14 +121,14 @@ export function CartPageClient() {
         ))}
       </ul>
 
-      <div className="flex flex-col gap-4 border-t border-[#2b2b2b]/15 pt-6">
+      <div className="flex flex-col gap-4 border-t border-[#0B1620]/15 pt-6">
         <div className="flex items-baseline justify-between">
-          <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#2b2b2b]">總計</span>
-          <span className="font-[family-name:var(--ep-font-en)] text-xl tracking-widest text-[#2b2b2b]">
+          <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">總計</span>
+          <span className="font-[family-name:var(--ep-font-en)] text-xl tracking-widest text-[#0B1620]">
             NT$ {totalPrice}
           </span>
         </div>
-        <p className="text-xs font-light text-[#8a8a8a]">
+        <p className="text-xs font-light text-[#536168]">
           本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
         </p>
         <Link href="/checkout" className={`w-fit ${editorialButtonSolid}`}>

@@ -7,14 +7,21 @@ import BusinessHeader from "../../../catalog/business-header";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import { getNewsArticle } from "../../news-data";
 
+/**
+ * 2026-09（追加審查，同 P1-3「SEO noindex 與 sitemap 尚未完全對齊」發現的
+ * 同一類缺口）：這頁是需要登入才看得到的 B2B 最新消息文章，跟旁邊的
+ * `/business/catalog`、`/business/rfq` 一樣屬於私有內容，但原本完全沒設定
+ * `robots`——照同一批頁面已經在用的 `{ index: false, follow: false }` 補上。
+ */
 export async function generateMetadata(props: PageProps<"/business/news/article/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const article = getNewsArticle(slug);
-  if (!article) return { title: "找不到公告 | 元家企業採購服務" };
+  if (!article) return { title: "找不到公告 | 元家企業採購服務", robots: { index: false, follow: false } };
 
   return {
     title: `${article.title} | 元家企業採購服務`,
     description: article.summary,
+    robots: { index: false, follow: false },
   };
 }
 

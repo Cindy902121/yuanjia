@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/analytics/track";
 import { FINDER_STEPS } from "@/lib/product-finder/config";
 import { findProductsByAnswers, type FinderResultProduct } from "@/lib/product-finder/match";
+import { buildProductsUrl } from "@/lib/product-finder/build-url";
 import { AI_DEMO_ENTRIES } from "@/lib/product-finder/ai-demo";
 
 const LINE_URL = "https://page.line.me/cdd6667c?openQrModal=true";
@@ -138,19 +139,27 @@ export function B2CHelpWidget() {
     !isB2cException &&
     EXCLUDED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
+  /**
+   * 2026-09（P1-1，C 提出）：原本這個 filter 只在下面「查結果」的 effect 裡
+   * 算一次，結果畫面（下方 JSX）要組「查看全部」連結時沒有現成的值可用。
+   * 抽成一個共用的 derived value，兩邊算的是同一份東西，不是分開各自維護
+   * 一次容易兜不起來的邏輯。
+   */
+  const selectedAnswerKeys = useMemo(
+    () => FINDER_STEPS.map((s) => answers[s.key]).filter((key): key is string => Boolean(key) && key !== "any"),
+    [answers],
+  );
+
   useEffect(() => {
     if (step < FINDER_STEPS.length) {
       return;
     }
-    const selectedKeys = FINDER_STEPS.map((s) => answers[s.key]).filter(
-      (key): key is string => Boolean(key) && key !== "any",
-    );
 
     // resultsLoading 已經在 selectAnswer()（使用者點擊送出最後一題答案的那個
     // handler）裡設成 true，這裡不用也不應該再呼叫一次 setResultsLoading(true)
     // ——effect 本身只負責非同步查詢與 cancelled 的競態保護。
     let cancelled = false;
-    findProductsByAnswers(selectedKeys).then((products) => {
+    findProductsByAnswers(selectedAnswerKeys).then((products) => {
       if (!cancelled) {
         setResults(products);
         setResultsLoading(false);
@@ -159,7 +168,7 @@ export function B2CHelpWidget() {
     return () => {
       cancelled = true;
     };
-  }, [step, answers]);
+  }, [step, selectedAnswerKeys]);
 
   useEffect(() => {
     if (!open) {
@@ -261,7 +270,7 @@ export function B2CHelpWidget() {
         onClick={openPanel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2b2b2b] text-2xl text-white shadow-[0_8px_24px_rgba(43,43,43,0.3)] transition-colors hover:bg-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#0B1620] text-2xl text-white shadow-[0_8px_24px_rgba(43,43,43,0.3)] transition-colors hover:bg-[#FF5A36] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
       >
         <span aria-hidden="true">💬</span>
         <span className="sr-only">開啟需求協助小工具</span>
@@ -273,17 +282,17 @@ export function B2CHelpWidget() {
           role="dialog"
           aria-modal="false"
           aria-label="需求協助小工具"
-          className="absolute bottom-[calc(100%+0.75rem)] right-0 flex max-h-[32rem] w-80 flex-col overflow-hidden border border-[#2b2b2b]/15 bg-[#FAF9F6] shadow-[0_16px_40px_rgba(43,43,43,0.2)]"
+          className="absolute bottom-[calc(100%+0.75rem)] right-0 flex max-h-[32rem] w-80 flex-col overflow-hidden border border-[#0B1620]/15 bg-[#EAF4F8] shadow-[0_16px_40px_rgba(43,43,43,0.2)]"
         >
-          <div className="flex items-center justify-between border-b border-[#2b2b2b]/15 px-4 py-3">
-            <h2 className="font-[family-name:var(--ep-font-serif)] text-sm font-medium text-[#2b2b2b]">
+          <div className="flex items-center justify-between border-b border-[#0B1620]/15 px-4 py-3">
+            <h2 className="font-[family-name:var(--ep-font-serif)] text-sm font-medium text-[#0B1620]">
               {view === "menu" ? "需要幫忙嗎？" : view === "finder" ? "幫你找商品" : "常見問題"}
             </h2>
             <button
               type="button"
               onClick={closePanel}
               aria-label="關閉"
-              className="flex h-8 w-8 items-center justify-center text-[#4a4a4a] transition-colors hover:text-[#2b2b2b]"
+              className="flex h-8 w-8 items-center justify-center text-[#536168] transition-colors hover:text-[#0B1620]"
             >
               ✕
             </button>
@@ -299,7 +308,7 @@ export function B2CHelpWidget() {
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => trackEvent({ event_name: "b2c_line_click" })}
-                    className="flex min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">💚</span>
                     加 LINE 官方帳號詢問
@@ -309,7 +318,7 @@ export function B2CHelpWidget() {
                   <button
                     type="button"
                     onClick={enterFinder}
-                    className="flex w-full min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-left text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex w-full min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-left text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">🔍</span>
                     幫我找適合的商品
@@ -322,7 +331,7 @@ export function B2CHelpWidget() {
                       setView("ai");
                       trackEvent({ event_name: "b2c_ai_demo_open" });
                     }}
-                    className="flex w-full min-h-11 items-center gap-3 border border-[#2b2b2b]/20 px-3 text-left text-sm text-[#2b2b2b] transition-colors hover:border-[#2b2b2b]"
+                    className="flex w-full min-h-11 items-center gap-3 border border-[#0B1620]/20 px-3 text-left text-sm text-[#0B1620] transition-colors hover:border-[#0B1620]"
                   >
                     <span aria-hidden="true">🤖</span>
                     常見問題快速問答
@@ -336,14 +345,14 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={goBack}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
 
                 {step < FINDER_STEPS.length ? (
                   <>
-                    <p className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">
+                    <p className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">
                       {FINDER_STEPS[step].question}
                     </p>
                     <div role="group" aria-label={FINDER_STEPS[step].question} className="flex flex-wrap gap-2">
@@ -352,7 +361,7 @@ export function B2CHelpWidget() {
                           key={option.key}
                           type="button"
                           onClick={() => selectAnswer(option.key)}
-                          className="border border-[#2b2b2b]/25 px-3 py-1.5 text-xs text-[#4a4a4a] transition-colors hover:border-[#3E5C6B] hover:text-[#3E5C6B]"
+                          className="border border-[#0B1620]/25 px-3 py-1.5 text-xs text-[#536168] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
                         >
                           {option.label}
                         </button>
@@ -362,51 +371,82 @@ export function B2CHelpWidget() {
                       <button
                         type="button"
                         onClick={skipOptionalStep}
-                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                        className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                       >
                         SKIP
                       </button>
                     ) : null}
-                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+                    <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
                       STEP {step + 1} / {FINDER_STEPS.length}
                     </p>
                   </>
                 ) : (
                   <>
                     {resultsLoading ? (
-                      <p className="text-center text-sm font-light text-[#8a8a8a]">搜尋中…</p>
+                      <p className="text-center text-sm font-light text-[#536168]">搜尋中…</p>
                     ) : results.length === 0 ? (
-                      <p className="border border-dashed border-[#2b2b2b]/20 p-4 text-center text-sm font-light text-[#8a8a8a]">
+                      <p className="border border-dashed border-[#0B1620]/20 p-4 text-center text-sm font-light text-[#536168]">
                         無符合商品
                       </p>
                     ) : (
-                      <ul className="flex flex-col gap-2">
-                        {results.slice(0, 6).map((product) => (
-                          <li key={product.id}>
-                            <Link
-                              href={`/products/${product.slug}`}
-                              onClick={() => {
-                                trackEvent({
-                                  event_name: "b2c_product_finder_result_click",
-                                  product_id: product.id,
-                                });
-                                closePanel();
-                              }}
-                              className="flex items-center justify-between gap-2 border border-[#2b2b2b]/20 px-3 py-2 text-sm transition-colors hover:border-[#3E5C6B]"
-                            >
-                              <span className="text-[#2b2b2b]">{product.name}</span>
-                              <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
-                                NT$ {product.price}
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                      /**
+                       * 2026-09（P1-1，C 提出「B2C Finder 多筆結果導流」）：0／1／
+                       * 多筆分開處理。
+                       *
+                       * 1 筆維持原本「面板內顯示連結卡片，使用者自己點」，**不**
+                       * 改成答完自動導頁——上面檔頭註解（47-49 行）已經記錄過這是
+                       * 刻意的無障礙決定（自動導頁對鍵盤／螢幕閱讀器使用者是不可
+                       * 預期的畫面跳動），P1-1 沒有要求要推翻這個決定，只是要求
+                       * 「進入商品詳細頁」——現在唯一的互動路徑本來就是點這張卡片
+                       * 進商品詳情頁，語意上已經滿足，不需要另外加自動跳轉。
+                       *
+                       * 2 筆以上才是這次真正要補的：原本結果裁到最多 6 筆、裁掉
+                       * 的部分完全看不到、也沒有任何回到完整列表的路。現在多筆時
+                       * 額外加一個「查看全部 N 件商品」連結，用
+                       * buildProductsUrl()（src/lib/product-finder/build-url.ts）
+                       * 把已選答案轉成 `/products?category=..&tag=..&tag=..`，
+                       * 落地後篩選側欄會正確顯示這些條件為已選（不需要另外處理，
+                       * /products 頁本身已經會呈現），達成「保留使用者選擇條件」
+                       * ＋「多筆結果頁的篩選顯示」兩項待補。
+                       */
+                      <div className="flex flex-col gap-3">
+                        <ul className="flex flex-col gap-2">
+                          {results.slice(0, 6).map((product) => (
+                            <li key={product.id}>
+                              <Link
+                                href={`/products/${product.slug}`}
+                                onClick={() => {
+                                  trackEvent({
+                                    event_name: "b2c_product_finder_result_click",
+                                    product_id: product.id,
+                                  });
+                                  closePanel();
+                                }}
+                                className="flex items-center justify-between gap-2 border border-[#0B1620]/20 px-3 py-2 text-sm transition-colors hover:border-[#FF5A36]"
+                              >
+                                <span className="text-[#0B1620]">{product.name}</span>
+                                <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
+                                  NT$ {product.price}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                        {results.length > 1 ? (
+                          <Link
+                            href={buildProductsUrl(selectedAnswerKeys)}
+                            onClick={closePanel}
+                            className="flex min-h-11 items-center justify-center border border-[#0B1620]/25 text-xs tracking-widest text-[#0B1620] transition-colors hover:border-[#FF5A36] hover:text-[#FF5A36]"
+                          >
+                            查看全部 {results.length} 件商品 →
+                          </Link>
+                        ) : null}
+                      </div>
                     )}
                     <button
                       type="button"
                       onClick={resetFinder}
-                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#3E5C6B] hover:text-[#2b2b2b]"
+                      className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#C2401D] hover:text-[#0B1620]"
                     >
                       RESTART
                     </button>
@@ -420,18 +460,18 @@ export function B2CHelpWidget() {
                 <button
                   type="button"
                   onClick={() => setView("menu")}
-                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a] hover:text-[#3E5C6B]"
+                  className="w-fit font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] hover:text-[#FF5A36]"
                 >
                   ← BACK
                 </button>
-                <p className="text-xs font-light text-[#8a8a8a]">
+                <p className="text-xs font-light text-[#536168]">
                   以下是固定的常見問答內容，僅供展示，不會呼叫真正的 AI，也不會保存對話。
                 </p>
                 <dl className="flex flex-col gap-4">
                   {AI_DEMO_ENTRIES.map((entry) => (
-                    <div key={entry.question} className="flex flex-col gap-1 border-t border-[#2b2b2b]/10 pt-3 first:border-t-0 first:pt-0">
-                      <dt className="font-[family-name:var(--ep-font-serif)] text-sm text-[#2b2b2b]">Q：{entry.question}</dt>
-                      <dd className="text-sm font-light leading-6 text-[#4a4a4a]">A：{entry.answer}</dd>
+                    <div key={entry.question} className="flex flex-col gap-1 border-t border-[#0B1620]/10 pt-3 first:border-t-0 first:pt-0">
+                      <dt className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">Q：{entry.question}</dt>
+                      <dd className="text-sm font-light leading-6 text-[#536168]">A：{entry.answer}</dd>
                     </div>
                   ))}
                 </dl>
