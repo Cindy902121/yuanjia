@@ -40,11 +40,11 @@ function isEmail(value: string) {
 async function getAdminOnly() {
   const context = await getAdminContext();
 
-  if (!context.user) {
-    return { response: apiError("請先登入管理者帳號。", 401) };
-  }
   if (context.configurationError || context.databaseError) {
     return { response: apiError("目前無法確認管理者權限。", 503) };
+  }
+  if (!context.user) {
+    return { response: apiError("請先登入管理者帳號。", 401) };
   }
   if (context.role !== "admin") {
     return { response: apiError("你沒有管理者權限。", 403) };

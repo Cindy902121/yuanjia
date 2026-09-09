@@ -8,9 +8,21 @@
 pnpm test:contracts
 ```
 
-最近一次在目前分支執行 `pnpm test:contracts` 可重現 35 pass、0 fail、8 skipped
-（共 43 項）；被跳過的案例需要另外載入測試 server、Auth identity 或隔離資料庫。
+最近一次在本次 `main` 驗收基準執行 `pnpm test:contracts` 可重現
+52 pass、0 fail、9 skipped（共 61 項）；被跳過的案例需要另外載入測試 server、Auth
+identity 或隔離資料庫。
 測試 server、Auth identity 與 fixture 均限於本機隔離環境。
+
+2026-09-09 最新一次在本機 Supabase 與既有 Next test server 執行
+`pnpm test:contracts:real`：44 pass、0 fail、0 skipped；補回 Auth 重啟後的停用公司／
+第二公司 fixture identity 後，所有 real runner 案例通過。測試使用隔離資料，動態建立的資料會清理。
+
+2026-09-09 Admin 缺口回歸與人工驗收：
+
+- `node --test tests/contracts/admin-auth.test.mjs tests/contracts/admin-interactions.test.mjs`：14 pass。
+- `business_staff` 開啟 `/admin?tab=analytics` 後導向 `/admin/business?tab=b2b-products`，只顯示合法 B2B 模組。
+- 停止本機 Supabase Auth 後開啟 `/admin/business`，顯示 `503` 與「重試」；恢復 Auth 後按重試回到 B2B 商品頁。
+- 詳細案例、環境與受阻項目見 [Admin 共用互動規則與驗收案例](../../docs/admin-interaction-rules-and-acceptance.md)。
 
 另依 2026-08-30 團隊驗收回報，已在安全的 hosted／staging 環境完成並通過真實
 整合測試：匿名、B2C、B2B、Admin 權限矩陣、B2B 停用公司不能登入、停用商品不出現
@@ -26,9 +38,9 @@ payload、customer prefix fallback、文件／seed 契約、RLS server-only 邊�
 fixture 或隔離資料庫條件顯示為 skipped；`pnpm test:contracts:real` 會載入被 Git
 ignore 的 `.env.local`／`.env.test.local` 後實際執行這些案例。
 
-未提供本機整合環境時，整合測試會有 8 個 skipped：Admin 權限矩陣／管理流程 2 個，
-加上 24 個事件、停用公司、多規格 RFQ、跨公司隔離、seed rerun 與五家公司 Analytics
-遮罩各 1 個。完成下方本機 setup 後，這 8 個案例會全部執行。
+未提供本機整合環境時，整合測試會有 9 個 skipped：Admin 權限矩陣／管理流程 2 個，
+加上 24 個事件、停用公司、正式路由範圍、B2B Analytics 五家公司遮罩、多規格 RFQ、
+跨公司隔離與 seed rerun 各 1 個。完成下方本機 setup 後，這 9 個案例會全部執行。
 
 ## CI 品質閘門
 

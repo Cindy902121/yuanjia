@@ -5,6 +5,7 @@ import { isUuid } from "@/lib/api";
 import { requireAdminPage } from "@/lib/admin-page-auth";
 
 import { ProductEditor } from "../product-editor";
+import { AdminServiceUnavailable } from "../../../admin-service-unavailable";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -18,6 +19,7 @@ export default async function BusinessProductPage({
 }) {
   const { productId } = await params;
   if (!isUuid(productId)) notFound();
-  await requireAdminPage(`/admin/business/products/${productId}`);
+  const access = await requireAdminPage(`/admin/business/products/${productId}`);
+  if (access.unavailable) return <AdminServiceUnavailable />;
   return <ProductEditor productId={productId} />;
 }

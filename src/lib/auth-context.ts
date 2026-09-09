@@ -12,6 +12,16 @@ export type CompanyContext = {
 export const ADMIN_ROLES = ["admin", "business_staff"] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
+export function isSupabaseUnavailable(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { name?: unknown; status?: unknown };
+  return (
+    candidate.name === "AuthRetryableFetchError" ||
+    candidate.name === "AuthUnknownError" ||
+    (typeof candidate.status === "number" && candidate.status >= 500)
+  );
+}
+
 export async function getSessionContext() {
   const supabase = await createServerClient();
   const {
@@ -52,7 +62,9 @@ export async function getAdminContext() {
       isAdmin: false,
       role: null,
       configurationError: null,
-      databaseError: null,
+      databaseError: isSupabaseUnavailable(session.authError)
+        ? session.authError
+        : null,
     };
   }
 

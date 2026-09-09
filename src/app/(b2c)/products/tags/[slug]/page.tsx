@@ -7,7 +7,6 @@ import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { EditorialProductGrid } from "@/components/editorial/ProductGrid";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
-import { requireB2cAccess } from "@/lib/b2c/access";
 
 /**
  * /products/tags/[slug] 頁面。
@@ -48,7 +47,6 @@ export async function generateMetadata({
 }
 
 export default async function ProductTagPage({ params }: PageProps<"/products/tags/[slug]">) {
-  await requireB2cAccess();
   const { slug } = await params;
   const supabase = await createClient();
   const [tag, products] = await Promise.all([

@@ -530,11 +530,12 @@ test(
     const rfqsResponse = await request("/api/admin/rfqs", { headers: { cookie: adminCookies } });
     assert.equal(rfqsResponse.status, 200);
     const rfqsPayload = await json(rfqsResponse);
-    assert.ok((rfqsPayload.rfqs ?? []).some((rfq) => rfq.id === rfqPayload.rfqId));
+    const createdRfq = (rfqsPayload.rfqs ?? []).find((rfq) => rfq.id === rfqPayload.rfqId);
+    assert.ok(createdRfq?.updated_at);
     const rfqUpdate = await request("/api/admin/rfqs", {
       method: "PATCH",
       headers: { cookie: adminCookies },
-      body: JSON.stringify({ rfq_id: rfqPayload.rfqId, status: "processing" }),
+      body: JSON.stringify({ rfq_id: rfqPayload.rfqId, status: "processing", expected_updated_at: createdRfq.updated_at }),
     });
     assert.equal(rfqUpdate.status, 200);
     assert.equal((await json(rfqUpdate)).rfq.status, "processing");
@@ -553,7 +554,7 @@ test(
     assert.ok(productId && rfqId, "the event contract needs a B2B product and RFQ fixture");
     const b2bEventData = {
       b2b_search_filter: { filter_type: "tag", selected_option_ids: ["b2b-fish"], result_count: 1 },
-      b2b_product_finder_answer: { question_key: "tag", option_id: "b2b-fish" },
+      b2b_product_finder_answer: { question_key: "primary_channel", option_id: "wholesale" },
       b2b_product_finder_result_click: { product_id: productId },
       b2b_rfq_add: { product_id: productId },
       b2b_rfq_submit: { rfq_id: rfqId },
