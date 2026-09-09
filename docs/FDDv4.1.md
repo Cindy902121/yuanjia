@@ -3,11 +3,11 @@
 ## Functional & Technical Design Document
 
 文件版本：第四版增補（MVP v4.1）
-文件日期：2026-09-02
+文件日期：2026-09-09
 技術基準：Next.js、TypeScript、Supabase
 Feature Complete：2026-09-10
 
-本次修訂重點：同步 MVP v4.1 的路由、Auth、B2B Analytics schema 與 Admin 維護規則；Admin 建立企業會員時直接輸入完整 `client_code`；B2B session 由伺服器阻擋所有 B2C 商品、購物車與結帳路徑；前綴規則只由 migration／seed 維護；`/faq` 與 `/media` 列入 MVP 核心；記錄學生專題對 Supabase Auth 洩漏密碼防護 warning 的忽略決策。
+本次修訂重點：同步 MVP v4.1 的正式路由範圍、Auth、B2B Analytics schema 與 Admin 維護規則；Admin 建立企業會員時直接輸入完整 `client_code`；B2B session 由伺服器阻擋所有 B2C 商品、購物車與結帳路徑；前綴規則只由 migration／seed 維護；`/faq`、`/media`、`/news` 與內容詳情列入 MVP 核心；記錄學生專題對 Supabase Auth 洩漏密碼防護 warning 的忽略決策。
 
 ---
 
@@ -16,8 +16,8 @@ Feature Complete：2026-09-10
 ### 1.1 架構目標
 
 - 使用單一 Next.js 專案承載 B2C 公開入口、B2B 私有專區與內部管理後台。
-- 根目錄為 B2C；B2B 使用 /business；管理者使用 /admin。
-- `/faq` 與 `/media` 為 B2C MVP 的公開核心內容頁。
+- 根目錄為 B2C；`/business` 是 B2B 登入後內容首頁，企業型錄位於 `/business/catalog`；管理者使用 /admin。
+- `/faq`、`/media`、`/news` 及其公開詳情頁為 B2C MVP 的核心內容頁。
 - 使用同一 Supabase 專案，但以資料表與 RLS 隔離 B2C、B2B、分析與管理資料。
 - B2B 公司使用一個 Auth identity 搭配公司共用密碼。
 - B2B 對外只使用 `Z/E/W`＋6 碼數字客戶代碼與公司共用密碼；Supabase Auth 的 Email 僅作伺服器端內部 identity。
@@ -65,15 +65,26 @@ flowchart LR
 | /products/tags/[slug] | B2C 標籤產品列表 | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許 |
 | /cart | B2C 購物車 | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許展示 |
 | /checkout | B2C 結帳（建立模擬訂單） | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許展示 |
+| /about | 公開品牌與企業內容 | 允許 | 允許 | 允許 | 允許 |
 | /faq | FAQ 公開內容 | 允許 | 允許 | 允許 | 允許 |
 | /media | 媒體公開內容 | 允許 | 允許 | 允許 | 允許 |
-| /business | B2B 專區入口 | 導向登入 | 返回 B2C | 導向型錄 | 不使用 |
+| /media/[slug] | 媒體公開詳情 | 允許 | 允許 | 允許 | 允許 |
+| /news | 元家公開最新消息 | 允許 | 允許 | 允許 | 允許 |
+| /news/[slug] | 元家公開消息詳情 | 允許 | 允許 | 允許 | 允許 |
+| /business | B2B 內容首頁 | 導向登入 | 返回 B2C | 允許 | 導向 /admin |
+| /business/about | B2B 品牌故事入口 | 導向登入 | 返回 B2C | 轉至 /business/about/company | 導向 /admin |
+| /business/about/[slug] | B2B 品牌故事內容 | 導向登入 | 返回 B2C | 允許 | 導向 /admin |
+| /business/news | B2B 企業消息入口 | 導向登入 | 返回 B2C | 轉至 /business/news/activities | 導向 /admin |
+| /business/news/{activities,offers,yuanjia} | B2B 企業消息分類 | 導向登入 | 返回 B2C | 允許 | 導向 /admin |
+| /business/news/article/[slug] | B2B 企業消息詳情 | 導向登入 | 返回 B2C | 允許 | 導向 /admin |
 | /business/catalog | 私有型錄 | 導向登入 | 拒絕 | 允許 | 不使用 |
 | /business/product-finder | B2B 需求篩選器 | 導向登入 | 拒絕 | 允許 | 不使用 |
 | /business/rfq | 詢價籃與已送出資料 | 導向登入 | 拒絕 | 允許自己的公司資料 | 後台查看 |
 | /business/lead | 公開企業合作表單 | 允許 | 允許 | 不從 B2B 導覽進入 | 允許展示 |
 | /admin | 內部管理後台 | 拒絕 | 拒絕 | 拒絕 | 允許 |
 | /admin/business | B2B 管理後台捷徑，預設開啟型錄頁籤 | 拒絕 | 拒絕 | 拒絕 | 允許 |
+
+> `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 是非 MVP 預覽／原型路徑，只保留直接預覽用途，設定 `noindex`，不納入正式權限、導航、sitemap 或驗收。
 
 ### 2.2 角色定義
 
@@ -101,7 +112,7 @@ sequenceDiagram
     API->>AUTH: 以 B2C Email 或公司內部 Email 驗證 identity
     AUTH-->>API: 回傳Auth session
     API-->>L: 回傳role與redirectTo；session寫入secure cookie
-    L->>L: B2C留在B2C，B2B導向型錄
+    L->>L: B2C留在B2C，B2B導向 /business/catalog；可返回 /business 內容首頁
 ```
 
 ### 3.2 B2B 公司級身份
@@ -702,6 +713,9 @@ MVP 不建立公開寫入 API。前端只做欄位驗證與成功畫面，不保
 | / | Hero、分類、品牌、食安、品質、企業合作入口 |
 | /faq | 常見問題與使用說明；MVP 公開核心內容 |
 | /media | 媒體與品牌內容；MVP 公開核心內容 |
+| /media/[slug] | 媒體報導深度詳情；MVP 公開核心內容 |
+| /news | 元家第一手最新消息；MVP 公開核心內容 |
+| /news/[slug] | 元家消息詳情；MVP 公開核心內容 |
 | /products | 搜尋、分類、列表、無結果 |
 | /products/categories/[slug] | B2C 分類名稱、分類產品列表、無符合商品、SEO metadata |
 | /products/tags/[slug] | B2C 標籤名稱、標籤產品列表、無符合商品、SEO metadata |
@@ -716,7 +730,9 @@ MVP 不建立公開寫入 API。前端只做欄位驗證與成功畫面，不保
 
 | 頁面 | 功能與狀態 |
 |---|---|
-| /business | B2B 導覽與登入後入口 |
+| /business | B2B 登入後內容首頁與企業型錄入口 |
+| /business/about、/business/about/[slug] | 品牌故事、企業介紹、供應、品質與永續內容；登入後 noindex |
+| /business/news、/business/news/{activities,offers,yuanjia}、/business/news/article/[slug] | 企業消息分類與文章；登入後 noindex |
 | /business/catalog | 搜尋、分類、品牌、產品編號、B2B 標籤、型錄與詢價籃 |
 | /business/product-finder | 兩層通路優先 B2B 需求篩選、返回分類、重新選擇與通路商品結果 |
 | /business/rfq | 詢價品項、數量、單位、備註、送出成功 |
@@ -765,7 +781,9 @@ MVP 不建立公開寫入 API。前端只做欄位驗證與成功畫面，不保
 
 ### 9.1 SEO
 
-- 公開 B2C 頁面輸出 title、description、canonical；`/faq` 與 `/media` 為 MVP 核心且可索引。
+- 公開 B2C 頁面輸出 title、description、canonical；`/faq`、`/media`、`/news` 及其公開詳情頁為 MVP 核心且可索引。
+- `/business`、`/business/about/*` 與 `/business/news/*` 是有效 B2B session 才能查看的私有內容；設定 `noindex` 且不加入 sitemap。`/business` 是內容首頁，不是轉址型錄的純入口。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 是非 MVP 預覽／原型；設定 `noindex` 且不加入 sitemap。
 - `/products/tags/[slug]` 使用標籤名稱產生 title、description、canonical；有 active 商品時列入 sitemap。
 - 建立 sitemap 與 robots。
 - B2C 需求釐清浮動工具、`/cart`、`/checkout`、B2B 型錄、B2B 需求篩選器、詢價與 admin 設定 noindex。
@@ -836,6 +854,9 @@ B2C 與 B2B 即使有相同顯示名稱，也建立為不同的標籤資料，�
 - B2B 開啟任一 B2C 商品、分類、標籤、商品詳情、`/cart` 或 `/checkout` 時被伺服器導回 `/business`；`/api/b2c/products` 回傳 403。
 - B2C 頁面顯示 B2CHelpWidget；B2B 與 Admin 不顯示。
 - B2B 開啟 /business/product-finder 時要求有效 B2B session。
+- `/business`、`/business/about/*` 與 `/business/news/*` 的登入、B2C、Admin 導向及有效 B2B session 行為符合路由規格；B2B 內容頁不進 sitemap。
+- `/news`、`/news/[slug]`、`/media` 與 `/media/[slug]` 可由公開訪客瀏覽並產生正確 metadata，且列入 sitemap。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 僅作預覽／原型，設定 noindex，不列入正式導航、sitemap 或 MVP 驗收。
 - 停用公司不能登入。
 - Admin 可在建立企業帳號時設定初始密碼，並可啟用／停用企業會員；目前尚未提供前端密碼重設按鈕。
 - Admin 可從前端輸入完整 `client_code`，後端驗證 `^[ZEW][0-9]{6}$` 與唯一性並完成 Auth／`companies` 綁定，不自動產生代碼。
