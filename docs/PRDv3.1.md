@@ -3,12 +3,12 @@
 ## Product Requirements Document
 
 文件版本：第三版增補（MVP v3.1）
-文件日期：2026-09-02
-最近更新：2026-09-02（B2B 邊界阻擋、完整 client_code、Analytics schema 與文件對齊）
+文件日期：2026-09-09
+最近更新：2026-09-09（正式 MVP 路由、FDD、sitemap 與驗收契約對齊）
 Feature Complete：2026-09-10
 適用對象：產品負責人、三人開發團隊、展示與驗收人員
 
-本次修訂重點：補充 `/faq`、`/media` MVP 核心範圍；確定 Admin 建立企業會員時直接輸入完整 `client_code`；明確阻擋 B2B session 進入 B2C 商品、購物車、結帳頁面與商品 API；同步 B2B Analytics schema、篩選與匯出規則；前綴規則只由 migration／seed 維護；記錄學生專題對 Supabase Auth 洩漏密碼防護 warning 的忽略決策。
+本次修訂重點：補充正式 MVP 的 B2B 內容首頁、品牌故事與企業消息路由，以及 B2C `/news`／`/media` 詳情路由；明確將首頁／型錄預覽與原型頁排除於 MVP；同步路由權限、metadata、sitemap 與驗收邊界；並保留既有的完整 `client_code`、B2B 邊界阻擋、Analytics schema、前綴規則與 Supabase Auth warning 忽略決策。
 
 ---
 
@@ -21,8 +21,10 @@ Feature Complete：2026-09-10
 ### 1.1 MVP 原則
 
 - / 是 B2C 公開首頁與主要品牌入口。
-- /business 是既有企業客戶的私有專區。
+- /business 是有效 B2B session 使用的內容首頁；企業型錄仍位於 /business/catalog。
 - /faq 與 /media 是 B2C MVP 的公開核心內容頁。
+- /news 與 /media 的列表及詳情頁是 B2C 公開內容核心；前者發布元家第一手消息，後者整理媒體報導。
+- /business/about（含 `[slug]`）與 /business/news（含分類及文章）是 B2B 登入後可用的品牌與企業消息內容。
 - B2B 權限與資料歸屬以公司為單位，不追蹤個別採購、門市或分店登入者。
 - B2B 型錄不顯示價格；詢價單由公司提出，後續由既有業務與企業窗口聯絡。
 - B2C 著重購物體驗、食品安全、認證、品質與產地內容。
@@ -30,6 +32,14 @@ Feature Complete：2026-09-10
 - 內部管理後台提供 B2C 商品、B2B 型錄上下架、B2C 展示訂單狀態與 B2B 企業會員管理。
 - B2B 企業帳號由 Admin 頁面發起建立，實際由伺服器建立 Supabase Auth identity 與 `companies` 資料，避免人工同步錯誤。
 - 2026-09-10 前完成 MVP 並凍結；之後只修正 Bug、視覺、響應式、效能、無障礙與文件。
+
+### 1.2 正式 MVP 路由範圍決策（2026-09-08）
+
+- 正式 MVP 納入 `/business` B2B 內容首頁、`/business/about` 與 `/business/about/[slug]` 品牌故事、`/business/news`、`/business/news/{activities,offers,yuanjia}` 與 `/business/news/article/[slug]` 企業消息內容。
+- 正式 MVP 納入公開 B2C `/news`、`/news/[slug]`、`/media` 與 `/media/[slug]`；`/news` 是元家第一手消息，`/media` 是媒體報導整理。
+- B2B 內容頁與 B2B 型錄、需求篩選、詢價一樣需要有效 B2B session，設定 `noindex`，不進 XML sitemap。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 保留作 UI 預覽／原型，不是正式產品頁；不列入正式路由權限、文件 sitemap、XML sitemap 或 MVP 驗收，且所有預覽路徑設定 `noindex`。
+- `/business` 的登入分流意義改為「進入 B2B 內容首頁」；B2B 要進型錄時由首頁導覽前往 `/business/catalog`，不再把 `/business` 定義成自動轉址至型錄的純入口。
 
 ## 2. 背景、問題與機會
 
@@ -131,9 +141,18 @@ flowchart TD
 | /products/[slug] | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許 |
 | /cart | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許展示 |
 | /checkout | 允許 | 允許 | 伺服器阻擋並導向 /business | 允許展示 |
+| /about | 允許 | 允許 | 允許 | 允許 |
 | /faq | 允許 | 允許 | 允許 | 允許 |
+| /news | 允許 | 允許 | 允許 | 允許 |
+| /news/[slug] | 允許 | 允許 | 允許 | 允許 |
 | /media | 允許 | 允許 | 允許 | 允許 |
-| /business | 導向登入 | 返回 B2C | 導向型錄 | 不提供 B2B 權限 |
+| /media/[slug] | 允許 | 允許 | 允許 | 允許 |
+| /business | 導向登入 | 導回 / | 允許，顯示 B2B 內容首頁 | 導向 /admin |
+| /business/about | 導向登入 | 導回 / | 允許，轉至 /business/about/company | 導向 /admin |
+| /business/about/[slug] | 導向登入 | 導回 / | 允許 | 導向 /admin |
+| /business/news | 導向登入 | 導回 / | 允許，轉至 /business/news/activities | 導向 /admin |
+| /business/news/{activities,offers,yuanjia} | 導向登入 | 導回 / | 允許 | 導向 /admin |
+| /business/news/article/[slug] | 導向登入 | 導回 / | 允許 | 導向 /admin |
 | /business/catalog | 導向登入 | 拒絕 | 允許 | 不提供 B2B 權限 |
 | /business/product-finder | 導向登入 | 拒絕 | 允許 | 不提供 B2B 權限 |
 | /business/rfq | 導向登入 | 拒絕 | 允許 | 可由後台查看 |
@@ -141,7 +160,9 @@ flowchart TD
 | /admin | 拒絕 | 拒絕 | 拒絕 | 允許 |
 | /admin/business | 拒絕 | 拒絕 | 拒絕 | 允許，預設開啟 B2B 型錄管理 |
 
-### 5.2 MVP Sitemap
+> `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 是非 MVP 預覽／原型路徑，不納入本表的正式角色權限；它們只保留直接預覽用途並設定 `noindex`。
+
+### 5.2 MVP 路由樹與 Sitemap 邊界
 
 ```text
 /
@@ -158,7 +179,11 @@ flowchart TD
 ├── /faq
 │   └── 常見問題
 ├── /media
-│   └── 媒體與內容
+│   └── /media/[slug]
+│       └── 媒體報導深度內容
+├── /news
+│   └── /news/[slug]
+│       └── 元家第一手消息
 ├── /cart
 │   └── 購物車
 ├── /checkout
@@ -168,6 +193,13 @@ flowchart TD
 ├── /login
 │   └── 統一登入
 ├── /business
+│   ├── B2B 內容首頁（登入後、noindex）
+│   ├── /business/about
+│   │   └── /business/about/[slug]（品牌故事，登入後、noindex）
+│   ├── /business/news
+│   │   ├── /business/news/{activities,offers,yuanjia}
+│   │   └── /business/news/article/[slug]
+│   │       └── 企業消息（登入後、noindex）
 │   ├── /business/catalog
 │   │   └── B2B 私有型錄
 │   ├── /business/product-finder
@@ -180,9 +212,14 @@ flowchart TD
         └── B2B 管理後台捷徑（預設開啟 B2B 型錄頁籤）
 ```
 
+非 MVP 預覽路徑（不列入上方正式產品樹）：`/business/homepage-preview`、`/business/prototype-home`、`/catalog-preview/*`。
+
 Sitemap 邊界：
 
 - B2B 商品規格查看整合在 /business/catalog，不新增 B2B 商品詳情路由。
+- `/news`、`/news/[slug]`、`/media` 與 `/media/[slug]` 是公開、可索引的 B2C 內容，加入程式 sitemap。
+- `/business` 及其 `about`／`news` 內容路由是登入後私有頁面，雖在 MVP 路由樹內，仍設定 `noindex` 且不加入程式 sitemap。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 只作預覽／原型，設定 `noindex`，不加入程式 sitemap。
 - 結帳成功與詢價送出成功為頁面狀態，不新增獨立頁面。
 - B2C 需求釐清工具以全站浮動工具的對話框呈現，不新增可索引的工具路由。
 - B2B 需求篩選器為登入後的私有頁面，不可被搜尋引擎索引。
@@ -297,6 +334,9 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 | /about 品牌與信任內容 | 了解企業、食品安全、品質與產地 | 查看商品 | /products |
 | /faq 常見問題 | 查看常見問題與使用說明 | 查看商品 | /products |
 | /media 媒體與內容 | 查看媒體與品牌內容 | 查看商品 | /products |
+| /media/[slug] 媒體詳情 | 閱讀媒體報導深度整理 | 查看商品 | /products |
+| /news 最新消息 | 閱讀元家第一手消息 | 閱讀內容 | /news/[slug] |
+| /news/[slug] 消息詳情 | 閱讀公告、活動與產品資訊 | 查看商品 | /products |
 | /products 商品列表 | 搜尋、分類、標籤與篩選商品 | 查看商品 | /products/[slug] |
 | /products/tags/[slug] 標籤產品列表 | 查看擁有指定標籤的所有 B2C 商品 | 查看商品 | /products/[slug] |
 | /products/[slug] 商品詳情 | 查看規格、價格、產地、保存方式與產品標籤 | 加入購物車 | /cart |
@@ -309,7 +349,9 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 
 | 頁面 | 使用者目的 | 主要 CTA | 下一步 |
 |---|---|---|---|
-| /business 企業專區入口 | 進入既有企業客戶功能 | 進入企業型錄 | /business/catalog |
+| /business B2B 內容首頁 | 查看品牌、食品安全、永續與企業採購入口 | 進入企業型錄 | /business/catalog |
+| /business/about 品牌故事 | 查看企業介紹、供應、品質與永續內容 | 進入企業型錄 | /business/catalog |
+| /business/news 企業消息 | 查看活動、元家資訊與大宗專案 | 閱讀消息 | /business/news/article/[slug] |
 | /business/catalog 私有型錄 | 搜尋、篩選並查看產品規格 | 加入詢價籃 | /business/rfq |
 | /business/product-finder 需求篩選器 | 透過主要通路與分類取得推薦商品 | 查看通路推薦結果 | 商品詳情、規格與 /business/rfq |
 | /business/rfq 詢價籃 | 確認產品、數量、單位與備註 | 送出詢價 | 詢價送出成功狀態 |
@@ -529,8 +571,10 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 
 ### 7.1 SEO
 
-- 可索引頁面：/、/products、B2C 商品詳情、B2C 分類頁、B2C 標籤產品列表、/about、/faq、/media、/business/lead。
+- 可索引頁面：/、/products、B2C 商品詳情、B2C 分類頁、B2C 標籤產品列表、/about、/faq、/media、/media/[slug]、/news、/news/[slug]、/business/lead。
 - B2C 需求釐清浮動工具、/cart、/checkout、B2B 型錄、B2B 需求篩選器、詢價與管理後台禁止索引。
+- `/business`、`/business/about/*` 與 `/business/news/*` 為 B2B 登入後內容，禁止索引且不進 sitemap；`/business` 是內容首頁，不是轉址型錄的空入口。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 為非 MVP 預覽／原型，禁止索引且不進 sitemap。
 - 公開頁面設定 title、description、canonical、sitemap 與 robots。
 - 商品頁提供 Product 結構化資料。
 - 根目錄提供 Organization 結構化資料。
@@ -584,29 +628,32 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 ### 9.1 B2C
 
 1. 訪客可瀏覽首頁、分類、搜尋、商品詳情、FAQ、媒體與食安／品質內容。
-2. 商品詳情可查看產地、保存、認證／品質資訊。
-3. 訪客可加入購物車、調整數量、由購物車下方進入結帳並建立展示用模擬訂單。
-4. B2C 行為事件可被保存或送至 GA4，且不含個資。
-5. 商品詳情顯示多個產品標籤；點擊標籤可進入對應產品列表，無結果顯示「無符合商品」。
-6. B2C 所有頁面右下角可開啟浮動工具，並可完成固定需求篩選、開啟 Line@ 或查看固定 AI 示範。
-7. B2C 需求篩選支援返回與重新開始；多項結果到產品列表，單一結果到商品詳情。
-8. Admin 可切換 B2C 商品上架／下架，前台只顯示 `is_active = true` 的商品。
-9. Admin 可查看 B2C 展示訂單品項與收件資訊，並更新訂單狀態。
+2. `/news` 與 `/news/[slug]` 可瀏覽元家第一手消息；`/media` 與 `/media/[slug]` 可瀏覽媒體報導及深度內容，列表與詳情均有正確 metadata。
+3. 商品詳情可查看產地、保存、認證／品質資訊。
+4. 訪客可加入購物車、調整數量、由購物車下方進入結帳並建立展示用模擬訂單。
+5. B2C 行為事件可被保存或送至 GA4，且不含個資。
+6. 商品詳情顯示多個產品標籤；點擊標籤可進入對應產品列表，無結果顯示「無符合商品」。
+7. B2C 所有頁面右下角可開啟浮動工具，並可完成固定需求篩選、開啟 Line@ 或查看固定 AI 示範。
+8. B2C 需求篩選支援返回與重新開始；多項結果到產品列表，單一結果到商品詳情。
+9. Admin 可切換 B2C 商品上架／下架，前台只顯示 `is_active = true` 的商品。
+10. Admin 可查看 B2C 展示訂單品項與收件資訊，並更新訂單狀態。
 
 ### 9.2 B2B
 
 1. 公司可使用客戶代碼與共用密碼登入。
 2. 不同瀏覽器使用同一公司帳密時，詢價與行為皆歸屬同一公司。
-3. B2B 可查看私有型錄、搜尋、篩選與產品規格。
-4. B2B 可建立詢價籃並填寫數量、單位與備註。
-5. 詢價單可保存於網站資料庫並在管理後台查看。
-6. B2B 價格不會在型錄或 API 回傳。
-7. 管理者可在企業清單查看客戶代碼前綴所對應的級距；前綴規則目前由 migration／種子資料維護。
-8. B2B 產品可套用既有通路標籤，需求篩選器可在登入後完成兩層通路選擇並顯示推薦結果。
-9. B2B 標籤與需求篩選結果不會公開給未登入使用者或搜尋引擎。
-10. Admin 可切換 B2B 型錄商品上架／下架；下架後不出現在型錄或需求篩選結果。
-11. Admin 可從前端表單輸入完整 `client_code`，系統驗證 `^[ZEW][0-9]{6}$` 與唯一性後完成 Auth user 與 `companies` 綁定，不自動產生代碼。
-12. Admin 可啟用或停用企業會員；停用帳號不得建立 B2B session，但既有詢價紀錄保留。
+3. B2B 可進入 `/business` 內容首頁，並查看 `/business/about` 品牌故事與 `/business/news` 分類／文章內容。
+4. 未登入、B2C 會員與管理者進入 B2B 內容路由時，依路由規格導向登入、B2C 首頁或管理後台；有效 B2B session 可正常查看。
+5. B2B 可查看私有型錄、搜尋、篩選與產品規格。
+6. B2B 可建立詢價籃並填寫數量、單位與備註。
+7. 詢價單可保存於網站資料庫並在管理後台查看。
+8. B2B 價格不會在型錄或 API 回傳。
+9. 管理者可在企業清單查看客戶代碼前綴所對應的級距；前綴規則目前由 migration／種子資料維護。
+10. B2B 產品可套用既有通路標籤，需求篩選器可在登入後完成兩層通路選擇並顯示推薦結果。
+11. B2B 標籤與需求篩選結果不會公開給未登入使用者或搜尋引擎。
+12. Admin 可切換 B2B 型錄商品上架／下架；下架後不出現在型錄或需求篩選結果。
+13. Admin 可從前端表單輸入完整 `client_code`，系統驗證 `^[ZEW][0-9]{6}$` 與唯一性後完成 Auth user 與 `companies` 綁定，不自動產生代碼。
+14. Admin 可啟用或停用企業會員；停用帳號不得建立 B2B session，但既有詢價紀錄保留。
 
 ### 9.3 分析與權限
 
@@ -625,6 +672,8 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 ### 9.4 邊界與錯誤狀態
 
 - 錯誤登入、停用公司、無權限路由、空購物車、空詢價籃、無搜尋結果與 API 錯誤皆有明確提示。
+- `/business/homepage-preview`、`/business/prototype-home` 與 `/catalog-preview/*` 僅作預覽／原型；不得列入正式導航、sitemap 或 MVP 驗收。
+- `/cart`、`/checkout`、所有 B2B 私有內容／型錄／詢價／後台頁面，以及所有預覽／原型頁均為 `noindex`；公開 `/news`、`/news/[slug]`、`/media`、`/media/[slug]` 必須列入 sitemap。
 - 不存在團購專區、客訴模組、CRM、ERP 串接與防截圖功能。
 - 結帳頁使用「結帳」名稱，但建立的仍是展示用模擬訂單，不被誤認為真實交易。
 - 2026-09-10 後禁止新增功能，只允許修正與微調。
