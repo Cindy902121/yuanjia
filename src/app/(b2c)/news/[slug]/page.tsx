@@ -169,7 +169,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[slug
           <FadeInSection>
             <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">{article.tableTitle}</h2>
           </FadeInSection>
-          <FadeInSection className="overflow-x-auto">
+          <FadeInSection className="overflow-x-auto" role="region" aria-label={`${article.tableTitle}，可左右捲動`} tabIndex={0}>
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr>

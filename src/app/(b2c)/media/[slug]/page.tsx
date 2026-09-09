@@ -190,7 +190,7 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
             <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
               名詞解釋
             </span>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="名詞解釋表格，可左右捲動" tabIndex={0}>
               <table className="w-full min-w-[520px] border-collapse text-sm">
                 <thead>
                   <tr>
@@ -227,7 +227,7 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
             <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-medium text-[#0B1620]">產業／社會影響評估</h2>
           </FadeInSection>
 
-          <FadeInSection className="overflow-x-auto">
+          <FadeInSection className="overflow-x-auto" role="region" aria-label="產業／社會影響評估表格，可左右捲動" tabIndex={0}>
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
                 <tr>

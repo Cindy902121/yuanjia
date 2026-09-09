@@ -46,7 +46,7 @@ function renderBlock(block: FaqAnswerBlock, key: number) {
   }
 
   return (
-    <div key={key} className="overflow-x-auto">
+    <div key={key} className="overflow-x-auto" role="region" aria-label="對照表格，可左右捲動" tabIndex={0}>
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
           <tr>
