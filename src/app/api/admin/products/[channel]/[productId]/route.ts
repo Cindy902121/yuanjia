@@ -48,6 +48,8 @@ export async function PATCH(
   if (guard.response) return guard.response;
 
   const body = await readJson(request);
+  const expected = body && typeof body === "object" ? (body as Record<string, unknown>).expected_updated_at : undefined;
+  if (typeof expected !== "string" || !Number.isFinite(Date.parse(expected))) return apiError("請重新讀取商品後再更新。", 428);
   const parsed = parseProductInput(body, channel, "update");
   if (!parsed.payload) {
     return apiError(parsed.error ?? "商品資料格式不正確。", 400);
@@ -72,6 +74,7 @@ export async function PATCH(
     .from(PRODUCT_TABLES[channel])
     .update(parsed.payload)
     .eq("id", productId)
+    .eq("updated_at", expected)
     .select(ADMIN_PRODUCT_FIELDS[channel])
     .maybeSingle();
 
@@ -82,7 +85,7 @@ export async function PATCH(
     return apiError("目前無法更新商品上架狀態。", 503);
   }
   if (!product) {
-    return apiError("找不到指定商品。", 404);
+    return apiError("此資料已被更新或已不存在，請重新讀取後再操作。", 409);
   }
 
   return json({ channel, product });

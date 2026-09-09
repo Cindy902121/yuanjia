@@ -17,6 +17,7 @@ export async function PATCH(
   }
 
   const body = (await readJson(request)) as {
+    expected_updated_at?: unknown;
     name?: unknown;
     is_active?: unknown;
   } | null;
@@ -38,11 +39,13 @@ export async function PATCH(
     return apiError("沒有可更新的企業資料。", 400);
   }
 
+  if (typeof body?.expected_updated_at !== "string" || !Number.isFinite(Date.parse(body.expected_updated_at))) return apiError("請重新讀取企業會員後再更新。", 428);
   const admin = createAdminClient();
   const { data: company, error } = await admin
     .from("companies")
     .update(updates)
     .eq("id", companyId)
+    .eq("updated_at", body.expected_updated_at)
     .select("id, client_code, name, is_active, updated_at")
     .maybeSingle();
 
@@ -50,7 +53,7 @@ export async function PATCH(
     return apiError("目前無法更新企業會員。", 503);
   }
   if (!company) {
-    return apiError("找不到指定企業會員。", 404);
+    return apiError("此資料已被更新或已不存在，請重新讀取後再操作。", 409);
   }
 
   return json({ company });

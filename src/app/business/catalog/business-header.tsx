@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,7 +18,7 @@ type BusinessHeaderProps = {
 /**
  * B2B 專屬 Header。公司名稱由受保護的型錄頁傳入；詢價單件數由同頁工作區透過瀏覽器事件同步。
  */
-export default function BusinessHeader({ companyName, transparent = false }: BusinessHeaderProps) {
+export default function BusinessHeader({ companyName, transparent = true }: BusinessHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [inquiryCount, setInquiryCount] = useState(0);
@@ -55,27 +56,29 @@ export default function BusinessHeader({ companyName, transparent = false }: Bus
   }
 
   return (
-    <header className={`${transparent ? "fixed inset-x-0 top-0 z-50 border-b border-white/25 bg-[#102C34]/72 text-white shadow-[0_2px_16px_rgba(0,0,0,0.16)] backdrop-blur-md" : "sticky top-0 z-30 border-b border-[#2B2B2B]/10 bg-[#FAF9F6]"}`}>
+    <header className={`${transparent ? `${pathname === "/business" ? "fixed" : "sticky"} inset-x-0 top-0 z-50 border-b border-white/25 bg-[#102C34]/72 text-white shadow-[0_2px_16px_rgba(0,0,0,0.16)] backdrop-blur-md` : "sticky top-0 z-30 border-b border-[#2B2B2B]/10 bg-[#FAF9F6]"}`}>
       <div className="mx-auto flex min-h-[72px] max-w-[1300px] flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-3 sm:px-8 lg:h-[76px] lg:min-h-0 lg:px-10 lg:py-0">
         <div className="flex min-w-0 items-center gap-4">
           <Link aria-label="前往企業首頁" className="flex min-w-0 items-center gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]" href="/business">
-            <img
+            <Image
               alt="元家"
               className="h-8 w-auto shrink-0 object-contain sm:h-9"
-              src="https://www.yens.com.tw/proimages/logo/logo_ch.png"
+              height={42}
+              src="/yens-logo.png"
+              width={140}
             />
             <div className="min-w-0">
               <p className={`text-[10px] font-bold tracking-[0.18em] ${transparent ? "text-white/90" : "text-[#3E5C6B]"}`}>YUANJIA BUSINESS</p>
               <p className={`mt-0.5 truncate text-sm font-medium tracking-[0.08em] ${transparent ? "text-white" : "text-[#2B2B2B]"}`}>企業採購服務</p>
             </div>
           </Link>
-          <span className="hidden h-6 w-px bg-[#2B2B2B]/15 sm:block" aria-hidden="true" />
+          <span className={`hidden h-6 w-px sm:block ${transparent ? "bg-white/30" : "bg-[#2B2B2B]/15"}`} aria-hidden="true" />
           <p className={`hidden max-w-56 truncate text-xs font-medium tracking-[0.08em] sm:block ${transparent ? "text-white/90" : "text-[#6E6E6E]"}`} title={companyName}>
             {companyName}・企業帳戶
           </p>
         </div>
 
-        <nav aria-label="企業導覽" className="order-3 flex w-full flex-wrap items-center gap-x-6 gap-y-1 border-t border-[#2B2B2B]/10 pt-2 text-sm lg:order-none lg:w-auto lg:flex-nowrap lg:gap-x-7 lg:border-t-0 lg:pt-0">
+        <nav aria-label="企業導覽" className={`order-3 flex w-full flex-wrap items-center gap-x-6 gap-y-1 border-t pt-2 text-sm lg:order-none lg:w-auto lg:flex-nowrap lg:gap-x-7 lg:border-t-0 lg:pt-0 ${transparent ? "border-white/20" : "border-[#2B2B2B]/10"}`}>
           <div className="relative shrink-0" onMouseEnter={() => setBrandOpen(true)} onMouseLeave={() => setBrandOpen(false)}>
             <button
               aria-controls="business-brand-menu"

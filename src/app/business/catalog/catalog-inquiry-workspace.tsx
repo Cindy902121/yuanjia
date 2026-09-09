@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import type { B2BProduct, B2BSpecOption } from "@/lib/b2b/catalog";
 import { trackEvent } from "@/lib/analytics/track";
@@ -38,6 +39,21 @@ function selectionPackaging(selection: SpecificationSelection) {
 type CatalogInquiryWorkspaceProps = {
   products: B2BProduct[];
 };
+
+/**
+ * 型錄頁的 Header 使用 backdrop-filter，會建立獨立的堆疊環境；直接巢狀在型錄內容
+ * 裡的 fixed dialog 即使提高 z-index 仍可能被 Header 蓋住。所有可操作的 B2B dialog
+ * 都由 Portal 直接掛到 body，確保遮罩與關閉鈕始終位於 Header 之上。
+ */
+function subscribeToPortal() {
+  return () => {};
+}
+
+function OverlayPortal({ children }: { children: ReactNode }) {
+  const isBrowser = useSyncExternalStore(subscribeToPortal, () => true, () => false);
+
+  return isBrowser ? createPortal(children, document.body) : null;
+}
 
 function ProductVisual({ product }: { product: B2BProduct }) {
   const marker = product.category.slice(0, 2) || "型錄";
@@ -96,7 +112,7 @@ function ProductCard({ onChoose, onDetail, product }: { onChoose: (product: B2BP
 
 function ProductDetail({ onClose, onChoose, product }: { onClose: () => void; onChoose: () => void; product: B2BProduct }) {
   return (
-    <div className="fixed inset-0 z-40 grid place-items-end bg-[#17242A]/45 p-4 sm:place-items-center" role="presentation">
+    <OverlayPortal><div className="fixed inset-0 z-[60] grid place-items-end bg-[#17242A]/45 p-4 sm:place-items-center" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} role="presentation">
       <section aria-labelledby="product-detail-title" aria-modal="true" className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl" role="dialog">
         <div className="flex items-start justify-between gap-4 border-b border-[#D9E1E5] p-5 sm:p-6">
           <div>
@@ -134,7 +150,7 @@ function ProductDetail({ onClose, onChoose, product }: { onClose: () => void; on
           </div>
         </div>
       </section>
-    </div>
+    </div></OverlayPortal>
   );
 }
 
@@ -157,7 +173,7 @@ function SpecPicker({ onClose, onConfirm, product }: { onClose: () => void; onCo
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-end bg-[#17242A]/45 p-4 sm:place-items-center" role="presentation">
+    <OverlayPortal><div className="fixed inset-0 z-[60] grid place-items-end bg-[#17242A]/45 p-4 sm:place-items-center" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} role="presentation">
       <section aria-labelledby="spec-picker-title" aria-modal="true" className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl" role="dialog">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -209,7 +225,7 @@ function SpecPicker({ onClose, onConfirm, product }: { onClose: () => void; onCo
           <button className="min-h-12 rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white hover:bg-[#00457F] disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!canConfirm} onClick={confirmSelection} type="button">加入詢價單</button>
         </div>
       </section>
-    </div>
+    </div></OverlayPortal>
   );
 }
 
@@ -424,7 +440,7 @@ export default function CatalogInquiryWorkspace({ products }: CatalogInquiryWork
           ))}
         </div>
       </section>
-      {inquiryOpen ? <div className="fixed inset-0 z-40 bg-[#17242A]/30 backdrop-blur-[1px]" role="presentation"><button aria-label="收起詢價單" className="absolute inset-0 cursor-default" onClick={() => setInquiryOpen(false)} type="button" /><div className="absolute inset-y-0 right-0 w-full max-w-[26rem] translate-x-0 transition-transform duration-300"><InquiryPanel items={items} onClose={() => setInquiryOpen(false)} onRemove={(key) => setItems((current) => current.filter((item) => item.key !== key))} onSubmit={submitInquiry} onUpdateQuantity={(key, quantity) => setItems((current) => current.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item))} /></div></div> : null}
+      {inquiryOpen ? <OverlayPortal><div className="fixed inset-0 z-[60] bg-[#17242A]/30 backdrop-blur-[1px]" role="presentation"><button aria-label="收起詢價單" className="absolute inset-0 cursor-default" onClick={() => setInquiryOpen(false)} type="button" /><div className="absolute inset-y-0 right-0 w-full max-w-[26rem] translate-x-0 transition-transform duration-300"><InquiryPanel items={items} onClose={() => setInquiryOpen(false)} onRemove={(key) => setItems((current) => current.filter((item) => item.key !== key))} onSubmit={submitInquiry} onUpdateQuantity={(key, quantity) => setItems((current) => current.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item))} /></div></div></OverlayPortal> : null}
       {detailProduct ? <ProductDetail onChoose={() => { setDetailProduct(null); setChosenProduct(detailProduct); }} onClose={() => setDetailProduct(null)} product={detailProduct} /> : null}
       {chosenProduct ? <SpecPicker onClose={() => setChosenProduct(null)} onConfirm={(quantity, selection) => addItem(quantity, selection)} product={chosenProduct} /> : null}
     </div>

@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { B2CHelpWidget } from "@/components/B2CHelpWidget";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { editorialFontClassName } from "@/lib/editorial/fonts";
 
 /**
  * B2C route group layout（2026-08-25，回應 B 回報「/business/catalog 同時顯示
@@ -44,7 +45,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
  */
 export default function B2CLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <div className={`flex min-h-full flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620] ${editorialFontClassName}`}>
       <GoogleAnalytics />
       <Header />
       {children}

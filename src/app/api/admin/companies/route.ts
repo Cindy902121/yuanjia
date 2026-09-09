@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       name,
       is_active: true,
     })
-    .select("id, client_code, name, is_active, created_at")
+    .select("id, client_code, name, is_active, created_at, updated_at")
     .single();
 
   if (companyError || !company) {

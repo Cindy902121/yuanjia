@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { resolvePeriod, validatePeriod, shiftDay, bucketRange } from "@/lib/admin-dates";
+import { changeAdminQuery } from "./admin-navigation";
+import { useAdminResource } from "./use-admin-resource";
+import { ResourceState } from "./resource-state";
 
 import type {
   AnalyticsFilters,
@@ -47,30 +52,6 @@ const buttonClass =
   "inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 const TABLE_PAGE_SIZE = 50;
 
-function dateInTaipei(date = new Date()) {
-  const values = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      day: "2-digit",
-      month: "2-digit",
-      timeZone: "Asia/Taipei",
-      year: "numeric",
-    })
-      .formatToParts(date)
-      .map(({ type, value }) => [type, value]),
-  );
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function shiftDate(value: string, days: number) {
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function dateSpan(from: string, to: string) {
-  return Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86400000) + 1;
-}
-
 function buildQuery(dateFrom: string, dateTo: string, filters: AnalyticsFilters) {
   const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
   const values: Array<[keyof AnalyticsFilters, string]> = [
@@ -89,21 +70,12 @@ function buildQuery(dateFrom: string, dateTo: string, filters: AnalyticsFilters)
   return params;
 }
 
-async function fetchReport(dateFrom: string, dateTo: string, filters: AnalyticsFilters) {
-  const response = await fetch(`/api/admin/analytics/summary?${buildQuery(dateFrom, dateTo, filters)}`, {
-    cache: "no-store",
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error ?? "目前無法讀取分析報表。");
-  return body as AnalyticsResponse;
-}
-
 function number(value: number | string | undefined) {
   return Number(value ?? 0).toLocaleString("zh-TW");
 }
 
 function percentage(value: number | null) {
-  return value === null ? "—" : `${value > 0 ? "+" : ""}${value}%`;
+  return value === null ? "—（前期為 0）" : `${value > 0 ? "+" : ""}${value}%`;
 }
 
 function MetricCard({
@@ -195,7 +167,7 @@ function TrendChart({ report }: { report: AnalyticsResponse }) {
         {points.map((point, index) => {
           const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
           const y = height - (point.events / max) * (height - 20) - 10;
-          return <circle cx={x} cy={y} fill="#fff" key={`${point.date_bucket}-${index}`} r="4" stroke="#005DAA" strokeWidth="3" />;
+          return <circle cx={x} cy={y} fill="#fff" key={`${(() => { const range = bucketRange(point.date_bucket, report.period.grain, report.period.date_from, report.period.date_to); return `${range.from}～${range.to}${range.partial ? "（部分期間）" : ""}`; })()}-${index}`} r="4" stroke="#005DAA" strokeWidth="3" />;
         })}
       </svg>
       <div className="flex justify-between gap-3 text-xs text-[#809099]"><span>{points[0].date_bucket}</span><span>事件 {number(points.reduce((sum, point) => sum + point.events, 0))}</span><span>{points[points.length - 1].date_bucket}</span></div>
@@ -219,14 +191,19 @@ function FunnelList({ funnel, labels }: { funnel: Funnel; labels: Record<string,
   ) : <p className="text-sm text-[#809099]">目前沒有漏斗資料。</p>;
 }
 
-export default function AnalyticsReportPanel() {
-  const today = dateInTaipei();
-  const [dateFrom, setDateFrom] = useState(shiftDate(today, -89));
-  const [dateTo, setDateTo] = useState(today);
-  const [filters, setFilters] = useState<AnalyticsFilters>(EMPTY_FILTERS);
-  const [report, setReport] = useState<AnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+export default function AnalyticsReportPanel({ revision = 0 }: { revision?: number }) {
+  const params = useSearchParams();
+  const period = resolvePeriod(new URLSearchParams(params.toString()));
+  const today = period.today;
+  const appliedFilters = Object.fromEntries(Object.keys(EMPTY_FILTERS).map((key) => [key, params.getAll(key).flatMap((value) => value.split(",")).filter(Boolean)])) as AnalyticsFilters;
+  const [dateFrom, setDateFrom] = useState(period.from);
+  const [dateTo, setDateTo] = useState(period.to);
+  const [filters, setFilters] = useState<AnalyticsFilters>(appliedFilters);
+  const resource = useAdminResource<AnalyticsResponse>(period.error ? null : `/api/admin/analytics/summary?${buildQuery(period.from, period.to, appliedFilters)}`, revision);
+  const report = resource.data ?? null, loading = resource.pending;
+  const [localError, setError] = useState("");
+  const error = localError || period.error || resource.error;
+  useEffect(() => { if (period.absent) changeAdminQuery({ date_from: period.from, date_to: period.to }, true); }, [period.absent, period.from, period.to]);
   const [purpose, setPurpose] = useState<(typeof EXPORT_PURPOSES)[number][0]>("operations_analysis");
   const [note, setNote] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -235,42 +212,14 @@ export default function AnalyticsReportPanel() {
   const [rfqPage, setRfqPage] = useState(0);
 
   async function refresh(nextFilters = filters, nextDateFrom = dateFrom, nextDateTo = dateTo) {
-    const days = dateSpan(nextDateFrom, nextDateTo);
-    if (!Number.isFinite(days) || days <= 0) {
-      setError("日期範圍不正確。");
-      return;
-    }
-    if (days > 90 && !window.confirm("目前查詢超過 90 天，報表會使用週／月聚合。確定繼續嗎？")) return;
-    setLoading(true);
+    const invalid = validatePeriod(nextDateFrom, nextDateTo, today);
+    if (invalid) { setError(invalid); return; }
     setError("");
-    try {
-      setReport(await fetchReport(nextDateFrom, nextDateTo, nextFilters));
-      setFinderPage(0);
-      setRfqPage(0);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "目前無法讀取分析報表。");
-    } finally {
-      setLoading(false);
-    }
+    const values: Record<string, string | null> = { date_from: nextDateFrom, date_to: nextDateTo };
+    for (const key of Object.keys(EMPTY_FILTERS) as Array<keyof AnalyticsFilters>) values[key] = nextFilters[key].join(",") || null;
+    changeAdminQuery(values);
+    if (nextDateFrom === period.from && nextDateTo === period.to && JSON.stringify(nextFilters) === JSON.stringify(appliedFilters)) await resource.reload();
   }
-
-  useEffect(() => {
-    let active = true;
-    const initialDateFrom = shiftDate(today, -89);
-    fetchReport(initialDateFrom, today, EMPTY_FILTERS).then(
-      (nextReport) => {
-        if (active) setReport(nextReport);
-      },
-      (reason) => {
-        if (active) setError(reason instanceof Error ? reason.message : "目前無法讀取分析報表。");
-      },
-    ).finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [today]);
 
   const productOptions = useMemo(
     () => (report?.options.products ?? []).map((product) => ({ value: product.id, label: `${product.product_code}｜${product.name}` })),
@@ -297,20 +246,21 @@ export default function AnalyticsReportPanel() {
   }
 
   function applyPreset(days: number) {
-    const nextDateTo = today;
-    const nextDateFrom = shiftDate(today, 1 - days);
+    const nextDateTo = days === 1 ? today : shiftDay(today, -1);
+    const nextDateFrom = shiftDay(nextDateTo, 1 - days);
     setDateFrom(nextDateFrom);
     setDateTo(nextDateTo);
     void refresh(filters, nextDateFrom, nextDateTo);
   }
 
   async function download() {
-    const days = dateSpan(dateFrom, dateTo);
+    if (!report) return;
+    const days = report.period.days;
     if (days > 90 && !window.confirm("目前匯出範圍超過 90 天，確定下載嗎？")) return;
     setExporting(true);
     setError("");
     try {
-      const params = buildQuery(dateFrom, dateTo, filters);
+      const params = buildQuery(report.period.date_from, report.period.date_to, report.filters);
       params.set("purpose", purpose);
       if (note.trim()) params.set("note", note.trim());
       const response = await fetch(`/api/admin/analytics/export?${params}`, { cache: "no-store" });
@@ -320,7 +270,7 @@ export default function AnalyticsReportPanel() {
       }
       const link = document.createElement("a");
       link.href = URL.createObjectURL(await response.blob());
-      link.download = `b2b-analytics-${dateTo}.csv`;
+      link.download = `b2b-analytics-${report.period.date_to}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (reason) {
@@ -330,7 +280,7 @@ export default function AnalyticsReportPanel() {
     }
   }
 
-  const change = report?.comparison.totals;
+  const change = report?.period.date_to === today ? undefined : report?.comparison.totals;
   const eventRows = (report?.events_by_name ?? []).map((row) => ({ label: EVENT_LABELS[row.event_name] ?? row.event_name, value: row.events, detail: `企業 ${number(row.active_companies)}` }));
   const tierRows = (report?.tier_breakdown ?? []).map((row) => ({ label: row.label, value: row.events, detail: `企業 ${number(row.active_companies)}`, disabled: row.label.includes("已遮罩") }));
   const finderRows = report?.finder_answers ?? [];
@@ -352,7 +302,7 @@ export default function AnalyticsReportPanel() {
         <form className="grid gap-4 lg:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void refresh(); }}>
           <div aria-label="日期快捷範圍" className="flex flex-wrap items-end gap-2 lg:col-span-2">
             <span className="mr-1 self-center text-sm font-semibold text-[#536168]">快捷範圍</span>
-            {[{ label: "今天", days: 1 }, { label: "近 7 天", days: 7 }, { label: "近 30 天", days: 30 }, { label: "近 90 天", days: 90 }].map((preset) => <button className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`} key={preset.days} onClick={() => applyPreset(preset.days)} type="button">{preset.label}</button>)}
+            {[{ label: "今天", days: 1 }, { label: "近 7 個完整日", days: 7 }, { label: "近 30 個完整日", days: 30 }, { label: "近 90 個完整日", days: 90 }].map((preset) => <button className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`} key={preset.days} onClick={() => applyPreset(preset.days)} type="button">{preset.label}</button>)}
           </div>
           <label className="text-sm font-semibold text-[#536168]">開始日期<input className={inputClass} max={dateTo} onChange={(event) => setDateFrom(event.target.value)} type="date" value={dateFrom} /></label>
           <label className="text-sm font-semibold text-[#536168]">結束日期<input className={inputClass} min={dateFrom} max={today} onChange={(event) => setDateTo(event.target.value)} type="date" value={dateTo} /></label>
@@ -372,11 +322,12 @@ export default function AnalyticsReportPanel() {
         </form>
       </section>
 
+      <ResourceState {...resource} hasData={!!report} />
       {error ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert"><span>{error}</span><button className={`${buttonClass} border border-[#D99B96] bg-white text-[#8D302A] hover:bg-[#FFE8E5]`} disabled={loading} onClick={() => void refresh()} type="button">重試</button></div> : null}
       {loading && !report ? <div className="rounded-2xl border border-[#D8E1E5] bg-white p-10 text-center text-sm text-[#536168]">正在整理 B2B 聚合資料…</div> : null}
       {report ? <>
         {report.totals.events === 0 ? <div className="rounded-xl border border-[#D8E1E5] bg-[#FBFDFE] px-4 py-3 text-sm text-[#536168]">此期間沒有資料；以下指標顯示為 0。</div> : null}
-        <p className="text-xs text-[#809099]">前期比較：{report.comparison.period.date_from}～{report.comparison.period.date_to}。</p>
+        <p className="text-xs text-[#809099]">已套用：{report.period.date_from}～{report.period.date_to}（台北時間）。{report.period.date_to === today ? "今天的資料尚未結束，不顯示前期比較。" : `前期比較：${report.comparison.period.date_from}～${report.comparison.period.date_to}。`}</p>
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <MetricCard change={change?.events} label="總事件數" value={report.totals.events} />
           <MetricCard change={change?.active_companies} label="活躍企業" value={report.totals.active_companies} />

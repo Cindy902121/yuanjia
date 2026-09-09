@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useAdminView, changeAdminQuery } from "./admin-navigation";
+import { useAdminResource } from "./use-admin-resource";
+import { ResourceState } from "./resource-state";
+import { AdminShell } from "./admin-shell";
+import { RfqWorkspace } from "./rfq-workspace";
+import { adminRequest } from "./admin-request";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import type { B2bProductStatus } from "@/lib/admin-catalog";
 
 import { B2bCsvImportPanel } from "./admin-catalog-tools";
 import AnalyticsReportPanel from "./analytics-report-panel";
+import { OperationsOverview } from "./operations-overview";
+import styles from "./admin-workspace.module.css";
 
 type AdminTab =
   | "overview"
@@ -51,6 +60,7 @@ type Order = {
   recipient_email: string;
   delivery_address: string;
   created_at: string;
+  updated_at: string;
   items: OrderItem[];
 };
 
@@ -60,27 +70,9 @@ type Company = {
   name: string;
   prefix: string;
   tier_label: string;
+  updated_at: string;
   is_active: boolean;
   created_at: string;
-};
-
-type RfqItem = {
-  id: string;
-  quantity: number | string;
-  unit: string;
-  item_note: string | null;
-  product: { product_code: string; name: string } | null;
-};
-
-type Rfq = {
-  id: string;
-  status: "new" | "processing" | "closed";
-  customer_tier_snapshot: string;
-  channel_snapshot: string;
-  total_note: string | null;
-  created_at: string;
-  company: { client_code: string; name: string } | null;
-  items: RfqItem[];
 };
 
 type Staff = {
@@ -96,24 +88,6 @@ type CompanyForm = {
   clientCode: string;
   password: string;
   passwordAgain: string;
-};
-
-type ApiPayload = { error?: string };
-
-const tabs: Array<{ id: AdminTab; label: string; group: string }> = [
-  { id: "overview", label: "總覽", group: "工作台" },
-  { id: "analytics", label: "分析報表", group: "分析" },
-  { id: "b2c-products", label: "B2C 商品", group: "B2C" },
-  { id: "b2c-orders", label: "B2C 訂單", group: "B2C" },
-  { id: "b2b-products", label: "B2B 型錄", group: "B2B" },
-  { id: "b2b-companies", label: "企業會員", group: "B2B" },
-  { id: "b2b-rfqs", label: "企業詢價", group: "B2B" },
-  { id: "admin-staff", label: "管理帳號", group: "管理" },
-];
-
-const tabsByScope: Record<AdminScope, AdminTab[]> = {
-  admin: ["overview", "analytics", "b2c-products", "b2c-orders", "b2b-products", "b2b-companies", "b2b-rfqs", "admin-staff"],
-  business: ["b2b-products", "b2b-rfqs"],
 };
 
 const statusLabels = {
@@ -132,23 +106,15 @@ const inputClass =
   "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]";
 const buttonClass =
   "inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+const savedReadError = "已儲存，但最新資料讀取失敗。請重新整理，勿重送操作。";
 
 async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit) {
-  const response = await fetch(input, { ...init, cache: "no-store" });
-  let payload: T & ApiPayload;
-  try {
-    payload = (await response.json()) as T & ApiPayload;
-  } catch {
-    payload = {} as T & ApiPayload;
-  }
-  if (!response.ok) {
-    throw new Error(payload.error ?? "操作失敗，請稍後再試。");
-  }
-  return payload;
+  return adminRequest<T>(String(input), init);
 }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-TW", {
+    timeZone: "Asia/Taipei",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -168,21 +134,17 @@ function statusBadge(isActive: boolean) {
 }
 
 export function AdminDashboard({
-  initialTab,
   scope = "admin",
 }: {
   initialTab?: AdminTab;
   scope?: AdminScope;
 }) {
-  const [activeTab, setActiveTab] = useState<AdminTab>(
-    initialTab ?? (scope === "business" ? "b2b-products" : "overview"),
-  );
-  const visibleTabs = tabs.filter((tab) => tabsByScope[scope].includes(tab.id));
+  const { activeTab, params } = useAdminView(scope);
+  const [revision, setRevision] = useState(0);
+  const [loadedTab, setLoadedTab] = useState("");
   const [b2cProducts, setB2cProducts] = useState<Product[]>([]);
-  const [b2bProducts, setB2bProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [rfqs, setRfqs] = useState<Rfq[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
@@ -204,8 +166,6 @@ export function AdminDashboard({
     );
     if (channel === "b2c") {
       setB2cProducts(payload.products ?? []);
-    } else {
-      setB2bProducts(payload.products ?? []);
     }
   }, []);
 
@@ -219,11 +179,6 @@ export function AdminDashboard({
     setCompanies(payload.companies ?? []);
   }, []);
 
-  const loadRfqs = useCallback(async () => {
-    const payload = await requestJson<{ rfqs: Rfq[] }>("/api/admin/rfqs");
-    setRfqs(payload.rfqs ?? []);
-  }, []);
-
   const loadStaff = useCallback(async () => {
     const payload = await requestJson<{ staff: Staff[] }>("/api/admin/staff");
     setStaff(payload.staff ?? []);
@@ -233,24 +188,27 @@ export function AdminDashboard({
     setIsLoading(true);
     setError("");
     try {
-      await Promise.all(
-        scope === "business"
-          ? [loadProducts("b2b"), loadRfqs()]
-          : [
-              loadProducts("b2c"),
-              loadOrders(),
-              loadCompanies(),
-              loadProducts("b2b"),
-              loadRfqs(),
-              loadStaff(),
-            ],
-      );
+      if (activeTab === "b2c-products") await loadProducts("b2c");
+      else if (activeTab === "b2c-orders") await Promise.all([loadOrders(), loadProducts("b2c")]);
+      else if (activeTab === "b2b-companies") await loadCompanies();
+      else if (activeTab === "admin-staff") await loadStaff();
+      setLoadedTab(activeTab);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "目前無法讀取後台資料。");
     } finally {
       setIsLoading(false);
     }
-  }, [loadCompanies, loadOrders, loadProducts, loadRfqs, loadStaff, scope]);
+  }, [activeTab, loadCompanies, loadOrders, loadProducts, loadStaff]);
+
+  async function refreshAfterWrite(loader: () => Promise<void>) {
+    try {
+      await loader();
+      return true;
+    } catch {
+      setError(savedReadError);
+      return false;
+    }
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -259,19 +217,14 @@ export function AdminDashboard({
     return () => window.clearTimeout(timer);
   }, [loadAll]);
 
-  const activeB2cCount = useMemo(
-    () => b2cProducts.filter((product) => product.is_active).length,
-    [b2cProducts],
-  );
-  const openOrderCount = useMemo(
-    () => orders.filter((order) => order.status !== "completed").length,
-    [orders],
-  );
-
   function selectTab(tab: AdminTab) {
-    setActiveTab(tab);
-    setError("");
-    setNotice("");
+    if (companyForm.name || companyForm.clientCode || companyForm.password || companyForm.passwordAgain) {
+      if (!window.confirm("企業會員表單尚未儲存，確定要離開嗎？")) return;
+      setCompanyForm({ name: "", clientCode: "", password: "", passwordAgain: "" });
+    }
+    const values: Record<string, string | null> = { tab };
+    for (const key of params.keys()) if (key !== "date_from" && key !== "date_to" && key !== "tab") values[key] = null;
+    changeAdminQuery(values); setError(""); setNotice("");
   }
 
   async function toggleProduct(channel: Channel, product: Product) {
@@ -290,9 +243,9 @@ export function AdminDashboard({
       await requestJson(`/api/admin/products/${channel}/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: !product.is_active }),
+        body: JSON.stringify({ is_active: !product.is_active, expected_updated_at: product.updated_at }),
       });
-      await loadProducts(channel);
+      if (!await refreshAfterWrite(() => loadProducts(channel))) return;
       setNotice(`${product.name} 已${product.is_active ? "下架" : "上架"}。`);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "商品狀態更新失敗。");
@@ -308,9 +261,9 @@ export function AdminDashboard({
       await requestJson("/api/b2c/mock-orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_id: orderId, status }),
+        body: JSON.stringify({ order_id: orderId, status, expected_updated_at: orders.find((order) => order.id === orderId)?.updated_at }),
       });
-      await loadOrders();
+      if (!await refreshAfterWrite(loadOrders)) return;
       setNotice("B2C 訂單狀態已更新。");
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "訂單狀態更新失敗。");
@@ -334,30 +287,12 @@ export function AdminDashboard({
       await requestJson(`/api/admin/companies/${company.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: !company.is_active }),
+        body: JSON.stringify({ is_active: !company.is_active, expected_updated_at: company.updated_at }),
       });
-      await loadCompanies();
+      if (!await refreshAfterWrite(loadCompanies)) return;
       setNotice(`企業會員已${action}。`);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "企業會員狀態更新失敗。");
-    } finally {
-      setBusyKey("");
-    }
-  }
-
-  async function updateRfqStatus(rfqId: string, status: Rfq["status"]) {
-    setBusyKey(`rfq-${rfqId}`);
-    setError("");
-    try {
-      await requestJson("/api/admin/rfqs", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rfq_id: rfqId, status }),
-      });
-      await loadRfqs();
-      setNotice("企業詢價狀態已更新。");
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "詢價狀態更新失敗。");
     } finally {
       setBusyKey("");
     }
@@ -374,7 +309,7 @@ export function AdminDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: staffUserId.trim(), role: staffRole }),
       });
-      await loadStaff();
+      if (!await refreshAfterWrite(loadStaff)) return;
       setStaffUserId("");
       setNotice("管理帳號已加入。");
     } catch (actionError) {
@@ -400,7 +335,7 @@ export function AdminDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: member.user_id, ...updates }),
       });
-      await loadStaff();
+      if (!await refreshAfterWrite(loadStaff)) return;
       setNotice("管理帳號已更新。");
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "管理帳號更新失敗。");
@@ -432,7 +367,6 @@ export function AdminDashboard({
           password: companyForm.password,
         }),
       });
-      await loadCompanies();
       setCompanyForm({
         name: "",
         clientCode: "",
@@ -442,6 +376,7 @@ export function AdminDashboard({
       setCredentialNotice(
         `企業「${payload.company.name}」已建立。客戶代碼：${payload.credential.client_code}；${payload.credential.note}`,
       );
+      await refreshAfterWrite(loadCompanies);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "企業會員建立失敗。");
     } finally {
@@ -450,73 +385,7 @@ export function AdminDashboard({
   }
 
   return (
-    <main className="min-h-screen flex-1 bg-[#F4F7F8] text-[#17242A]">
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <header className="flex flex-col gap-5 border-b border-[#D8E1E5] pb-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-bold tracking-[0.22em] text-[#005DAA]">YUANJIA ADMIN</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#17242A]">管理後台</h1>
-            <p className="mt-2 text-sm leading-6 text-[#536168]">
-              集中管理 B2C 商品、展示訂單、B2B 型錄、企業會員權限與 B2B 使用分析。
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
-              href={scope === "business" ? "/admin" : "/admin/business"}
-            >
-              {scope === "business" ? "管理總覽" : "B2B 管理"}
-            </Link>
-            <Link
-              className={`${buttonClass} border border-[#B8CBD4] bg-white text-[#00457F] hover:bg-[#EAF5FB]`}
-              href="/"
-            >
-              回到前台
-            </Link>
-            <button
-              className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
-              disabled={isLoading}
-              onClick={() => void loadAll()}
-              type="button"
-            >
-              {isLoading ? "讀取中…" : "重新整理"}
-            </button>
-          </div>
-        </header>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-2xl border border-[#D8E1E5] bg-white p-3 shadow-[0_8px_24px_rgba(23,36,42,0.04)]">
-            <p className="px-3 pb-2 pt-1 text-xs font-bold tracking-[0.16em] text-[#809099]">管理模組</p>
-            <nav aria-label="管理後台模組" className="space-y-1">
-              {visibleTabs.map((tab, index) => {
-                const isFirstInGroup =
-                  index === 0 || visibleTabs[index - 1].group !== tab.group;
-                return (
-                  <div key={tab.id}>
-                    {isFirstInGroup && index !== 0 ? (
-                      <p className="px-3 pb-1 pt-4 text-[11px] font-bold tracking-[0.14em] text-[#9AA8AE]">
-                        {tab.group}
-                      </p>
-                    ) : null}
-                    <button
-                      aria-current={activeTab === tab.id ? "page" : undefined}
-                      className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition ${
-                        activeTab === tab.id
-                          ? "bg-[#EAF5FB] text-[#005DAA]"
-                          : "text-[#536168] hover:bg-[#F4F7F8] hover:text-[#17242A]"
-                      }`}
-                      onClick={() => selectTab(tab.id)}
-                      type="button"
-                    >
-                      {tab.label}
-                    </button>
-                  </div>
-                );
-              })}
-            </nav>
-          </aside>
-
-          <section className="min-w-0">
+    <AdminShell scope={scope} activeTab={activeTab} onSelect={selectTab} busy={isLoading} onRefresh={() => { setRevision((value) => value + 1); void loadAll(); }}>
             {error ? (
               <div className="mb-4 rounded-xl border border-[#F0C6C3] bg-[#FFF3F2] px-4 py-3 text-sm text-[#A43B34]" role="alert">
                 {error}
@@ -533,21 +402,14 @@ export function AdminDashboard({
               </div>
             ) : null}
 
-            {isLoading ? (
+            {isLoading && loadedTab !== activeTab && !["overview", "analytics", "b2b-rfqs", "b2b-products"].includes(activeTab) ? (
               <div className="rounded-2xl border border-[#D8E1E5] bg-white p-8 text-center text-sm text-[#536168]">
                 正在讀取管理資料…
               </div>
             ) : (
               <>
-                {activeTab === "overview" ? (
-                  <Overview
-                    activeB2cCount={activeB2cCount}
-                    companyCount={companies.filter((company) => company.is_active).length}
-                    openOrderCount={openOrderCount}
-                    onSelectTab={selectTab}
-                  />
-                ) : null}
-                {activeTab === "analytics" ? <AnalyticsReportPanel /> : null}
+                {activeTab === "overview" ? <OperationsOverview revision={revision} scope={scope} /> : null}
+                {activeTab === "analytics" ? <AnalyticsReportPanel key={params.toString()} revision={revision} /> : null}
                 {activeTab === "b2c-products" ? (
                   <ProductPanel
                     channel="b2c"
@@ -557,11 +419,7 @@ export function AdminDashboard({
                   />
                 ) : null}
                 {activeTab === "b2b-products" ? (
-                  <B2bProductPanel
-                    busyKey={busyKey}
-                    onReload={() => loadProducts("b2b")}
-                    products={b2bProducts}
-                  />
+                  <B2bProductPanel key={params.toString()} revision={revision} busyKey={busyKey} />
                 ) : null}
                 {activeTab === "b2c-orders" ? (
                   <OrderPanel
@@ -582,11 +440,7 @@ export function AdminDashboard({
                   />
                 ) : null}
                 {activeTab === "b2b-rfqs" ? (
-                  <RfqPanel
-                    busyKey={busyKey}
-                    onUpdateStatus={updateRfqStatus}
-                    rfqs={rfqs}
-                  />
+                  <RfqWorkspace revision={revision} />
                 ) : null}
                 {activeTab === "admin-staff" ? (
                   <StaffPanel
@@ -603,89 +457,7 @@ export function AdminDashboard({
                 ) : null}
               </>
             )}
-          </section>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function Overview({
-  activeB2cCount,
-  companyCount,
-  openOrderCount,
-  onSelectTab,
-}: {
-  activeB2cCount: number;
-  companyCount: number;
-  openOrderCount: number;
-  onSelectTab: (tab: AdminTab) => void;
-}) {
-  const metrics = [
-    { label: "B2C 上架商品", value: activeB2cCount, tab: "b2c-products" as AdminTab },
-    { label: "啟用企業會員", value: companyCount, tab: "b2b-companies" as AdminTab },
-    { label: "待處理 B2C 訂單", value: openOrderCount, tab: "b2c-orders" as AdminTab },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {metrics.map((metric) => (
-          <button
-            className="rounded-2xl border border-[#D8E1E5] bg-white p-5 text-left shadow-[0_8px_24px_rgba(23,36,42,0.04)] transition hover:-translate-y-0.5 hover:border-[#9CC6E1]"
-            key={metric.label}
-            onClick={() => onSelectTab(metric.tab)}
-            type="button"
-          >
-            <p className="text-sm text-[#536168]">{metric.label}</p>
-            <p className="mt-3 text-3xl font-bold text-[#17242A]">{metric.value}</p>
-          </button>
-        ))}
-      </section>
-
-      <section className="rounded-2xl border border-[#C5D8E9] bg-[#EEF7FD] p-6">
-        <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">操作原則</p>
-        <h2 className="mt-2 text-xl font-bold text-[#17242A]">上架狀態會立即影響前台型錄</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#536168]">
-          商品上下架與企業停用都由伺服器驗證管理者權限後寫入資料庫。B2B 客戶代碼由外部公司系統提供，建立企業會員時由 Admin 輸入完整代碼；登入頁只接受 Z、E、W 加 6 碼數字。
-        </p>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2">
-        <QuickAction
-          description="查看啟用與停用商品，快速調整前台可見性。"
-          label="管理商品上架狀態"
-          onClick={() => onSelectTab("b2c-products")}
-        />
-        <QuickAction
-          description="輸入外部公司系統提供的客戶代碼並建立企業登入帳號。"
-          label="新增企業會員"
-          onClick={() => onSelectTab("b2b-companies")}
-        />
-      </section>
-    </div>
-  );
-}
-
-function QuickAction({
-  label,
-  description,
-  onClick,
-}: {
-  label: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className="rounded-2xl border border-[#D8E1E5] bg-white p-5 text-left transition hover:border-[#9CC6E1] hover:bg-[#FBFDFE]"
-      onClick={onClick}
-      type="button"
-    >
-      <p className="font-bold text-[#17242A]">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-[#536168]">{description}</p>
-      <span className="mt-4 inline-block text-sm font-bold text-[#005DAA]">前往管理 →</span>
-    </button>
+    </AdminShell>
   );
 }
 
@@ -798,39 +570,29 @@ function b2bStatusClass(status: B2bProductStatus) {
   return "border-[#C5D8E9] bg-[#EEF7FD] text-[#00457F]";
 }
 
-function B2bProductPanel({
-  products,
-  busyKey,
-  onReload,
-}: {
-  products: Product[];
-  busyKey: string;
-  onReload: () => Promise<void>;
-}) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | B2bProductStatus>("all");
+function B2bProductPanel({ revision, busyKey }: { revision: number; busyKey: string }) {
+  const params = useSearchParams();
+  const appliedSearch = params.get("product_q") ?? "";
+  const appliedStatus = params.get("product_status") ?? "all";
+  const missing = params.get("missing_images") === "true";
+  const page = Number(params.get("product_page")) || 1;
+  const query = new URLSearchParams({ include_inactive: "true", page: String(page), page_size: "25" });
+  if (appliedSearch) query.set("q", appliedSearch);
+  if (appliedStatus !== "all") query.set("status", appliedStatus);
+  if (missing) query.set("missing_images", "true");
+  const resource = useAdminResource<{ products: Product[]; total: number }>(`/api/admin/products/b2b?${query}`, revision);
+  const products = resource.data?.products ?? [];
+  const filteredProducts = products;
+  const pages = Math.max(1, Math.ceil((resource.data?.total ?? 0) / 25));
+  const [search, setSearch] = useState(appliedSearch);
+  const [statusFilter, setStatusFilter] = useState(appliedStatus);
+  const [missingFilter, setMissingFilter] = useState(missing);
+  async function onReload() { if (!await resource.reload()) throw new Error("已儲存，但最新商品清單讀取失敗。請重新讀取，勿重送操作。"); }
+  useEffect(() => { if (resource.data && page > pages) { changeAdminQuery({ product_page: String(pages) }, true); window.dispatchEvent(new CustomEvent("admin-navigation-notice", { detail: "資料已更新，已調整頁碼。" })); } }, [resource.data, page, pages]);
   const [bulkStatus, setBulkStatus] = useState<B2bProductStatus>("review");
   const [selected, setSelected] = useState<string[]>([]);
   const [localBusy, setLocalBusy] = useState("");
   const [message, setMessage] = useState("");
-
-  const filteredProducts = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    return products.filter((product) => {
-      const status = product.status ?? (product.is_active ? "published" : "offline");
-      const matchesStatus = statusFilter === "all" || status === statusFilter;
-      const searchable = [
-        product.product_code,
-        product.name,
-        product.brand,
-        product.category,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return matchesStatus && (!normalizedSearch || searchable.includes(normalizedSearch));
-    });
-  }, [products, search, statusFilter]);
 
   async function updateStatus(product: Product, nextStatus: B2bProductStatus) {
     const currentStatus = product.status ?? (product.is_active ? "published" : "offline");
@@ -848,7 +610,7 @@ function B2bProductPanel({
       await requestJson(`/api/admin/products/b2b/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({ status: nextStatus, expected_updated_at: product.updated_at }),
       });
       await onReload();
       setMessage(`「${product.name}」已更新為${statusLabels[nextStatus]}。`);
@@ -886,7 +648,7 @@ function B2bProductPanel({
       title="B2B 商品型錄管理"
     >
       <B2bCsvImportPanel onImported={onReload} />
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <form className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between" onSubmit={(event) => { event.preventDefault(); changeAdminQuery({ product_q: search.trim(), product_status: statusFilter, missing_images: String(missingFilter), product_page: "1" }); }}>
         <div className="grid flex-1 gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
           <label className="text-sm font-semibold text-[#536168]">
             搜尋商品
@@ -917,7 +679,10 @@ function B2bProductPanel({
         >
           新增 B2B 商品
         </Link>
-      </div>
+        <label className={styles.muted}><input type="checkbox" checked={missingFilter} onChange={(event) => setMissingFilter(event.target.checked)} /> 尚無圖片</label>
+        <button type="submit" className={styles.primary}>套用篩選</button>
+        <button type="button" className={styles.button} onClick={() => changeAdminQuery({ product_q: null, product_status: null, missing_images: null, product_page: null })}>清除篩選</button>
+      </form>
 
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[#D8E1E5] bg-[#F8FBFC] p-3">
         <span className="text-sm text-[#536168]">已選 {selected.length} 筆</span>
@@ -943,7 +708,7 @@ function B2bProductPanel({
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#536168]">
-        <span>共 {filteredProducts.length} 筆，已發布 {products.filter((product) => (product.status ?? (product.is_active ? "published" : "offline")) === "published").length} 筆</span>
+        <span>共 {resource.data?.total ?? "—"} 筆 · 第 {page}／{pages} 頁</span>
         <span>批次操作只允許合法狀態轉換。</span>
       </div>
 
@@ -991,7 +756,7 @@ function B2bProductPanel({
                     <select
                       aria-label={`${product.name} 狀態`}
                       className={`rounded-lg border px-2.5 py-2 text-xs font-bold ${b2bStatusClass(status)}`}
-                      disabled={isBusy}
+                      disabled={isBusy || !!localBusy || resource.pending || !!resource.error}
                       onChange={(event) => void updateStatus(product, event.target.value as B2bProductStatus)}
                       value={status}
                     >
@@ -1014,6 +779,11 @@ function B2bProductPanel({
             ) : null}
           </tbody>
         </table>
+      </div>
+      <ResourceState {...resource} hasData={!!resource.data} />
+      <div className={styles.actions}>
+        <button className={styles.button} type="button" disabled={page <= 1 || resource.pending} onClick={() => changeAdminQuery({ product_page: String(page - 1) })}>上一頁</button>
+        <button className={styles.button} type="button" disabled={page >= pages || resource.pending} onClick={() => changeAdminQuery({ product_page: String(page + 1) })}>下一頁</button>
       </div>
     </PanelShell>
   );
@@ -1365,61 +1135,6 @@ function StaffPanel({
         </div>
       </PanelShell>
     </div>
-  );
-}
-
-function RfqPanel({
-  rfqs,
-  busyKey,
-  onUpdateStatus,
-}: {
-  rfqs: Rfq[];
-  busyKey: string;
-  onUpdateStatus: (rfqId: string, status: Rfq["status"]) => void;
-}) {
-  return (
-    <PanelShell
-      description="查看所有企業的詢價摘要與品項，並由內部人員更新處理進度。"
-      title="B2B 企業詢價管理"
-    >
-      <div className="space-y-3">
-        {rfqs.map((rfq) => (
-          <article className="rounded-xl border border-[#D8E1E5] bg-white p-4" key={rfq.id}>
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="font-bold text-[#17242A]">{rfq.company?.name ?? "未綁定企業"}</p>
-                <p className="mt-1 text-xs text-[#809099]">
-                  {rfq.company?.client_code ?? "—"} · {formatDate(rfq.created_at)} · {rfq.customer_tier_snapshot}
-                </p>
-              </div>
-              <select
-                className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm text-[#17242A] outline-none focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]"
-                disabled={busyKey === `rfq-${rfq.id}`}
-                onChange={(event) => void onUpdateStatus(rfq.id, event.target.value as Rfq["status"])}
-                value={rfq.status}
-              >
-                <option value="new">{statusLabels.new}</option>
-                <option value="processing">{statusLabels.processing}</option>
-                <option value="closed">{statusLabels.closed}</option>
-              </select>
-            </div>
-            <ul className="mt-4 grid gap-2 border-t border-[#E7EDF0] pt-3 text-sm text-[#536168] md:grid-cols-2">
-              {rfq.items.map((item) => (
-                <li key={item.id}>
-                  <span className="font-semibold text-[#17242A]">{item.product?.name ?? item.product?.product_code ?? "未知商品"}</span>
-                  <span> · {item.quantity} {item.unit}</span>
-                  {item.item_note ? <span className="text-xs text-[#809099]">（{item.item_note}）</span> : null}
-                </li>
-              ))}
-            </ul>
-            {rfq.total_note ? <p className="mt-3 text-sm leading-6 text-[#536168]">備註：{rfq.total_note}</p> : null}
-          </article>
-        ))}
-        {rfqs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#B8CBD4] p-10 text-center text-sm text-[#809099]">目前沒有企業詢價。</div>
-        ) : null}
-      </div>
-    </PanelShell>
   );
 }
 

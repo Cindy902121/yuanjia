@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import BusinessHeader from "../catalog/business-header";
+import BusinessBreadcrumb from "../catalog/business-breadcrumb";
 import ProductFinderClient from "./product-finder-client";
 
 /**
- * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」）：這頁登入
- * 前就會被導回 /login（見下面 redirect 判斷），內容本身也是 B2B 私有型錄的
- * 一部分，跟 /business/catalog 同一個道理不該被索引——但一直沒有 export
- * `metadata`，等於沒有明確的 `robots` 設定。照 /business/catalog/page.tsx
- * 已經在用的做法補上，不需要另外設計新的模式。
+ * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」；B 同時也在
+ * codex/b-b2b-portal-experience 加了同一個 metadata，合併 main 時兩邊撞在
+ * 一起——這頁登入前就會被導回 /login，內容也是 B2B 私有型錄的一部分，跟
+ * /business/catalog 同一個道理不該被索引，兩邊想法一致，保留 B 的 title
+ * 文案（跟其他 B2B 頁面的「...元家企業採購服務」格式一致）。
  */
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
-  title: "需求篩選器 | 元家",
+  title: "需求篩選器 | 元家企業採購服務",
 };
 
 export default async function ProductFinderPage() {
@@ -28,8 +28,8 @@ export default async function ProductFinderPage() {
     <div className="min-h-screen bg-[#F7F6F2] text-[#17242A]">
       <BusinessHeader companyName={access.companyName} />
       <main className="mx-auto max-w-6xl px-5 py-8 lg:px-8">
-        <Link className="text-sm font-semibold text-[#005DAA] hover:underline" href="/business/catalog">← 返回企業型錄</Link>
-        <div className="mt-6"><p className="text-xs font-bold tracking-[.16em] text-[#005DAA]">PRODUCT FINDER</p><h1 className="mt-2 text-3xl font-bold">需求篩選器</h1><p className="mt-2 text-sm leading-6 text-[#536168]">先選擇用途、加工方式或保存條件，再交由業務確認規格與報價。</p></div>
+        <BusinessBreadcrumb current="需求篩選器" />
+        <div className="mt-6"><p className="text-xs font-bold tracking-[.16em] text-[#005DAA]">CHANNEL FINDER</p><h1 className="mt-2 text-3xl font-bold">需求篩選器</h1><p className="mt-2 text-sm leading-6 text-[#536168]">先選擇主要銷售通路，再瀏覽適合的企業商品；規格、包裝與報價由業務確認。</p></div>
         <ProductFinderClient />
       </main>
     </div>
