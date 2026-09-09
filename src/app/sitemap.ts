@@ -44,6 +44,12 @@ import { SITE_URL } from "@/lib/seo";
  * 報導，見 src/lib/content/media-detail.ts）——原本規劃給 /news 的內容
  * 搬來這裡，sitemap 條目也跟著搬。
  *
+ * 2026-09-08：正式 MVP 路由範圍確認。B2B 內容頁（`/business`、
+ * `/business/about/*`、`/business/news/*`）是登入後私有內容，與
+ * `/business/homepage-preview`、`/business/prototype-home`、`/catalog-preview/*`
+ * 一律不進 XML sitemap；`/news`、`/news/[slug]`、`/media`、`/media/[slug]`
+ * 是公開 B2C 內容，保留在 sitemap。購物車也不進 sitemap。
+ *
  * 沒有帶 `lastModified`——`b2c_products` 雖然有 `updated_at` 欄位，但目前查詢層
  * （B2C_PRODUCT_FIELDS）沒有選取它，為了這個次要欄位去擴充核心商品查詢的回傳
  * 型別（ProductDetailData）不划算，`lastModified` 本來就是可選欄位，先省略。
@@ -65,7 +71,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/media`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/news`, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   const productEntries: MetadataRoute.Sitemap = products.map((product) => ({

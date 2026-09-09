@@ -10,11 +10,17 @@ import { getNewsArticle } from "../../news-data";
 export async function generateMetadata(props: PageProps<"/business/news/article/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const article = getNewsArticle(slug);
-  if (!article) return { title: "找不到公告 | 元家企業採購服務" };
+  if (!article) {
+    return {
+      title: "找不到公告 | 元家企業採購服務",
+      robots: { index: false, follow: false },
+    };
+  }
 
   return {
     title: `${article.title} | 元家企業採購服務`,
     description: article.summary,
+    robots: { index: false, follow: false },
   };
 }
 
@@ -26,6 +32,7 @@ export default async function BusinessNewsArticlePage(props: PageProps<"/busines
   const access = await getB2BAccess();
   if (access.role === "anonymous") redirect("/login");
   if (access.role === "admin") redirect("/admin");
+  if (access.role === "business_staff") redirect("/admin/business");
   if (access.role === "b2c") redirect("/");
 
   const categoryHref = `/business/news/${article.category}`;

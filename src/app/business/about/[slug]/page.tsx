@@ -26,6 +26,7 @@ export default async function BusinessAboutDetailPage(props: PageProps<"/busines
   const access = await getB2BAccess();
   if (access.role === "anonymous") redirect("/login");
   if (access.role === "admin") redirect("/admin");
+  if (access.role === "business_staff") redirect("/admin/business");
   if (access.role === "b2c") redirect("/");
 
   return (

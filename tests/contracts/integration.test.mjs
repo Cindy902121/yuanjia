@@ -611,6 +611,67 @@ test(
 );
 
 test(
+  "finalized route scope protects B2B content and keeps public content public",
+  { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
+  async () => {
+    for (const path of ["/business", "/business/about/company", "/business/news/activities"]) {
+      const response = await request(path);
+      assert.ok([307, 308].includes(response.status), `${path} should require login`);
+      assert.equal(new URL(response.headers.get("location"), baseUrl).pathname, "/login");
+    }
+
+    for (const path of [
+      "/news",
+      "/news/diamond-seafood-box",
+      "/media",
+      "/media/2wan-dun-supply-chain",
+    ]) {
+      assert.equal((await request(path)).status, 200, `${path} should remain public`);
+    }
+
+    const b2bCookies = await login(credentials.b2b);
+    for (const path of [
+      "/business",
+      "/business/about/company",
+      "/business/news/activities",
+      "/business/news/offers",
+      "/business/news/yuanjia",
+      "/business/news/article/shanghai-fisheries-2026",
+    ]) {
+      assert.equal((await request(path, { headers: { cookie: b2bCookies } })).status, 200, `${path} should be available to B2B`);
+    }
+
+    for (const [path, expectedLocation] of [
+      ["/business/about", "/business/about/company"],
+      ["/business/news", "/business/news/activities"],
+    ]) {
+      const response = await request(path, { headers: { cookie: b2bCookies } });
+      assert.ok([307, 308].includes(response.status), `${path} should resolve to its default child page`);
+      assert.equal(new URL(response.headers.get("location"), baseUrl).pathname, expectedLocation);
+    }
+
+    const b2cCookies = await login(credentials.b2c);
+    for (const path of [
+      "/business",
+      "/business/about",
+      "/business/about/company",
+      "/business/news",
+      "/business/news/activities",
+      "/business/news/article/shanghai-fisheries-2026",
+    ]) {
+      const response = await request(path, { headers: { cookie: b2cCookies } });
+      assert.ok([307, 308].includes(response.status), `${path} should redirect B2C users`);
+      assert.equal(new URL(response.headers.get("location"), baseUrl).pathname, "/");
+    }
+
+    const adminCookies = await login(credentials.admin);
+    const adminBusinessRoute = await request("/business", { headers: { cookie: adminCookies } });
+    assert.ok([307, 308].includes(adminBusinessRoute.status));
+    assert.equal(new URL(adminBusinessRoute.headers.get("location"), baseUrl).pathname, "/admin");
+  },
+);
+
+test(
   "B2B RFQ preserves multiple options for one product and other text",
   { skip: integrationReady ? false : "set CONTRACT_TEST_BASE_URL and the three demo credential pairs to run" },
   async () => {
