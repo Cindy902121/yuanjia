@@ -9,6 +9,15 @@ import { getNewsArticles } from "../news-data";
 
 export const metadata: Metadata = { robots: { index: false, follow: false }, title: "大宗專案 | 元家企業採購服務" };
 
+// Keep the subject visually centered when wide campaign photos are cropped into card media.
+const offerImageFocalPoints: Record<string, string> = {
+  "summer-restaurant-restock": "38% center",
+  "new-product-trial": "29% center",
+  "group-meal-proposal": "28% center",
+  "holiday-preorder": "28% center",
+  "expo-consultation": "35% center",
+};
+
 export default async function BusinessOfferNewsPage() {
   const access = await getB2BAccess();
   if (access.role === "anonymous") redirect("/login");
@@ -35,7 +44,7 @@ export default async function BusinessOfferNewsPage() {
         </div>
         <section aria-labelledby="featured-offer" className="mt-9 border border-[#C7D7E0] bg-white">
           <div className="grid lg:grid-cols-[1.05fr_1fr]">
-            <div className="relative min-h-64 overflow-hidden bg-[#DCEBF2] lg:min-h-[320px]"><Image alt={featuredOffer.title} className="object-cover" fill priority sizes="(min-width: 1024px) 535px, 100vw" src={featuredOffer.offer.imagePath} /></div>
+            <div className="relative min-h-64 overflow-hidden bg-[#DCEBF2] lg:min-h-[320px]"><Image alt={featuredOffer.title} className="object-cover" fill priority sizes="(min-width: 1024px) 535px, 100vw" src={featuredOffer.offer.imagePath} style={{ objectPosition: offerImageFocalPoints[featuredOffer.slug] ?? "center" }} /></div>
             <div className="flex flex-col p-6 sm:p-8">
               <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold tracking-[0.12em] text-[#005DAA]">FOCUS OFFER</p><span className="border border-[#A8C8DA] px-2 py-1 text-xs font-medium text-[#356277]">展示用方案</span></div>
               <h2 className="mt-5 text-2xl font-bold leading-8" id="featured-offer">{featuredOffer.title}</h2>
@@ -50,7 +59,7 @@ export default async function BusinessOfferNewsPage() {
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             {otherOffers.map((offer) => offer.offer ? (
               <article className="overflow-hidden border border-[#D1DCE1] bg-white" key={offer.slug}>
-                <div className="grid sm:grid-cols-[11rem_1fr]"><div className="relative min-h-44 bg-[#DCEBF2] sm:min-h-full"><Image alt={offer.title} className="object-cover" fill sizes="(min-width: 768px) 176px, 100vw" src={offer.offer.imagePath} /></div><div className="p-5"><p className="text-xs font-bold tracking-[0.1em] text-[#005DAA]">展示用方案</p><h3 className="mt-2 text-lg font-bold leading-7">{offer.title}</h3><p className="mt-2 text-sm leading-6 text-[#536168]">{offer.summary}</p><dl className="mt-4 space-y-2 border-t border-[#E1E7EA] pt-3 text-xs leading-5 text-[#536168]"><div><dt className="inline font-bold text-[#718087]">適用品類：</dt><dd className="inline">{offer.offer.productCategories}</dd></div><div><dt className="inline font-bold text-[#718087]">MOQ：</dt><dd className="inline">{offer.offer.moq}</dd></div><div><dt className="inline font-bold text-[#718087]">價格：</dt><dd className="inline font-bold text-[#005DAA]">{offer.offer.pricing}</dd></div></dl><Link className="mt-4 inline-flex border-b border-[#005DAA] pb-1 text-sm font-bold text-[#005DAA] transition hover:text-[#00457F]" href={`/business/news/article/${offer.slug}`}>查看方案內容</Link></div></div>
+                <div className="grid sm:grid-cols-[11rem_1fr]"><div className="relative min-h-44 bg-[#DCEBF2] sm:min-h-full"><Image alt={offer.title} className="object-cover" fill sizes="(min-width: 768px) 176px, 100vw" src={offer.offer.imagePath} style={{ objectPosition: offerImageFocalPoints[offer.slug] ?? "center" }} /></div><div className="p-5"><p className="text-xs font-bold tracking-[0.1em] text-[#005DAA]">展示用方案</p><h3 className="mt-2 text-lg font-bold leading-7">{offer.title}</h3><p className="mt-2 text-sm leading-6 text-[#536168]">{offer.summary}</p><dl className="mt-4 space-y-2 border-t border-[#E1E7EA] pt-3 text-xs leading-5 text-[#536168]"><div><dt className="inline font-bold text-[#718087]">適用品類：</dt><dd className="inline">{offer.offer.productCategories}</dd></div><div><dt className="inline font-bold text-[#718087]">MOQ：</dt><dd className="inline">{offer.offer.moq}</dd></div><div><dt className="inline font-bold text-[#718087]">價格：</dt><dd className="inline">{offer.offer.pricing}</dd></div></dl><Link className="mt-4 inline-flex border-b border-[#005DAA] pb-1 text-sm font-bold text-[#005DAA] transition hover:text-[#00457F]" href={`/business/news/article/${offer.slug}`}>查看方案內容</Link></div></div>
               </article>
             ) : null)}
           </div>
