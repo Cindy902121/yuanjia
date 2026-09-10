@@ -6,7 +6,7 @@
 
 | 身分 | 登入資料 | 登入成功後 |
 | --- | --- | --- |
-| B2C 會員 | Email + 密碼 | 留在 B2C 流程 |
+| B2C 會員 | Email + 密碼、Google OAuth | 留在 B2C 流程 |
 | B2B 公司使用者 | 外部系統提供的客戶代碼（Z/E/W＋6 碼數字）+ 公司共用密碼 | `/business/catalog` |
 | Admin | Email + 密碼 | `/admin` |
 | Business staff | Email + 密碼 | `/admin/business` |
@@ -26,6 +26,9 @@
 ## Admin 入口規則
 
 - 前台導覽不顯示 Admin、後台或管理者登入入口。
+- B2C 會員可透過同一個 `/login` 使用 Email + 密碼或 Google OAuth 登入；新客可由「建立新帳號」前往 `/signup` 建立 Supabase Auth Email 帳號。
+- `/auth/callback` 負責交換 Supabase OAuth authorization code；成功導回 `/`，失敗回 `/login` 顯示一般錯誤。
+- Google OAuth 須先在 Supabase Auth 設定 Google provider，並將 `/auth/callback` 所在網站 URL 加入 redirect allow list。
 - Admin 透過同一個 `/login` 使用 Email + 密碼登入。
 - 伺服器確認使用者存在於啟用的 `app_admins` 後，依 `role` 將 `admin` 導向 `/admin`、`business_staff` 導向 `/admin/business`。
 - `/admin` 設定 `noindex`；直接輸入網址的未授權使用者必須被拒絕。

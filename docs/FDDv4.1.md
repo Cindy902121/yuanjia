@@ -21,6 +21,7 @@ Feature Complete：2026-09-10
 - 使用同一 Supabase 專案，但以資料表與 RLS 隔離 B2C、B2B、分析與管理資料。
 - B2B 公司使用一個 Auth identity 搭配公司共用密碼。
 - B2B 對外只使用 `Z/E/W`＋6 碼數字客戶代碼與公司共用密碼；Supabase Auth 的 Email 僅作伺服器端內部 identity。
+- B2C 會員可使用 Email／密碼或 Google OAuth 登入；新客由 `/signup` 建立 Supabase Auth identity。
 - Admin 前端只發起建立企業帳號；`auth.admin.createUser` 與 `companies` 寫入均在伺服器端完成，並在第二步失敗時清理剛建立的 Auth user。
 - 網站不與 ERP API、ERP 資料庫或 ERP 檔案交換流程串接。
 - 網站只保存網站功能必要資料，不保存 ERP 客戶名單、採購明細、成本、底價或成交資料。
@@ -81,6 +82,8 @@ flowchart LR
 | /business/product-finder | B2B 需求篩選器 | 導向登入 | 拒絕 | 允許 | 不使用 |
 | /business/rfq | 詢價籃與已送出資料 | 導向登入 | 拒絕 | 允許自己的公司資料 | 後台查看 |
 | /business/lead | 公開企業合作表單 | 允許 | 允許 | 不從 B2B 導覽進入 | 允許展示 |
+| /login | B2C／B2B 統一登入 | 允許 | Email／密碼或 Google OAuth | 客戶代碼／密碼 | 專屬 Email／密碼 |
+| /signup | B2C 新客建立帳號 | 允許 | 可建立 Email／密碼帳號 | 公開頁面，不影響 B2B session | 公開頁面，不影響 Admin session |
 | /admin | 內部管理後台 | 拒絕 | 拒絕 | 拒絕 | 允許 |
 | /admin/business | B2B 管理後台捷徑，預設開啟型錄頁籤 | 拒絕 | 拒絕 | 拒絕 | 允許 |
 
@@ -88,7 +91,7 @@ flowchart LR
 
 ### 2.2 角色定義
 
-- B2C：以 Email identity 登入或使用匿名購物流程。
+- B2C：以 Email／密碼或 Google OAuth 登入，也可使用匿名購物流程；新客由 `/signup` 建立帳號。
 - B2B：以使用者輸入的客戶代碼對應 `companies.client_code`，再登入該公司的 Supabase Auth identity。
 - Admin：MVP 使用固定展示管理者帳號；所有 Admin API 由伺服器驗證 `app_admins` 與啟用狀態。正式版再替換為完整內部管理者權限。
 - B2B 不建立 company_users 個人登入模型。
@@ -114,6 +117,10 @@ sequenceDiagram
     API-->>L: 回傳role與redirectTo；session寫入secure cookie
     L->>L: B2C留在B2C，B2B導向 /business/catalog；可返回 /business 內容首頁
 ```
+
+- B2C 的 Email／密碼註冊透過 Supabase Auth `signUp` 完成；有 session 時導回 `/`，需驗證時顯示 Email confirmation 提示。
+- B2C Google OAuth 透過 `signInWithOAuth({ provider: "google" })` 啟動，完成後由 `/auth/callback` 執行 `exchangeCodeForSession`。
+- Google provider 與 redirect allow list 由 Supabase 專案設定，client secret 不得寫入前端或 repository。
 
 ### 3.2 B2B 公司級身份
 
@@ -695,7 +702,8 @@ MVP 不建立公開寫入 API。前端只做欄位驗證與成功畫面，不保
 | 元件 | 責任 |
 |---|---|
 | Header | 品牌、目前區域、登入狀態、購物車或企業導覽 |
-| LoginForm | Email／客戶代碼與密碼輸入、錯誤狀態 |
+| LoginForm | Email／Google／客戶代碼登入、註冊連結與錯誤狀態 |
+| SignupForm | B2C Email／密碼註冊、確認密碼與 Email confirmation 提示 |
 | ProductCard | B2C 價格購物卡或 B2B 詢價卡 |
 | ProductDetail | 商品規格、產地、保存、品質與主要操作 |
 | BusinessGuard | 判斷 B2B session 與路由權限 |

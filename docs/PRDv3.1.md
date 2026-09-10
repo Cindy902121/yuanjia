@@ -70,6 +70,7 @@ Feature Complete：2026-09-10
 - 建立 B2B 行為事件與 Admin 詳細分析報表；B2C 行為分析交由 GA4，不另製作 B2C 後台分析報表。
 - 保存 B2B 詢價單與 B2C 模擬訂單。
 - 建立可由內部 Admin 操作的商品上下架、B2C 展示訂單狀態與 B2B 企業會員管理流程。
+- B2C 登入頁提供 Email／密碼與 Google OAuth；新客可由 `/signup` 建立 Supabase Auth 會員帳號。
 - 以 `Z/E/W`＋6 碼數字客戶代碼作為 B2B 對外登入識別，並與 Supabase Auth user 一對一綁定。
 - 完成 SEO 基礎、結構化資料、GA4、響應式與基本 WCAG 2.2 AA。
 
@@ -83,7 +84,7 @@ Feature Complete：2026-09-10
 - 客訴與售後服務管理模組，包含正式版。
 - 防截圖保證、DRM、右鍵封鎖或高強度內容保護。
 - 完整 2000+ 商品資料清洗與正式內容遷移；MVP 使用代表性展示資料驗證資料結構。
-- B2C 真實金流、物流、正式訂單、正式會員註冊與第三方商城 API。
+- B2C 真實金流、物流、正式訂單與第三方商城 API。
 - 真實 AI API；B2C AI 智能問答僅提供固定內容示範。
 - 可由後台新增、編輯或刪除標籤定義；標籤定義由開發團隊預先建立，後台只套用既有標籤。
 - Email、簡訊、推播與正式通知。
@@ -118,7 +119,7 @@ Feature Complete：2026-09-10
 flowchart TD
     A[根目錄 B2C] --> B[品牌 食安 產品與購物]
     A --> C[統一登入]
-    C -->|B2C Email| D[B2C 會員區]
+    C -->|B2C Email／Google| D[B2C 會員區]
     C -->|B2B 客戶代碼| E[B2B 企業專區]
     E --> F[私有型錄]
     F --> G[詢價籃]
@@ -324,7 +325,8 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 
 | 頁面 | 使用者目的 | 主要 CTA | 下一步 |
 |---|---|---|---|
-| /login 統一登入 | 使用 Email 或客戶代碼登入 | 登入 | B2C 留在 B2C；B2B 前往 /business/catalog |
+| /login 統一登入 | 使用 Email、Google 或客戶代碼登入 | 登入 | B2C 留在 B2C；B2B 前往 /business/catalog |
+| /signup B2C 建立帳號 | 新客建立 Email／密碼帳號 | 建立帳號 | 依 Supabase Auth confirmation 設定顯示成功或驗證提示 |
 
 #### B2C 頁面
 
@@ -418,8 +420,9 @@ B2B 核心任務完成點：詢價單成功保存於網站資料庫。後續由�
 
 **AUTH-01 登入**
 
-- 登入表單提供 Email／客戶代碼與密碼。
-- B2C 使用展示 Email 與密碼。
+- 登入表單提供 B2C Email／密碼、B2C Google OAuth，以及 B2B 客戶代碼／密碼。
+- B2C 新客可從 `/login` 前往 `/signup`，以 Supabase Auth 建立 Email／密碼帳號；若啟用 Email confirmation，須先完成信件驗證。
+- Google OAuth 完成後由 `/auth/callback` 交換 authorization code，成功回到 B2C 首頁；provider 未設定或驗證失敗時回到 `/login` 顯示一般錯誤。
 - B2B 只使用公司客戶代碼與公司共用密碼；客戶代碼須符合 `^[ZEW][0-9]{6}$`，輸入後由伺服器正規化為大寫並查詢 `companies.client_code`。
 - B2B 查到有效公司後，伺服器依 `companies.auth_user_id` 取得對應的 Supabase Auth 內部 Email，再完成 Auth 密碼驗證；內部 Email 不回傳給前端或企業客戶。
 - 伺服器端判斷帳號類型，不由前端決定權限。

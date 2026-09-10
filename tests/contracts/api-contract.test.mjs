@@ -10,6 +10,17 @@ function read(relativePath) {
   return readFileSync(join(ROOT, relativePath), "utf8");
 }
 
+function readIfExists(relativePath) {
+  try {
+    return read(relativePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return "";
+    }
+    throw error;
+  }
+}
+
 const routes = {
   b2cProducts: read("src/app/api/b2c/products/route.ts"),
   b2cFinder: read("src/app/api/b2c/product-finder/route.ts"),
@@ -47,11 +58,17 @@ const b2cLayouts = [
   read("src/app/(b2c)/products/tags/layout.tsx"),
 ];
 const cartPage = read("src/app/(b2c)/cart/page.tsx");
+const loginForm = read("src/app/login/login-form.tsx");
+const signupForm = readIfExists("src/app/signup/signup-form.tsx");
+const authCallback = readIfExists("src/app/auth/callback/route.ts");
 
 const adminDashboard = read("src/app/admin/admin-dashboard.tsx");
 const productEditor = read("src/app/admin/business/products/product-editor.tsx");
 const productPage = read("src/app/admin/business/products/[productId]/page.tsx");
 const newProductPage = read("src/app/admin/business/products/new/page.tsx");
+const b2cProductEditor = readIfExists("src/app/admin/products/product-editor.tsx");
+const b2cProductPage = readIfExists("src/app/admin/products/[productId]/page.tsx");
+const newB2cProductPage = readIfExists("src/app/admin/products/new/page.tsx");
 const adminCatalogTools = read("src/app/admin/admin-catalog-tools.tsx");
 
 const EVENT_NAMES = [
@@ -159,6 +176,17 @@ test("B2C and B2B guards are not interchangeable", () => {
   assert.match(routes.analytics, /!isB2bEvent && context\.company/);
   assert.doesNotMatch(routes.b2cProducts, /b2b_products/);
   assert.doesNotMatch(routes.b2bProducts, /b2c_products/);
+});
+
+test("B2C login offers Google OAuth and account creation", () => {
+  assert.match(loginForm, /使用 Google 帳號登入/);
+  assert.match(loginForm, /signInWithOAuth/);
+  assert.match(loginForm, /provider:\s*"google"/);
+  assert.match(loginForm, /href="\/signup"/);
+  assert.match(loginForm, /建立新帳號/);
+  assert.match(signupForm, /auth\.signUp/);
+  assert.match(signupForm, /emailRedirectTo/);
+  assert.match(authCallback, /exchangeCodeForSession/);
 });
 
 test("B2B sessions are blocked from every B2C shopping page", () => {
@@ -357,6 +385,27 @@ test("admin UI exposes the complete B2B catalog workflow in the correct scopes",
   assert.match(productEditor, /每張圖片都必須填寫替代文字/);
   assert.doesNotMatch(productEditor, /alt_text: item\.altText\.trim\(\), sort_order: index/);
   assert.match(productEditor, /alt_text: item\.altText\.trim\(\) }/);
+});
+
+test("admin UI exposes the B2C catalog create, edit, tag and media workflow", () => {
+  assert.match(adminDashboard, /href="\/admin\/products\/new"/);
+  assert.match(adminDashboard, /href=\{`\/admin\/products\/\$\{product\.id\}`\}/);
+  assert.match(newB2cProductPage, /requireAdminPage\("\/admin\/products\/new"\)/);
+  assert.match(b2cProductPage, /requireAdminPage\(`\/admin\/products\/\$\{productId\}`\)/);
+  assert.match(b2cProductEditor, /\/api\/admin\/products\/b2c/);
+  assert.match(b2cProductEditor, /expected_updated_at/);
+  assert.match(b2cProductEditor, /ProductImageManager/);
+  for (const field of [
+    "slug",
+    "price",
+    "mock_inventory",
+    "food_safety_info",
+    "quality_info",
+    "tag_ids",
+  ]) {
+    assert.match(b2cProductEditor, new RegExp(field));
+  }
+  assert.match(routes.adminTags, /export async function GET/);
 });
 
 test("admin UI wires CSV import without exposing prefix rule CRUD", () => {
