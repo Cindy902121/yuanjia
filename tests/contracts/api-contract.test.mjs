@@ -38,11 +38,13 @@ const routes = {
 const b2cPages = [
   read("src/app/(b2c)/page.tsx"),
   read("src/app/(b2c)/products/page.tsx"),
-  read("src/app/(b2c)/products/categories/[slug]/page.tsx"),
-  read("src/app/(b2c)/products/tags/[slug]/page.tsx"),
   read("src/app/(b2c)/products/[slug]/page.tsx"),
   read("src/app/(b2c)/cart/page.tsx"),
   read("src/app/(b2c)/checkout/page.tsx"),
+];
+const b2cLayouts = [
+  read("src/app/(b2c)/products/categories/layout.tsx"),
+  read("src/app/(b2c)/products/tags/layout.tsx"),
 ];
 const cartPage = read("src/app/(b2c)/cart/page.tsx");
 
@@ -163,6 +165,10 @@ test("B2B sessions are blocked from every B2C shopping page", () => {
   for (const page of b2cPages) {
     assert.match(page, /requireB2cAccess/);
     assert.match(page, /await requireB2cAccess\(\)/);
+  }
+  for (const layout of b2cLayouts) {
+    assert.match(layout, /requireB2cAccess/);
+    assert.match(layout, /await requireB2cAccess\(\)/);
   }
   assert.match(cartPage, /robots: \{ index: false, follow: false \}/);
   assert.match(routes.b2cProducts, /context\.company/);

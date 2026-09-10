@@ -1,9 +1,11 @@
 # 資料庫設計與契約
 
-> 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；本機
-> HTTP／seed／Admin real contract 34/34（15 個 API 靜態、11 個資料庫／文件靜態、
-> 8 個整合案例）已於 2026-08-29 重新執行通過；另依 2026-08-30 驗收回報，
-> hosted／staging 真實整合測試已通過；原 31/31 記錄已核對並更新。
+> 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；目前 `main`
+>（本次 `main` 驗收基準）執行 `pnpm test:contracts` 為 52 pass、0 fail、9 skipped（共 61 項），
+> 9 個跳過案例需另外載入本機／隔離測試 server、Auth identity 或資料庫。
+> 2026-09-09 最新一次在本機 Supabase 執行 `pnpm test:contracts:real`，結果為 44 pass、
+> 0 fail、0 skipped；Auth 重啟後已補回停用公司／第二公司 fixture identity。
+> 下方保留 2026-08-29 與 2026-08-30 的歷史驗收紀錄，但不作為目前測試統計。
 > 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
 > `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
@@ -149,8 +151,9 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
 - [x] B2B 多規格選項由獨立 migration 建表，展示選項由 `supabase/seed.sql` 可重跑建立。
 - [x] 後台商品、角色、圖片、規格選項、標籤與 B2B CSV 批量新增 API 已建立；B2C／B2B Storage 權限與圖片 metadata migration 已建立。
-- [x] C API 與 B 的登入／前端整合已完成；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，本機 HTTP／seed／Admin real contract 34/34 已於 2026-08-29 重新執行通過。
-- [x] 依 2026-08-30 驗收回報，hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
+- [x] C API 與 B 的登入／前端整合已完成；未載入本機／隔離整合環境時，`main` 加本輪工作樹的 `pnpm test:contracts` 為 52 pass、0 fail、9 skipped（2026-09-09）；最新本機 real runner 為 44 pass、0 fail、0 skipped。
+- [x] 歷史紀錄（2026-08-29）：本機 HTTP／seed／Admin real contract 34/34 通過。
+- [x] 歷史紀錄（2026-08-30）：hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
 - [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；CI 維持只跑靜態檢查，不連接測試資料庫；hosted／staging 驗收另依隔離環境執行。
 - [x] B2C schema 擴充延後至另一次有明確資料模型與 backfill／rollback 計畫的工作，
   決策記錄於 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。
