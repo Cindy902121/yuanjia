@@ -1,6 +1,6 @@
 # Admin 共用互動規則與驗收案例
 
-版本：v1.2｜整理日期：2026-09-09｜實作盤點基準：`main`（本次驗收基準）
+版本：v1.3｜整理日期：2026-09-10｜實作盤點基準：`main`（本次驗收基準）
 
 用途：統一 Admin 導覽狀態、詳情互動、日期口徑與資料更新的開發和驗收依據。
 
@@ -210,10 +210,10 @@
 |---|---|---|
 | TypeScript `tsc --noEmit --incremental false` | 通過 | `/private/tmp/yuanjia-admin-validation.2CSK6j`，完整隔離依賴；未讀取 secrets。 |
 | Admin／相關 API ESLint | 通過 | 同一隔離副本，0 errors、0 warnings。 |
-| `node --test tests/contracts/*.test.mjs` | 52 通過、9 跳過 | 9 個需要本地／隔離服務憑證或真實資料庫的整合案例未執行；沒有失敗。 |
-| `pnpm test:contracts:real` | 44 通過、0 失敗、0 跳過 | 2026-09-09；補回本機停用公司／第二公司 fixture identity 後重跑，44 案例全部通過。 |
+| `node --test tests/contracts/*.test.mjs` | 52 通過、9 跳過 | 預設 runner 不載入本機整合環境；9 個案例在本指令中維持 skipped，不代表尚未完成，已由下一列 real runner 覆蓋。 |
+| `pnpm test:contracts:real` | 44 通過、0 失敗、0 跳過 | 2026-09-09、`main` 驗收基準；補回本機停用公司／第二公司 fixture identity 後重跑，44 案例全部通過。 |
 | `node --test tests/contracts/admin-auth.test.mjs tests/contracts/admin-interactions.test.mjs` | 14 通過 | 3 個 Admin auth 回歸案例加 11 個日期、query、分析函式與 RFQ route 案例；Supabase 邊界使用本機替身。 |
-| Next `build --webpack` | 通過 | 60 個頁面產生完成；build 未連線遠端資料。 |
+| Next `build --webpack` | 通過 | 61 個頁面產生完成；build 未連線遠端資料。 |
 | 瀏覽器 390／1440px 未登入流程 | 通過 | 本機只回 401 的 Supabase stub；`/admin`、`/admin/business` 導向同站登入，兩尺寸無水平溢位。 |
 
 ### 8.2 最新人工瀏覽器驗收（2026-09-09）

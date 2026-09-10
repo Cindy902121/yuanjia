@@ -1,16 +1,16 @@
 # Supabase migration 歷史整理
 
-## 結論（2026-09-09）
+## 結論（文件同步：2026-09-10；最近一次驗證：2026-09-09）
 
 已依目前 linked remote 與 repository 版本核對 migration。遠端 `supabase_migrations.schema_migrations` 與 repository 的 `supabase/migrations/` 目前均以 12 支 active migration 為基準，版本與名稱逐筆對齊；最新一支為 `20260904031445_b2b_product_finder_channel_tags.sql`。
 
 linked remote 的 `supabase db push --linked --dry-run --skip-vault` 回報 `upToDate: true`，沒有 pending migration。這次沒有執行 `migration repair` 或正式 `db push`；本機隔離 DB 的 `db reset` 已完成。
 
-本機隔離資料庫曾有 12 筆 history，包含沒有 repository 檔案的孤兒版本 `20260812150002_b2c_editor_fields`、`20260827030729_admin_replace_b2b_product_tags`；這是歷史狀態，不是目前 active 清單。現在依 12 支 active migration 重建並執行 `supabase/seed.sql`，local history 以 12/12 為對齊基準，`supabase db push --local --dry-run --skip-vault` 應回報 `upToDate: true`。
+本機隔離資料庫曾有 12 筆 history，包含沒有 repository 檔案的孤兒版本 `20260812150002_b2c_editor_fields`、`20260827030729_admin_replace_b2b_product_tags`；這是歷史狀態，不是目前 active 清單。現在依 12 支 active migration 重建並執行 `supabase/seed.sql`，local history 以 12/12 為對齊基準，`supabase db push --local --dry-run --skip-vault` 回報 `upToDate: true`。
 
 動態 seed rerun 已完成：在沒有主機 `psql` 的情況下，測試透過 Docker container fallback 連線 `54322`，連續執行兩次 `supabase/seed.sql`，Auth identity 綁定保持不變；展示資料筆數也符合預期（B2C／B2B 商品 6／8、標籤 17／27、規格選項 10、標籤關聯 31／50）。
 
-Admin Analytics 五家公司整合驗證已完成：測試動態建立 5 家企業，透過 summary API 驗證漏斗、商品／RFQ 排名、Finder，以及 4 家資料聚合為 `其他（已遮罩）`；同一測試實際下載 CSV 並回查 `analytics_export_audits`。2026-09-09 最新 real contract 共 44 案例、44 pass、0 fail、0 skipped；停用公司登入阻擋、第二公司 RFQ 隔離與 seed rerun 也已通過。未載入整合環境時，預設契約測試為 52 pass、0 fail、9 skipped。
+Admin Analytics 五家公司整合驗證已完成：測試動態建立 5 家企業，透過 summary API 驗證漏斗、商品／RFQ 排名、Finder，以及 4 家資料聚合為 `其他（已遮罩）`；同一測試實際下載 CSV 並回查 `analytics_export_audits`。2026-09-09 最新 real contract 共 44 案例、44 pass、0 fail、0 skipped；停用公司登入阻擋、第二公司 RFQ 隔離與 seed rerun 也已通過。未載入整合環境時，預設契約測試為 52 pass、0 fail、9 skipped；這是預設 runner 的環境限制，不代表 9 個真實整合案例未完成。
 
 ## Active migration 順序
 
