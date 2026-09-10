@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
+import { getProductPhoto } from "@/lib/product-photos";
 import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, editorialStepperWrap } from "@/lib/editorial/styles";
 
 /**
@@ -24,6 +26,11 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * 增減數量按鈕（見下方）本來就有 `減少／增加 {name} 數量` 這種帶商品名稱的
  * aria-label，也是 CartDrawer.tsx 移除按鈕原本就有的寫法，這裡補齊讓兩處
  * 一致。
+ *
+ * 2026-09-10（使用者回報購物車品項一直顯示「無商品圖片」，跟 CartDrawer.tsx
+ * 同一個根因、同一個修法）：CartItem 沒有存圖片快照，改用 `item.slug` 即時
+ * 查 `getProductPhoto()`（src/lib/product-photos.ts），詳細理由見
+ * CartDrawer.tsx 同一天的檔頭註解，不重複寫一次。
  */
 export function CartPageClient() {
   const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
@@ -63,14 +70,22 @@ export function CartPageClient() {
       </div>
 
       <ul className="flex flex-col">
-        {items.map((item) => (
+        {items.map((item) => {
+          const photo = getProductPhoto(item.slug);
+          return (
           <li key={item.productId} className="flex flex-wrap items-center gap-4 border-b border-[#0B1620]/10 py-6">
-            <div
-              aria-hidden="true"
-              className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
-            >
-              無商品圖片
-            </div>
+            {photo ? (
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden bg-[#F6FBFC]">
+                <Image src={photo.url} alt={photo.alt} fill sizes="64px" className="object-cover" />
+              </div>
+            ) : (
+              <div
+                aria-hidden="true"
+                className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
+              >
+                無商品圖片
+              </div>
+            )}
 
             <div className="flex min-w-[8rem] flex-1 flex-col gap-1">
               <Link
@@ -118,7 +133,8 @@ export function CartPageClient() {
               REMOVE
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <div className="flex flex-col gap-4 border-t border-[#0B1620]/15 pt-6">

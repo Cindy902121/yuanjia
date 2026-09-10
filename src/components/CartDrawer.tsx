@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
+import { getProductPhoto } from "@/lib/product-photos";
 import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, editorialStepperWrap } from "@/lib/editorial/styles";
 
 /**
@@ -43,6 +45,15 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * rgb 值（原本對應 `#2b2b2b`＝rgb(43,43,43)，現在對應 `#0B1620`＝
  * rgb(11,22,32)），純粹是陰影顏色本身要跟著新的文字／邊框色系一致，不是
  * 新增或調整陰影效果。
+ *
+ * 2026-09-10（使用者回報購物車品項一直顯示「無圖片」）：CartItem
+ * （src/lib/cart/store.ts）只存 productId／slug／name／price／quantity，
+ * 加入購物車當下沒有把圖片一起存進快照——這是刻意的（名稱／價格要鎖住
+ * 加入當下的值），但圖片不像名稱／價格會變動，沒有必要跟著鎖快照，所以
+ * 用 `item.slug` 即時查 `getProductPhoto()`（src/lib/product-photos.ts）
+ * 取圖，不用改 CartItem 的資料結構、也不用處理 localStorage 舊資料的
+ * 相容性問題。沒有對應照片的 slug（目前 6 筆商品都有）維持顯示「無圖片」
+ * 佔位，不是把整個防呆邏輯拿掉。
  */
 export function CartDrawer() {
   const { items, totalPrice, updateQuantity, removeItem } = useCart();
@@ -161,14 +172,22 @@ export function CartDrawer() {
             ) : (
               <>
                 <ul className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    const photo = getProductPhoto(item.slug);
+                    return (
                     <li key={item.productId} className="flex gap-3 border-b border-[#0B1620]/10 pb-5 last:border-0 last:pb-0">
-                      <div
-                        aria-hidden="true"
-                        className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
-                      >
-                        無圖片
-                      </div>
+                      {photo ? (
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden bg-[#F6FBFC]">
+                          <Image src={photo.url} alt={photo.alt} fill sizes="64px" className="object-cover" />
+                        </div>
+                      ) : (
+                        <div
+                          aria-hidden="true"
+                          className="flex h-16 w-16 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
+                        >
+                          無圖片
+                        </div>
+                      )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <Link
                           href={`/products/${item.slug}`}
@@ -214,7 +233,8 @@ export function CartDrawer() {
                         🗑
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
 
                 <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 px-6 py-5">
