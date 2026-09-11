@@ -43,6 +43,13 @@ import Link from "next/link";
  * 兩色幾乎看不出差異（只是更黑一階），這是全站共用元件，這次 Migration
  * 唯一 touch 到、homepage 以外會受影響的正式檔案，但純粹一個顏色 token，
  * 排版、欄位結構、連結、文案跟上面這段一樣完全沒有動。
+ *
+ * 2026-09-11：「關於元家」跟 Header 同一批改動，從 `/#about`（首頁錨點）
+ * 改指到 `/about`（正式改版後的完整品牌故事頁，見
+ * `(b2c)/about/page.tsx`）。順便把它從 `FooterAnchor`（`<a>`，整頁重新
+ * 載入，本來是給同頁錨點用的）換成 `FooterLink`（Next.js `<Link>`，
+ * client-side 導頁），跟上面「全部商品」同一種真連結一致——`/about` 是
+ * 獨立頁面，不是首頁錨點，用 `<a>` 硬連過去會多一次整頁重新載入，沒必要。
  */
 export function Footer() {
   const year = new Date().getFullYear();
@@ -69,7 +76,7 @@ export function Footer() {
         <FooterColumn title="商品探索">
           <FooterLink href="/products">全部商品</FooterLink>
           <FooterAnchor href="/#quality">食安與產地</FooterAnchor>
-          <FooterAnchor href="/#about">關於元家</FooterAnchor>
+          <FooterLink href="/about">關於元家</FooterLink>
         </FooterColumn>
 
         <FooterColumn title="服務與政策">

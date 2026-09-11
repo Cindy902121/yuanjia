@@ -135,6 +135,14 @@ import { CartDrawer } from "@/components/CartDrawer";
  * - 斷點選 `lg`（1024px）而不是 `sm`／`md`：導覽項目數量（4 個主連結＋4 個
  *   帳號區塊項目）在平板寬度一樣塞不進一行，跟這個檔案其他地方（例如
  *   `lg:h-[76px]`）已經用 `lg` 當「完整桌面版佈局」的分界一致。
+ *
+ * 2026-09-11：「關於元家」主連結（桌機下拉觸發文字＋手機選單項目）從
+ * `/#about`（首頁錨點）改指到 `/about`——`/about` 正式改版成完整的品牌故事
+ * ＋24 筆大事紀互動時間軸＋企業優勢頁面（見 `(b2c)/about/page.tsx`），比
+ * 首頁錨點區塊的精簡摘要更完整，適合當作主連結目的地。下拉選單裡的「品牌
+ * 故事」「企業優勢」子連結維持指向首頁錨點（`/#brand-story`／
+ * `/#advantages`）沒有動——那兩個是「在首頁快速定位」的用途，跟主連結要換
+ * 的是兩件事，沒有一併改的理由。
  */
 export async function Header() {
   const supabase = await createClient();
@@ -182,7 +190,7 @@ export async function Header() {
             食安與產地
           </Link>
           <div className="group relative">
-            <Link href="/#about" className={navLinkClass}>
+            <Link href="/about" className={navLinkClass}>
               關於元家
             </Link>
             <div className="invisible absolute left-1/2 top-full z-10 w-40 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
@@ -255,7 +263,7 @@ export async function Header() {
         <Link href="/#quality" className={mobileNavLinkClass}>
           食安與產地
         </Link>
-        <Link href="/#about" className={mobileNavLinkClass}>
+        <Link href="/about" className={mobileNavLinkClass}>
           關於元家
         </Link>
         <Link href="/media" className={`${mobileNavLinkClass} pl-5 text-xs text-white/55`}>

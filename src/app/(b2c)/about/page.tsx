@@ -1,8 +1,14 @@
-import Image from "next/image";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
-import { FadeInSection } from "@/components/editorial/FadeInSection";
 import { EditorialStyles } from "@/components/editorial/EditorialStyles";
+import { FadeInSection } from "@/components/editorial/FadeInSection";
+import { WaterRipple } from "@/app/(b2c)/_ocean/water-ripple";
+import { ScallopLineArt } from "@/app/(b2c)/_ocean/marine-line-art";
+import { editorialButtonLight } from "@/lib/editorial/styles";
+import { heroContent, introContent, timeline, strengthsContent, closingContent } from "./about-content";
+import { AboutTimeline } from "./about-timeline";
+import { AboutStrengths } from "./about-strengths";
 
 const TITLE = "關於元家 | 元家";
 const DESCRIPTION = "元家企業的品牌故事、企業優勢與經營理念，從 1968 年澎湖草創至今的水產食品供應商。";
@@ -19,116 +25,137 @@ export const metadata: Metadata = {
   }),
 };
 
-const ADVANTAGES = [
-  { title: "國際採購", description: "掌握全球水產源頭，通過 MSC、ASC 等國際永續漁業認證，兼顧美味與海洋永續。" },
-  { title: "研發生產", description: "自有食品研發中心與生產工廠，取得 FSSC 22000、HACCP 等多項國際品質認證。" },
-  { title: "食品安全", description: "專職品保團隊層層把關，全台超過 20 位專職品保人員，每批進貨自主性品質檢測。" },
-  { title: "倉儲物流", description: "大型冷凍倉庫全年溫控 -20°C 以下，搭配專業物流管理系統，確保新鮮送達。" },
-];
-
 /**
- * /about 頁面（2026-08-19，PRD B2C 伸展項目，8/17-8/22 團隊任務清單列為選做）。
+ * /about 頁面（2026-08-19 原始建立，PRD B2C 伸展項目）。
  *
- * 首頁本來就有 #brand-story／#advantages 兩個錨點區塊涵蓋同樣內容（見
- * src/app/page.tsx），這裡不是重新編一份新內容，而是把同樣的真實內容（品牌
- * 故事、企業優勢，來源見首頁檔案的檔頭說明）做成一個有獨立網址、可以直接
- * 分享／被搜尋引擎索引的頁面，適合「關於我們」這種常被外部連結／SEO 需要
- * 獨立網址的情境（首頁的錨點區塊沒有自己的 title／description，分享出去
- * 只會看到「元家首頁」，不是「關於元家」）。
+ * 2026-09-11：正式版改版。原本是首頁 #brand-story／#advantages 兩個錨點
+ * 區塊的精簡摘要搬過來的獨立網址版本（品牌故事兩段文字＋企業優勢四行
+ * 條列），這次換成完整的品牌故事＋24 筆大事紀互動時間軸＋企業優勢深度
+ * 版面——先在獨立的 `/about-preview` Preview Route 做完整設計、時間軸
+ * 互動、Correction Pass（移除深色背景／放大過小字級／確認圖片）三輪，
+ * 使用者確認設計後這次正式套用到這個既有的 `/about` 路徑上：
  *
- * 內容跟首頁保持一致（同一份真實資料），故意沒有另外加首頁沒有的新事實內容，
- * 避免同一件事在两個地方各講一個版本、之後其中一邊漏改。
+ * - 網址維持原樣，不是新路徑——`sitemap.ts` 早就有 `/about` 這筆
+ *   （monthly／priority 0.6），完全不需要動 sitemap／robots。
+ * - 這個檔案在 `(b2c)` route group 底下，Header／Footer／
+ *   B2CHelpWidget／GA4 由 `(b2c)/layout.tsx` 自動套用（見該檔案），
+ *   不是這個頁面自己要處理的事，也不會漏掉。
+ * - 內容資料層（`about-content.ts`）全部 import 自既有、真實、來源是
+ *   yens.com.tw 的 `src/app/business/about/about-data.ts`，不重寫任何
+ *   年份／數字／事實。首頁 `(b2c)/page.tsx` 的品牌故事／企業優勢
+ *   Section 完全沒有被這次改版觸碰，兩邊各自獨立維護版面，只共用同一份
+ *   事實資料源頭。
+ * - 原本 `/about-preview` 底下的四個檔案已經整組搬過來（`page.tsx`／
+ *   `about-content.ts`／`about-timeline.tsx`／`about-strengths.tsx`），
+ *   `src/app/about-preview/` 這個 Preview 專用資料夾已刪除，避免正式版
+ *   上線後還留著一份內容重複、且沒有 Header／Footer 的舊版孤兒頁面。
  */
 export default function AboutPage() {
   return (
     <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
+      <WaterRipple />
 
-      {/* Hero：跟首頁同樣的滿版圖片＋白字疊層手法。 */}
-      <section className="relative flex min-h-[360px] items-end overflow-hidden border-b border-[#D4DEE2] lg:min-h-[440px]">
-        <div className="absolute inset-0" aria-hidden="true">
-          <Image src="/hero-seafood.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
-        </div>
-        <FadeInSection className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 pb-14 pt-24 sm:px-8 lg:px-10">
-          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-white/85">
-            ABOUT
+      {/* About Hero：安靜開場，Typography 為主，不放照片、不複製首頁 Hero。 */}
+      <section className="relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 lg:px-10 lg:pb-40 lg:pt-40">
+        <ScallopLineArt
+          tone="light"
+          opacity={0.07}
+          className="right-[-60px] top-6 hidden h-[260px] w-[400px] lg:block"
+        />
+        <FadeInSection className="relative mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.4em] text-[#536168]">
+            {heroContent.kicker}
           </span>
-          <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-white sm:text-4xl">
-            關於元家
+          <h1 className="max-w-3xl font-[family-name:var(--ep-font-serif)] text-4xl font-light leading-[1.35] tracking-[0.02em] text-[#0B1620] sm:text-5xl lg:text-6xl">
+            {heroContent.title}
           </h1>
+        </FadeInSection>
+        <FadeInSection
+          aria-hidden="true"
+          className="relative mx-auto mt-24 flex w-full max-w-[1200px] justify-center lg:mt-32"
+        >
+          <span className="h-10 w-px bg-[#0B1620]/25" />
         </FadeInSection>
       </section>
 
-      {/* 品牌故事 */}
-      <section className="border-b border-[#D4DEE2]">
-        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1fr] lg:gap-20 lg:px-10 lg:py-32">
-          <FadeInSection className="flex flex-col gap-8">
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
-              01 · BRAND STORY
-            </span>
-            <span className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
-              品牌故事
-            </span>
+      {/* Brand Introduction：Lead → 短段落 → Key Quote → 數字，建立閱讀節奏。 */}
+      <section className="border-t border-[#0B1620]/10">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
+          <FadeInSection className="max-w-2xl">
+            <p className="font-[family-name:var(--ep-font-serif)] text-2xl font-light leading-[1.6] text-[#0B1620] sm:text-3xl">
+              {introContent.lead}
+            </p>
           </FadeInSection>
-
-          <FadeInSection className="flex flex-col gap-6 lg:pt-16">
-            <p className="text-[15px] font-light leading-[2] text-[#536168]">
-              元家企業的故事，最早可追溯到 1968 年於澎湖草創的「元進行」商行；1979
-              年於台北正式成立元家企業股份有限公司，隔年在高雄設立冷凍草蝦外銷廠，以自創品牌行銷日本、美國，奠定日後發展的基礎。此後陸續拓展冷凍水產的進口、銷售與生產加工，並跨足調理食品領域，2012
-              年起積極開拓海外市場，成為橫跨零售、餐飲、電商與國際貿易的水產食品供應商。
+          <FadeInSection className="max-w-xl">
+            <p className="text-[17px] font-light leading-[1.9] text-[#0B1620] sm:text-[18px]">
+              {introContent.paragraph}
             </p>
-            <p className="text-[15px] font-light leading-[2] text-[#536168]">
-              我們期望透過食的流通，將幸福傳遞給世界——提供穩定、值得信賴的商品與服務，同時關懷生態環境的平衡，引領安心的飲食文化。
+          </FadeInSection>
+          <FadeInSection className="border-y border-[#0B1620]/15 py-10">
+            <p className="mx-auto max-w-2xl text-center font-[family-name:var(--ep-font-serif)] text-xl font-light leading-[1.9] tracking-[0.03em] text-[#0B1620] sm:text-2xl">
+              {introContent.quote}
             </p>
+          </FadeInSection>
+          <FadeInSection className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+            {introContent.stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col gap-2 border-l border-[#0B1620]/15 pl-4">
+                <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#C2401D] sm:text-4xl">
+                  {stat.value}
+                </span>
+                <span className="text-sm font-light text-[#536168]">{stat.label}</span>
+              </div>
+            ))}
           </FadeInSection>
         </div>
       </section>
 
-      {/* 企業優勢 */}
-      <section className="border-b border-[#D4DEE2] bg-[#F6FBFC]">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-14 px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
+      {/* History Timeline：本頁核心互動，見 about-timeline.tsx。 */}
+      <section className="border-t border-[#0B1620]/10 pt-20 lg:pt-32">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 pb-14 sm:px-8 lg:px-10">
           <FadeInSection>
             <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
-              02 · STRENGTHS
+              HISTORY · 1968—TODAY
             </span>
-            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.05em] text-[#0B1620] sm:text-3xl">
-              企業優勢
+            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620] sm:text-3xl">
+              每一年，都是元家往前的一小步。
             </h2>
           </FadeInSection>
+        </div>
+        <AboutTimeline timeline={timeline} />
+      </section>
 
-          <div className="flex flex-col">
-            {ADVANTAGES.map((item, index) => (
-              <FadeInSection key={item.title}>
-                <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 py-8 sm:flex-row sm:items-baseline sm:gap-10 lg:py-10">
-                  <span className="font-[family-name:var(--ep-font-en)] text-3xl font-thin text-[#C2401D] sm:w-24 sm:shrink-0">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="font-[family-name:var(--ep-font-serif)] text-lg font-medium text-[#0B1620] sm:w-48 sm:shrink-0">
-                    {item.title}
-                  </h3>
-                  <p className="max-w-xl text-sm font-light leading-[1.9] text-[#536168]">{item.description}</p>
-                </div>
-              </FadeInSection>
-            ))}
-          </div>
+      {/* Enterprise Strengths：bg-[#F6FBFC]（首頁企業優勢既有在用的極淡
+          色階）做輕微 tonal variation，不用大面積深色背景區隔 Section。 */}
+      <section className="border-t border-[#0B1620]/10 bg-[#F6FBFC] px-5 py-20 sm:px-8 lg:px-10 lg:py-32">
+        <div className="mx-auto w-full max-w-[1200px]">
+          <FadeInSection className="mb-16 max-w-2xl">
+            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
+              STRENGTHS
+            </span>
+            <h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620] sm:text-3xl">
+              {strengthsContent.lead}
+            </h2>
+            <p className="mt-4 max-w-lg text-[17px] font-light leading-[1.85] text-[#536168]">
+              {strengthsContent.summary}
+            </p>
+          </FadeInSection>
+          <AboutStrengths items={strengthsContent.items} />
         </div>
       </section>
 
-      {/* 公司資訊，跟 Footer 同一份真實資料。 */}
-      <section>
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 py-20 text-center sm:px-8 lg:py-24">
+      {/* Closing */}
+      <section className="border-t border-[#0B1620]/10 px-5 py-24 text-center sm:px-8 lg:py-32">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
           <FadeInSection>
-            <p className="font-[family-name:var(--ep-font-serif)] text-lg text-[#0B1620]">
-              元家企業股份有限公司
-              <br />
-              <span className="text-sm text-[#536168]">YEN &amp; Brothers Enterprise CO., LTD.</span>
+            <p className="font-[family-name:var(--ep-font-serif)] text-xl font-light leading-[1.9] tracking-[0.03em] text-[#0B1620] sm:text-2xl">
+              {closingContent.statement}
             </p>
-            <p className="mt-4 text-sm font-light leading-7 text-[#536168]">
-              地址：242 新北市新莊區新北大道二段 217 號 14 樓
-              <br />
-              代表號：(02)8521-1230
-            </p>
+          </FadeInSection>
+          <FadeInSection>
+            <Link href="/products" className={editorialButtonLight}>
+              瀏覽商品 →
+            </Link>
           </FadeInSection>
         </div>
       </section>
