@@ -193,8 +193,12 @@ export const COUPON_STATUS_LABEL: Record<DemoCouponStatus, string> = {
   expired: "已失效",
 };
 
+/** 優惠券種類，決定 OffersSection 用哪個 Icon 呈現——不是憑外觀猜的，資料層就分類好。 */
+export type DemoCouponKind = "amount_off" | "free_shipping" | "percent_off";
+
 export interface DemoCoupon {
   id: string;
+  kind: DemoCouponKind;
   title: string;
   discountLabel: string;
   condition: string;
@@ -206,6 +210,7 @@ export interface DemoCoupon {
 export const DEMO_COUPONS: DemoCoupon[] = [
   {
     id: "coupon-new-member",
+    kind: "amount_off",
     title: "新會員優惠",
     discountLabel: "NT$ 150",
     condition: "訂單滿 NT$ 1,000 可折抵，每帳號限用一次",
@@ -214,6 +219,7 @@ export const DEMO_COUPONS: DemoCoupon[] = [
   },
   {
     id: "coupon-frozen-free-shipping",
+    kind: "free_shipping",
     title: "冷凍水產滿額免運",
     discountLabel: "免運費",
     condition: "單筆訂單冷凍水產品滿 NT$ 1,500 免運",
@@ -222,6 +228,7 @@ export const DEMO_COUPONS: DemoCoupon[] = [
   },
   {
     id: "coupon-salmon-discount",
+    kind: "percent_off",
     title: "鮭魚系列商品 85 折",
     discountLabel: "85 折",
     condition: "限鮭魚菲力系列商品，恕不與其他優惠併用",

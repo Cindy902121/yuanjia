@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { ProductCardData } from "@/lib/types/product";
 import { DEMO_MEMBER_PROFILE } from "@/lib/cart/demo-profile";
 import { logout } from "@/lib/actions/auth";
@@ -75,7 +76,7 @@ export function MemberCenter({
   return (
     <div className="mx-auto grid w-full max-w-[1320px] flex-1 grid-cols-1 gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[220px_1fr] lg:gap-20 lg:px-10 lg:py-24">
       {/* Member Navigation */}
-      <nav className="flex gap-6 overflow-x-auto pb-2 lg:sticky lg:top-28 lg:flex-col lg:gap-1 lg:self-start lg:overflow-visible lg:pb-0">
+      <nav className="flex gap-6 overflow-x-auto pb-2 lg:sticky lg:top-28 lg:flex-col lg:gap-1.5 lg:self-start lg:overflow-visible lg:pb-0">
         {NAV_ITEMS.map((item) => {
           const isActive = item.key === activeTab;
           return (
@@ -83,32 +84,42 @@ export function MemberCenter({
               key={item.key}
               type="button"
               onClick={() => setActiveTab(item.key)}
-              className={`flex shrink-0 items-baseline gap-3 whitespace-nowrap border-b-2 py-2 text-left transition-colors lg:border-b-0 lg:border-l-2 lg:py-2.5 lg:pl-4 ${
+              className={`flex shrink-0 items-baseline gap-3 whitespace-nowrap border-b-2 py-2.5 text-left transition-colors lg:border-b-0 lg:border-l-2 lg:py-3 lg:pl-4 ${
                 isActive ? "border-[#C2401D]" : "border-transparent"
               }`}
             >
               <span
-                className={`font-[family-name:var(--ep-font-en)] text-xs ${
+                className={`font-[family-name:var(--ep-font-en)] text-sm ${
                   isActive ? "text-[#C2401D]" : "text-[#536168]"
                 }`}
               >
                 {item.num}
               </span>
-              <span className={`text-sm ${isActive ? "text-[#0B1620]" : "text-[#536168] hover:text-[#0B1620]"}`}>
+              <span
+                className={`text-base ${isActive ? "font-medium text-[#0B1620]" : "text-[#536168] hover:text-[#0B1620]"}`}
+              >
                 {item.cn}
               </span>
             </button>
           );
         })}
 
-        <form action={logout} className="mt-2 hidden border-t border-[#0B1620]/10 pt-4 lg:block">
-          <button
-            type="submit"
-            className="text-xs tracking-[0.1em] text-[#536168] underline underline-offset-2 hover:text-[#C2401D]"
+        <div className="mt-4 hidden flex-col gap-3 border-t border-[#0B1620]/10 pt-5 lg:flex">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full border border-[#C2401D]/50 px-4 py-2 text-sm tracking-[0.1em] text-[#C2401D] transition-colors hover:border-[#C2401D] hover:bg-[#C2401D] hover:text-white"
+            >
+              登出
+            </button>
+          </form>
+          <Link
+            href="/faq"
+            className="text-sm tracking-[0.05em] text-[#536168] underline underline-offset-2 hover:text-[#0B1620]"
           >
-            登出
-          </button>
-        </form>
+            聯絡我們
+          </Link>
+        </div>
       </nav>
 
       {/* Content */}
@@ -135,14 +146,22 @@ export function MemberCenter({
         {activeTab === "offers" ? <OffersSection /> : null}
         {activeTab === "favorites" ? <FavoritesSection favorites={favorites} onRemove={removeFavorite} /> : null}
 
-        <form action={logout} className="mt-16 border-t border-[#0B1620]/10 pt-6 lg:hidden">
-          <button
-            type="submit"
-            className="text-xs tracking-[0.1em] text-[#536168] underline underline-offset-2 hover:text-[#C2401D]"
+        <div className="mt-16 flex flex-col gap-3 border-t border-[#0B1620]/10 pt-6 lg:hidden">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-fit border border-[#C2401D]/50 px-4 py-2 text-sm tracking-[0.1em] text-[#C2401D] transition-colors hover:border-[#C2401D] hover:bg-[#C2401D] hover:text-white"
+            >
+              登出
+            </button>
+          </form>
+          <Link
+            href="/faq"
+            className="w-fit text-sm tracking-[0.05em] text-[#536168] underline underline-offset-2 hover:text-[#0B1620]"
           >
-            登出
-          </button>
-        </form>
+            聯絡我們
+          </Link>
+        </div>
       </div>
     </div>
   );
