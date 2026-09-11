@@ -274,8 +274,8 @@ export function EditorialProductList({
             {filtered.map((product) => {
               const card = toCardData(product);
               return (
-                <FadeInSection key={product.id}>
-                  <div className="group relative flex flex-col gap-4">
+                <FadeInSection key={product.id} className="h-full">
+                  <div className="group relative flex h-full flex-col gap-4">
                     <div className="ep-hover-zoom relative aspect-[4/3]">
                       {card.coverImage ? (
                         <Image src={card.coverImage.url} alt={card.coverImage.alt} fill sizes="(min-width: 640px) 45vw, 90vw" className="object-cover" />
@@ -286,7 +286,7 @@ export function EditorialProductList({
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-1 flex-col gap-2">
                       <Link
                         href={`/products/${product.slug}`}
                         className="after:absolute after:inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5A36]"
@@ -296,16 +296,26 @@ export function EditorialProductList({
                         </h2>
                       </Link>
                       <p className="line-clamp-2 text-sm font-light leading-[1.8] text-[#536168]">{card.shortDescription}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-4">
-                        <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
-                          NT$ {card.price}
-                        </span>
-                        {card.inventoryStatus === "out_of_stock" ? (
-                          <span className="text-xs tracking-widest text-[#536168]">缺貨</span>
-                        ) : null}
-                      </div>
-                      <div className="relative z-10 mt-1">
-                        <AddToCartButton product={card} className={`${editorialButtonLight} min-h-9 w-full px-4 py-2 text-[11px]`} />
+
+                      {/* 2026-09-11（使用者回饋：商品列表最下面兩張卡片的「加入購物車」
+                          按鈕沒有對齊）：不同商品的 shortDescription 折行後高度不一，
+                          按鈕原本緊接在描述文字後面，同一列的卡片高度一樣（Grid 預設
+                          stretch），但卡片內部文字區塊本身只長到內容高度，導致按鈕
+                          垂直位置跟著描述長短跑掉。這裡讓文字區塊本身 `flex-1` 撐滿
+                          卡片高度，再用 `mt-auto` 把價格／按鈕這組壓到底部，不管描述
+                          折成一行還是兩行，同一列卡片的按鈕永遠切齊。 */}
+                      <div className="mt-auto flex flex-col gap-2 pt-1">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <span className="font-[family-name:var(--ep-font-en)] text-sm tracking-widest text-[#0B1620]">
+                            NT$ {card.price}
+                          </span>
+                          {card.inventoryStatus === "out_of_stock" ? (
+                            <span className="text-xs tracking-widest text-[#536168]">缺貨</span>
+                          ) : null}
+                        </div>
+                        <div className="relative z-10">
+                          <AddToCartButton product={card} className={`${editorialButtonLight} min-h-9 w-full px-4 py-2 text-[11px]`} />
+                        </div>
                       </div>
                     </div>
                   </div>
