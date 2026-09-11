@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: "/news",
-    images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: "元家最新消息" }],
+    images: [{ url: "/brand/company-network.jpg", width: 700, height: 472, alt: "元家員工團隊活動" }],
   }),
 };
 
@@ -37,17 +38,31 @@ export default function NewsPage() {
     <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
-      <section className={NEWS_ARTICLES.length === 0 ? "" : "border-b border-[#D4DEE2]"}>
-        <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
-          <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
-              NEWS
-            </span>
-            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620] sm:text-4xl">
-              最新消息
-            </h1>
-          </FadeInSection>
+      {/* Header banner：元家員工團隊活動照（public/brand/company-network.jpg，
+          來源 yens.com.tw，真實照片、無烙印文字），跟 /products／/faq 既有的
+          「滿版照片＋深色漸層＋白字」Hero 手法一致，標題落在漸層最暗的底部，
+          確保清晰可讀、不會跟照片內容打架。 */}
+      <section className="relative flex min-h-[240px] items-end overflow-hidden border-b border-[#D4DEE2] lg:min-h-[320px]">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="/brand/company-network.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+            style={{ filter: "saturate(0.85)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15" />
         </div>
+        <FadeInSection className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pb-16">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-white/85">
+            NEWS
+          </span>
+          <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-white sm:text-4xl">
+            最新消息
+          </h1>
+        </FadeInSection>
       </section>
 
       {NEWS_ARTICLES.length === 0 ? (

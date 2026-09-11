@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: "/faq",
-    images: [{ url: "/products-banner.jpg", width: 1920, height: 380, alt: "元家常見問題" }],
+    images: [{ url: "/brand/cold-storage.jpg", width: 600, height: 382, alt: "元家品保實驗室檢測作業" }],
   }),
 };
 
@@ -95,20 +96,35 @@ export default function FaqPage() {
       <JsonLd data={faqJsonLd} />
       <EditorialStyles />
 
-      <section className="border-b border-[#D4DEE2]">
-        <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-4 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
-          <FadeInSection>
-            <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
-              FAQ
-            </span>
-            <h1 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-[#0B1620] sm:text-4xl">
-              常見問題
-            </h1>
-            <p className="mt-4 max-w-xl text-sm font-light leading-[1.9] text-[#536168]">
-              本網站目前為 MVP 展示版本，實際下單、客服與退換貨服務請以正式上線後的公告為準。
-            </p>
-          </FadeInSection>
+      {/* Header banner：元家品保實驗室檢測照（public/brand/cold-storage.jpg，
+          來源 yens.com.tw，真實照片、無烙印文字），跟 /products 既有的
+          「滿版照片＋深色漸層＋白字」Hero 手法一致——漸層由下往上加深，
+          文字區塊落在最暗的底部，確保標題在任何照片內容上都清晰可讀，
+          不會跟照片細節打架。 */}
+      <section className="relative flex min-h-[240px] items-end overflow-hidden border-b border-[#D4DEE2] lg:min-h-[320px]">
+        <div className="absolute inset-0" aria-hidden="true">
+          <Image
+            src="/brand/cold-storage.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+            style={{ filter: "saturate(0.85)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15" />
         </div>
+        <FadeInSection className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-col gap-4 px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pb-16">
+          <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-white/85">
+            FAQ
+          </span>
+          <h1 className="font-[family-name:var(--ep-font-serif)] text-3xl font-light tracking-[0.05em] text-white sm:text-4xl">
+            常見問題
+          </h1>
+          <p className="max-w-xl text-sm font-light leading-[1.9] text-white/80">
+            本網站目前為 MVP 展示版本，實際下單、客服與退換貨服務請以正式上線後的公告為準。
+          </p>
+        </FadeInSection>
       </section>
 
       <section>
