@@ -382,7 +382,7 @@ migration，符合原條款的變更程序。
 **對應 API 與行為**
 
 - `GET /api/admin/analytics/summary`：只回傳 PostgreSQL 聚合結果，不回傳原始事件；篩選欄位跨欄位採 AND、同欄多選採 OR；少於 5 家公司的分組回傳「其他（已遮罩）」。
-- `GET /api/admin/analytics/export`：下載前需先填 `purpose`（必要）與可選 `note`，成功下載會寫入一筆 `analytics_export_audits`；只輸出聚合列，不輸出原始事件、完整客戶代碼或公司明細。
+- `GET /api/admin/analytics/export`：下載前需先填 `purpose`（必要）與可選 `note`，成功下載會寫入一筆 `analytics_export_audits`；手動與排程匯出都只輸出聚合列，不輸出原始事件、完整客戶代碼或公司明細。
 - 原始事件與 `customer_code_snapshot` 保留 24 個月，由 `public.cleanup_old_analytics_events()` 搭配 `pg_cron`（可用時，任務名 `yuanjia_analytics_retention`，排程 `0 3 1 * *`）每月自動清理；`pg_cron` 未啟用的環境需由外部排程呼叫同一函式。
 
 **與原設計的差異，供未來查核使用**
@@ -392,6 +392,19 @@ migration，符合原條款的變更程序。
   Email、IP、完整瀏覽器指紋或 User-Agent。
 - 詳細規則與驗收標準另見 `docs/database-plan.md`「C：後台／分析／整合」第
   C5 節（事件隱私與行為分析），本節為 FDD 端的對應紀錄。
+
+### 4.8.2 Admin Analytics 擴充（2026-09-11 界定稿）
+
+本節為已確認的後續需求，尚不代表程式、migration 或部署已完成。
+
+- 只有 `admin` 可使用 Analytics 擴充；`business_staff` 仍只能管理 B2B 商品與 RFQ。
+- 常用篩選由所有 Admin 共用，可使用、修改與刪除；保存日期與查詢條件，不保存分頁、排序或下鑽位置。快捷日期保存為動態規則，自訂日期保存固定起訖日，名稱不得重複。
+- 未遮罩的 Analytics 結果可進入客戶明細下鑽；保留目前日期與篩選，伺服器每頁 50 筆，依最後活動時間新到舊，支援企業名稱與客戶代碼搜尋。明細只包含企業名稱、`client_code`、啟用狀態、目前查詢範圍的聚合事件／工作階段／使用者／產品／RFQ 指標與最後活動時間；不包含 Auth email、user ID、session ID 或原始 `event_data`。遮罩列不可下鑽。
+- 排程匯出提供每日、每週、每月頻率與台北時間設定，預設 08:00；每個排程保存獨立條件快照，不受常用篩選日後修改影響。Vercel Cron 每 5 分鐘呼叫受保護的 server job；錯過執行時間不補跑，失敗每 5 分鐘重試最多 3 次；每月指定日期不存在時改在當月最後一天執行。
+- 排程匯出只產生聚合 CSV，存入私有 Supabase Storage 30 天；保留匯出稽核 metadata，不寄 Email。排程由所有 Admin 共用管理，儲存確認後立即啟用。
+- 異常告警只顯示在共用 Admin 告警中心。業務指標每日 08:00 檢查前一完整日，監測總事件數與活躍企業數；同長度前期下降至少 50% 且前期基準至少 10 才告警，前期有資料而本期為 0 時直接告警。當日 0 事件僅在前 7 個完整日合計至少 10 筆時告警。
+- API／Supabase 健康檢查每 5 分鐘執行，後端 Analytics API 或 Supabase 503／逾時連續 2 次才告警。排程失敗在重試耗盡後告警；同一規則與範圍只保留一筆未恢復告警，狀態為未讀／已確認／已恢復，任何 Admin 可確認，指標恢復後自動結案。
+- 以上功能整合在既有 Analytics 頁面：常用篩選與告警入口位於頁面上方，排程與匯出歷史位於匯出區，客戶明細由報表結果進入。
 
 ## 5. Supabase 與 RLS
 
@@ -436,7 +449,7 @@ B2B 存取必須同時滿足：
 - Request 只接受白名單 `event_name`、可選 `product_id` 與依事件允許的 `event_data`；不接受 `actor_user_id`、`company_id`、級距、通路、完整客戶代碼或個人資料。
 - 伺服器由 request 面向與路由推導 `surface`，再依登入 session、公司與 `customer_prefix_rules` 填入 `actor_user_id`、`company_id`、`session_id`、`customer_code_snapshot`、`customer_tier_snapshot` 與 `channel_snapshot`。
 - 產品、分類、品牌與 RFQ／Finder 參照由伺服器驗證並填入；B2B `event_data` 只保存白名單結構化欄位，B2C 事件的身份欄位與 `event_data` 維持空值／空物件。
-- 原始 `analytics_events` 對匿名、B2C、B2B 使用者均不可讀；Admin 只透過再次驗證 `admin` session 的資料庫聚合與匯出 API 讀取，CSV 不輸出原始事件、完整代碼或個別公司。
+- 原始 `analytics_events` 對匿名、B2C、B2B 使用者均不可讀；Admin 只透過再次驗證 `admin` session 的資料庫聚合、受限客戶明細與匯出 API 讀取。CSV 不輸出原始事件、完整代碼或個別公司；客戶明細僅在後台畫面提供最小欄位。
 
 ## 6. API 設計
 
@@ -624,7 +637,7 @@ Request 與伺服器規則：
 - 各產品行為排行與 RFQ 統計；RFQ 實際筆數、品項與數量由 `b2b_rfqs` 彙總。
 - 趨勢、級距與通路比較；群組少於 5 家不重複公司時併入「其他（已遮罩）」。
 
-`GET /api/admin/analytics/export` 使用相同查詢條件，必填 `purpose`（`operations_analysis`／`customer_service`／`audit`／`other`），可選 500 字 `note`；只輸出聚合 CSV，並在成功下載前寫入 `analytics_export_audits`，保存管理者、時間、用途、查詢範圍、格式與筆數。單次讀取完整 `customer_code_snapshot` 不另留稽核紀錄。
+`GET /api/admin/analytics/export` 使用相同查詢條件，必填 `purpose`（`operations_analysis`／`customer_service`／`audit`／`other`），可選 500 字 `note`；只輸出聚合 CSV，並在成功下載前寫入 `analytics_export_audits`，保存管理者、時間、用途、查詢範圍、格式與筆數。單次讀取完整 `customer_code_snapshot` 不另留稽核紀錄。排程匯出沿用聚合格式，另保存私有檔案與執行狀態，不把客戶明細放入檔案。
 
 ### 6.9 前綴規則資料
 
@@ -756,7 +769,7 @@ MVP 不建立公開寫入 API。前端只做欄位驗證與成功畫面，不保
 | 產品標籤套用 API | 後端可從既有 B2B／B2C 標籤清單套用或移除；目前未加入 AdminDashboard 頁籤，不建立標籤定義 |
 | 前綴規則 | 只由 migration／seed 建立與更新；企業清單讀取規則顯示級距，沒有 Admin CRUD 頁籤或 API |
 | 詢價 | 查看所有企業詢價品項、公司與快照，更新 `new`／`processing`／`closed` 狀態 |
-| 分析 | 僅提供 B2B 篩選、摘要、漏斗、產品／Finder／RFQ 統計與 CSV 匯出；B2C 分析由 GA4 負責 |
+| 分析 | 提供 B2B 篩選、摘要、漏斗、產品／Finder／RFQ 統計、Admin-only 客戶明細下鑽、共用篩選、排程聚合 CSV 與告警；B2C 分析由 GA4 負責 |
 | B2B 管理捷徑 | `/admin/business` 以 B2B 型錄頁籤開啟同一個 AdminDashboard |
 
 ## 8. 分析與資料流
@@ -902,7 +915,7 @@ B2C 與 B2B 即使有相同顯示名稱，也建立為不同的標籤資料，�
 - 每種白名單事件可保存。
 - 非白名單事件被拒絕。
 - B2B 事件正確保存 surface、customer_tier_snapshot 與 channel_snapshot。
-- 分析結果不宣稱可辨識單一公司或同一公司的不同瀏覽器。
+- 一般分析結果仍是聚合資料，不宣稱可辨識單一公司或同一公司的不同瀏覽器；只有經 Admin 授權且從未遮罩結果進入的客戶明細下鑽，才顯示該企業的最小聚合明細。
 - B2C 事件不包含姓名、電話、Email 或完整客戶代碼。
 - 前綴規則變更不修改歷史事件快照。
 - Admin 可依日期、customer_tier_snapshot、channel_snapshot、product_reference、product_category、product_brand、event_name、filter_type 與 finder_question 查詢；B2C 行為分析由 GA4 負責。

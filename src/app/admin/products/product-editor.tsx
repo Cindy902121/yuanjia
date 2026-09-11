@@ -702,7 +702,7 @@ export function ProductEditor({
               <div>
                 <p className="text-sm font-semibold text-[#17242A]">目前狀態：{isActive ? "上架中" : "已下架"}</p>
                 <p className="mt-1 text-sm text-[#536168]">
-                  {!isEditing ? "先儲存基本資料，才能切換上架狀態。" : hasCover ? "狀態會在儲存商品時更新。" : "目前沒有封面圖，完成圖片後才能上架。"}
+                  {!isEditing ? "先儲存基本資料，才能切換上架狀態。" : !isActive && !hasCover ? "目前沒有封面圖，完成圖片後才能上架。" : "狀態會在儲存商品時更新。"}
                 </p>
               </div>
               <label className="flex min-h-11 shrink-0 items-center gap-3 text-sm font-semibold text-[#17242A]">

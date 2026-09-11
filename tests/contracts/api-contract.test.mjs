@@ -189,6 +189,22 @@ test("B2C login offers Google OAuth and account creation", () => {
   assert.match(authCallback, /exchangeCodeForSession/);
 });
 
+test("mutually exclusive UI controls expose native radio semantics", () => {
+  const controls = [
+    ["login mode", "src/app/login/login-form.tsx", /name="login-mode"/],
+    ["B2B banner", "src/app/business/homepage-preview/homepage-preview-client.tsx", /name="business-banner"/],
+    ["product thumbnails", "src/app/business/catalog/catalog-inquiry-workspace.tsx", /name=\{`product-image-/],
+    ["admin inquiry status", "src/app/admin/operations-overview.tsx", /name="inquiry-status"/],
+  ];
+
+  for (const [label, path, namePattern] of controls) {
+    const source = read(path);
+    assert.match(source, /type="radio"/, `${label} should use radio inputs`);
+    assert.match(source, namePattern, `${label} should belong to a named radio group`);
+    assert.doesNotMatch(source, /aria-pressed/, `${label} should not be exposed as a toggle button`);
+  }
+});
+
 test("B2B sessions are blocked from every B2C shopping page", () => {
   for (const page of b2cPages) {
     assert.match(page, /requireB2cAccess/);
@@ -406,6 +422,13 @@ test("admin UI exposes the B2C catalog create, edit, tag and media workflow", ()
     assert.match(b2cProductEditor, new RegExp(field));
   }
   assert.match(routes.adminTags, /export async function GET/);
+});
+
+test("B2C editor does not show a missing-cover publish blocker for an active product", () => {
+  assert.match(
+    b2cProductEditor,
+    /!isActive && !hasCover \? "目前沒有封面圖，完成圖片後才能上架。"/,
+  );
 });
 
 test("admin UI wires CSV import without exposing prefix rule CRUD", () => {

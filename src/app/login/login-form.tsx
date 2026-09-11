@@ -102,30 +102,18 @@ export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) 
     <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
       <fieldset className="grid grid-cols-2 rounded-lg bg-[#EAF5FB] p-1" disabled={isSubmitting}>
         <legend className="sr-only">選擇登入方式</legend>
-        <button
-          aria-pressed={isEmail}
-          className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] ${
-            isEmail
-              ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]"
-              : "text-[#536168] hover:text-[#00457F]"
-          }`}
-          onClick={() => chooseMode("email")}
-          type="button"
-        >
-          會員登入
-        </button>
-        <button
-          aria-pressed={!isEmail}
-          className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] ${
-            !isEmail
-              ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]"
-              : "text-[#536168] hover:text-[#00457F]"
-          }`}
-          onClick={() => chooseMode("customer-code")}
-          type="button"
-        >
-          企業客戶
-        </button>
+        <label className="block">
+          <input checked={isEmail} className="peer sr-only" name="login-mode" onChange={() => chooseMode("email")} type="radio" value="email" />
+          <span className={`flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#005DAA] ${isEmail ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]" : "text-[#536168] hover:text-[#00457F]"}`}>
+            會員登入
+          </span>
+        </label>
+        <label className="block">
+          <input checked={!isEmail} className="peer sr-only" name="login-mode" onChange={() => chooseMode("customer-code")} type="radio" value="customer-code" />
+          <span className={`flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#005DAA] ${!isEmail ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]" : "text-[#536168] hover:text-[#00457F]"}`}>
+            企業客戶
+          </span>
+        </label>
       </fieldset>
 
       <p className="rounded-lg border border-[#CFE3F0] bg-[#EAF5FB] px-4 py-3 text-sm leading-6 text-[#00457F]">

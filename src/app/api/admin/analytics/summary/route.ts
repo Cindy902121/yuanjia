@@ -34,6 +34,14 @@ export async function GET(request: Request) {
   try {
     // surface=b2b；admin_b2b_analytics_summary 在資料庫內完成聚合，不載入原始事件。
     const report = await getB2bAnalyticsReport(admin, parsed.query);
+    const { data: activeProducts, error: activeProductsError } = await admin
+      .from("b2b_products")
+      .select("id")
+      .eq("status", "published")
+      .eq("is_active", true);
+    if (activeProductsError) throw activeProductsError;
+    const activeProductIds = new Set((activeProducts ?? []).map((product) => product.id));
+    report.options.products = report.options.products.filter((product) => activeProductIds.has(product.id));
     return json(report);
   } catch (error) {
     console.error("B2B analytics summary failed", error);

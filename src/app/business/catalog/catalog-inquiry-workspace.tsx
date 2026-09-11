@@ -281,13 +281,17 @@ function ProductGallery({ product }: { product: B2BProduct }) {
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#EAF5FB]">
         <Image alt={`${product.name}商品圖片 ${activeIndex + 1}`} className="object-cover" fill priority={activeIndex === 0} sizes="(min-width: 640px) 42vw, 100vw" src={images[activeIndex]} />
       </div>
-      <div aria-label="商品圖片切換" className="mt-3 flex gap-2 overflow-x-auto pb-1" role="list">
+      <fieldset className="mt-3 flex gap-2 overflow-x-auto border-0 p-0 pb-1">
+        <legend className="sr-only">商品圖片切換</legend>
         {images.map((src, index) => (
-          <button aria-label={`查看第 ${index + 1} 張商品圖片`} aria-pressed={activeIndex === index} className={`relative size-16 shrink-0 overflow-hidden rounded-lg border-2 transition ${activeIndex === index ? "border-[#005DAA] ring-2 ring-[#EAF5FB]" : "border-[#D9E1E5] hover:border-[#8FB8CD]"}`} key={src} onClick={() => setActiveIndex(index)} type="button">
-            <Image alt="" className="object-cover" fill sizes="64px" src={src} />
-          </button>
+          <label className="relative block size-16 shrink-0 overflow-hidden rounded-lg" key={src}>
+            <input aria-label={`查看第 ${index + 1} 張商品圖片`} checked={activeIndex === index} className="peer sr-only" name={`product-image-${product.productCode}`} onChange={() => setActiveIndex(index)} type="radio" value={src} />
+            <span aria-hidden="true" className={`absolute inset-0 rounded-lg border-2 transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#005DAA] ${activeIndex === index ? "border-[#005DAA] ring-2 ring-[#EAF5FB]" : "border-[#D9E1E5] hover:border-[#8FB8CD]"}`}>
+              <Image alt="" className="object-cover" fill sizes="64px" src={src} />
+            </span>
+          </label>
         ))}
-      </div>
+      </fieldset>
     </div>
   );
 }
