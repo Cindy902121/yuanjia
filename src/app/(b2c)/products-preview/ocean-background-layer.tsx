@@ -90,32 +90,43 @@ export function OceanBackgroundLayer({ activeCategoryLabel }: { activeCategoryLa
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       <div ref={layerRef} className="absolute inset-0 will-change-transform">
-        {/* 水下光感：兩個極淡的大型 radial gradient，transparent → 冰白 → transparent。 */}
+        {/* 水下光感：兩個大型 radial gradient，transparent → 白 → transparent。
+            2026-09-12（使用者回饋「完全看不出來有變化」）：第一版用
+            `rgba(247,251,252,…)`（接近純白的冰白）疊在 `#EAF4F8`（也接近
+            純白的淺藍）背景上——兩個顏色本身太接近，就算 alpha 疊到 50%
+            實際視覺差異也趨近於零，不是「調得不夠淡」，是顏色本身選錯、
+            天生就疊不出對比。這裡改用真正的純白 `rgba(255,255,255,…)`
+            （跟背景色有實際亮度差），alpha 也調高一階，才會是「看得到、
+            但看起來很輕」，不是「看不到」。 */}
         <div
           className="absolute -right-[10%] -top-[10%] h-[60vw] w-[60vw] max-h-[720px] max-w-[720px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(247,251,252,0.5) 0%, rgba(247,251,252,0) 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 68%)" }}
         />
         <div
           className="absolute -left-[15%] top-[55%] h-[50vw] w-[50vw] max-h-[600px] max-w-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(247,251,252,0.4) 0%, rgba(247,251,252,0) 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 68%)" }}
         />
 
+        {/* Marine Graphic Visual Anchor：同一個回饋，opacity 同步調高（約
+            2 倍），同時把桌機以下的隱藏門檻從 md（768px）放寬到直接顯示
+            （只在真的很窄的手機隱藏），確保使用者在一般筆電寬度就看得到，
+            不是只有很寬的桌機才顯示。 */}
         <CrabLineArt
           tone="light"
-          opacity={0.045}
-          className="right-[-8%] top-[4%] hidden h-[380px] w-[560px] md:block"
+          opacity={0.09}
+          className="right-[-6%] top-[4%] hidden h-[380px] w-[560px] sm:block"
         />
         <ScallopLineArt
           tone="light"
-          opacity={0.04}
-          className="bottom-[6%] left-[-10%] hidden h-[320px] w-[480px] md:block"
+          opacity={0.08}
+          className="bottom-[6%] left-[-8%] hidden h-[320px] w-[480px] sm:block"
         />
-        <CurrentLine className="left-[-5%] top-[42%] hidden w-[110%] lg:block" />
+        <CurrentLine className="left-[-5%] top-[42%] hidden w-[110%] md:block" />
 
         {activeCategoryLabel ? (
           <span
             aria-hidden="true"
-            className="absolute right-[2%] top-[38%] hidden select-none whitespace-nowrap font-[family-name:var(--ep-font-en)] text-[18vw] font-thin leading-none tracking-tight text-[#0B1620] opacity-[0.03] lg:block"
+            className="absolute right-[2%] top-[38%] hidden select-none whitespace-nowrap font-[family-name:var(--ep-font-en)] text-[18vw] font-thin leading-none tracking-tight text-[#0B1620] opacity-[0.05] md:block"
           >
             {activeCategoryLabel}
           </span>
@@ -128,12 +139,12 @@ export function OceanBackgroundLayer({ activeCategoryLabel }: { activeCategoryLa
 /** 抽象海流線——單純一條大型 S 型細線，暗示水流方向，不是任何生物輪廓。 */
 function CurrentLine({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 1600 300" className={`absolute ${className}`} style={{ opacity: 0.05 }} aria-hidden="true">
+    <svg viewBox="0 0 1600 300" className={`absolute ${className}`} style={{ opacity: 0.1 }} aria-hidden="true">
       <path
         d="M-50 180 C 200 60, 400 260, 650 140 S 1100 40, 1350 160 S 1650 220, 1700 120"
         fill="none"
         stroke="#0B1620"
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
       />
     </svg>
