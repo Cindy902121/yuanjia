@@ -38,9 +38,20 @@ type LineArtProps = {
   tone?: keyof typeof TONE_STROKE;
   className?: string;
   opacity?: number;
+  /**
+   * 覆寫預設的 `TONE_STROKE[tone]` 顏色，選填。2026-09-12（`/products-preview`
+   * 使用者回饋「Marine Line Art 幾乎看不見」，除錯後發現除了容器寬度問題外，
+   * `light` 這階固定用的 Mist `#536168` 跟 Pale Ice Blue 背景色差本來就偏小，
+   * 淡背景想要「看得到但不搶戲」需要比 Mist 更深一階的顏色，不是無限調高
+   * opacity 能解決的）——不傳就完全等於原本行為，首頁企業優勢／收尾引言
+   * 這兩個既有呼叫端沒有傳這個 prop，視覺不受影響。
+   */
+  strokeColor?: string;
+  /** 覆寫預設 strokeWidth，選填，同上不傳則行為不變。 */
+  strokeWidth?: number;
 };
 
-export function CrabLineArt({ tone = "light", className = "", opacity = 0.12 }: LineArtProps) {
+export function CrabLineArt({ tone = "light", className = "", opacity = 0.12, strokeColor, strokeWidth = 1.4 }: LineArtProps) {
   return (
     <svg
       aria-hidden="true"
@@ -63,8 +74,8 @@ export function CrabLineArt({ tone = "light", className = "", opacity = 0.12 }: 
           M315,140 L344,150 L366,164
         "
         fill="none"
-        stroke={TONE_STROKE[tone]}
-        strokeWidth={1.4}
+        stroke={strokeColor ?? TONE_STROKE[tone]}
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -72,7 +83,7 @@ export function CrabLineArt({ tone = "light", className = "", opacity = 0.12 }: 
   );
 }
 
-export function ScallopLineArt({ tone = "light", className = "", opacity = 0.08 }: LineArtProps) {
+export function ScallopLineArt({ tone = "light", className = "", opacity = 0.08, strokeColor, strokeWidth = 1.2 }: LineArtProps) {
   return (
     <svg
       aria-hidden="true"
@@ -86,8 +97,8 @@ export function ScallopLineArt({ tone = "light", className = "", opacity = 0.08 
           M60,70 L18.4,46 M60,70 L36,28.4 M60,70 L60,22 M60,70 L84,28.4 M60,70 L101.6,46
         "
         fill="none"
-        stroke={TONE_STROKE[tone]}
-        strokeWidth={1.2}
+        stroke={strokeColor ?? TONE_STROKE[tone]}
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
     </svg>
