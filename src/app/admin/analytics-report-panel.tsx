@@ -76,6 +76,13 @@ const EXPORT_PURPOSES = [
   ["other", "其他"],
 ] as const;
 
+const PRODUCT_STATUS_LABELS: Record<string, string> = {
+  draft: "草稿",
+  review: "待審核",
+  published: "已上架",
+  offline: "停用",
+};
+
 type ProductSort = "active_companies" | "product_views" | "rfq_adds" | "rfq_submits";
 type SavedFilter = { id: string; name: string; scope: Record<string, unknown>; created_at: string; updated_at: string };
 type AnalyticsSchedule = { id: string; name: string; frequency: "daily" | "weekly" | "monthly"; time_local: string; weekday: number | null; month_day: number | null; is_active: boolean; last_run_at: string | null };
@@ -91,7 +98,7 @@ const buttonClass =
   "inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 const TABLE_PAGE_SIZE = 50;
 
-function buildQuery(dateFrom: string, dateTo: string, filters: AnalyticsFilters) {
+function buildQuery(dateFrom: string, dateTo: string, filters: AnalyticsFilters, includeInactiveProducts = false) {
   const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
   const values: Array<[keyof AnalyticsFilters, string]> = [
     ["customer_tier_snapshot", "customer_tier_snapshot"],
@@ -106,6 +113,7 @@ function buildQuery(dateFrom: string, dateTo: string, filters: AnalyticsFilters)
   for (const [field, key] of values) {
     if (filters[field].length) params.set(key, filters[field].join(","));
   }
+  if (includeInactiveProducts) params.set("include_inactive_products", "true");
   return params;
 }
 
@@ -270,7 +278,8 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
   const [dateTo, setDateTo] = useState(period.to);
   const [dateMode, setDateMode] = useState<SavedDateMode>({ type: "fixed" });
   const [filters, setFilters] = useState<AnalyticsFilters>(appliedFilters);
-  const resource = useAdminResource<AnalyticsResponse>(period.error ? null : `/api/admin/analytics/summary?${buildQuery(period.from, period.to, appliedFilters)}`, revision);
+  const [includeInactiveProducts, setIncludeInactiveProducts] = useState(params.get("include_inactive_products") === "true");
+  const resource = useAdminResource<AnalyticsResponse>(period.error ? null : `/api/admin/analytics/summary?${buildQuery(period.from, period.to, appliedFilters, includeInactiveProducts)}`, revision);
   const report = resource.data ?? null, loading = resource.pending;
   const [localError, setError] = useState("");
   const error = localError || period.error || resource.error;
@@ -320,18 +329,18 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
     return () => { active = false; };
   }, [revision]);
 
-  async function refresh(nextFilters = filters, nextDateFrom = dateFrom, nextDateTo = dateTo) {
+  async function refresh(nextFilters = filters, nextDateFrom = dateFrom, nextDateTo = dateTo, nextIncludeInactiveProducts = includeInactiveProducts) {
     const invalid = validatePeriod(nextDateFrom, nextDateTo, today);
     if (invalid) { setError(invalid); return; }
     setError("");
-    const values: Record<string, string | null> = { date_from: nextDateFrom, date_to: nextDateTo };
+    const values: Record<string, string | null> = { date_from: nextDateFrom, date_to: nextDateTo, include_inactive_products: nextIncludeInactiveProducts ? "true" : null };
     for (const key of Object.keys(EMPTY_FILTERS) as Array<keyof AnalyticsFilters>) values[key] = nextFilters[key].join(",") || null;
     changeAdminQuery(values);
-    if (nextDateFrom === period.from && nextDateTo === period.to && JSON.stringify(nextFilters) === JSON.stringify(appliedFilters)) await resource.reload();
+    if (nextDateFrom === period.from && nextDateTo === period.to && JSON.stringify(nextFilters) === JSON.stringify(appliedFilters) && nextIncludeInactiveProducts === includeInactiveProducts) await resource.reload();
   }
 
   const productOptions = useMemo(
-    () => (report?.options.products ?? []).map((product) => ({ value: product.id, label: `${product.product_code}｜${product.name}` })),
+    () => (report?.options.products ?? []).map((product) => ({ value: product.id, label: `${product.product_code}｜${product.name}${product.status && product.status !== "published" ? `（${PRODUCT_STATUS_LABELS[product.status] ?? "未上架"}）` : ""}` })),
     [report?.options.products],
   );
   const categories = useMemo(
@@ -354,6 +363,16 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
     void refresh(next);
   }
 
+  function changeProductVisibility(include: boolean) {
+    const nextFilters = include ? filters : {
+      ...filters,
+      product_reference: filters.product_reference.filter((id) => (report?.options.products ?? []).some((product) => product.id === id && product.status === "published" && product.is_active)),
+    };
+    setIncludeInactiveProducts(include);
+    setFilters(nextFilters);
+    void refresh(nextFilters, dateFrom, dateTo, include);
+  }
+
   function applyPreset(days: number) {
     const nextDateTo = days === 1 ? today : shiftDay(today, -1);
     const nextDateFrom = shiftDay(nextDateTo, 1 - days);
@@ -371,7 +390,7 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
     setError("");
     setDownloadMessage("");
     try {
-      const params = buildQuery(report.period.date_from, report.period.date_to, report.filters);
+      const params = buildQuery(report.period.date_from, report.period.date_to, report.filters, includeInactiveProducts);
       params.set("purpose", purpose);
       if (note.trim()) params.set("note", note.trim());
       const response = await fetch(`/api/admin/analytics/export?${params}`, { cache: "no-store" });
@@ -402,6 +421,7 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
       date_from: report.period.date_from,
       date_to: report.period.date_to,
       date_mode: dateMode,
+      include_inactive_products: includeInactiveProducts,
       filters: Object.fromEntries(FILTER_KEYS.map((key) => [key, report.filters[key]])),
     };
   }
@@ -437,6 +457,7 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
       return;
     }
     const mode = scope.date_mode && typeof scope.date_mode === "object" && !Array.isArray(scope.date_mode) ? scope.date_mode as Record<string, unknown> : null;
+    const nextIncludeInactiveProducts = scope.include_inactive_products === true;
     const nextMode: SavedDateMode = mode?.type === "complete_days" && Number.isInteger(mode.days) && Number(mode.days) > 0 && Number(mode.days) <= 90
       ? { type: "complete_days", days: Number(mode.days) }
       : { type: "fixed" };
@@ -455,8 +476,9 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
     setDateMode(nextMode);
     setDateFrom(nextDateFrom);
     setDateTo(nextDateTo);
+    setIncludeInactiveProducts(nextIncludeInactiveProducts);
     setFilters(nextFilters);
-    void refresh(nextFilters, nextDateFrom, nextDateTo);
+    void refresh(nextFilters, nextDateFrom, nextDateTo, nextIncludeInactiveProducts);
   }
 
   async function createSchedule() {
@@ -493,7 +515,7 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
     setDrilldownLoading(true);
     setManagementError("");
     try {
-      const query = buildQuery(report.period.date_from, report.period.date_to, report.filters);
+      const query = buildQuery(report.period.date_from, report.period.date_to, report.filters, includeInactiveProducts);
       query.set("page", String(page));
       query.set("page_size", String(TABLE_PAGE_SIZE));
       if (drilldownSearch.trim()) query.set("search", drilldownSearch.trim());
@@ -569,6 +591,10 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
   const visibleFinderRows = finderRows.slice(currentFinderPage * TABLE_PAGE_SIZE, (currentFinderPage + 1) * TABLE_PAGE_SIZE);
   const visibleRfqRows = rfqRows.slice(currentRfqPage * TABLE_PAGE_SIZE, (currentRfqPage + 1) * TABLE_PAGE_SIZE);
   const activeFilterChips = report ? appliedFilterChips(report.filters, report.options.products) : [];
+  const appliedConditions = report ? [
+    { key: "date", label: "日期", value: `${report.period.date_from}～${report.period.date_to}` },
+    ...activeFilterChips,
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -587,6 +613,7 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
           <MultiSelect label="客戶級距" options={(report?.options.tiers ?? []).map((value) => ({ value, label: value === "unclassified" ? "未分類" : value }))} value={filters.customer_tier_snapshot} onChange={(value) => setFilters((current) => ({ ...current, customer_tier_snapshot: value }))} />
           <MultiSelect label="客戶通路" options={(report?.options.channels ?? []).map((value) => ({ value, label: value === "unclassified" ? "未分類" : value }))} value={filters.channel_snapshot} onChange={(value) => setFilters((current) => ({ ...current, channel_snapshot: value }))} />
           <MultiSelect label="商品" options={productOptions} value={filters.product_reference} onChange={(value) => setFilters((current) => ({ ...current, product_reference: value }))} />
+          <div className="rounded-lg border border-[#D8E1E5] bg-[#FBFDFE] px-3 py-2 lg:col-span-2"><label className="flex cursor-pointer items-start gap-3 text-sm font-semibold text-[#536168]"><input aria-describedby="analytics-inactive-products-hint" checked={includeInactiveProducts} className="mt-1 h-4 w-4 shrink-0 accent-[#005DAA]" onChange={(event) => changeProductVisibility(event.currentTarget.checked)} type="checkbox" /><span><span className="block text-[#17242A]">包含停用商品</span><span className="mt-1 block text-xs font-normal leading-5 text-[#809099]" id="analytics-inactive-products-hint">預設只顯示已上架且啟用中的商品；勾選後立即載入停用／測試商品。</span></span></label></div>
           <MultiSelect label="分類" options={categories} value={filters.product_category} onChange={(value) => setFilters((current) => ({ ...current, product_category: value }))} />
           <MultiSelect label="品牌" options={brands} value={filters.product_brand} onChange={(value) => setFilters((current) => ({ ...current, product_brand: value }))} />
           <MultiSelect label="事件名稱" options={(report?.options.event_names ?? []).map((value) => ({ value, label: EVENT_LABELS[value] ?? value }))} value={filters.event_name} onChange={(value) => setFilters((current) => ({ ...current, event_name: value as AnalyticsFilters["event_name"] }))} />
@@ -649,8 +676,8 @@ export default function AnalyticsReportPanel({ revision = 0 }: { revision?: numb
       {loading && !report ? <div className="rounded-2xl border border-[#D8E1E5] bg-white p-10 text-center text-sm text-[#536168]">正在整理 B2B 聚合資料…</div> : null}
       {report ? <>
         {report.totals.events === 0 ? <div className="rounded-xl border border-[#D8E1E5] bg-[#FBFDFE] px-4 py-3 text-sm text-[#536168]">此期間沒有資料；以下指標顯示為 0。</div> : null}
-        <p className="text-xs text-[#809099]">已套用：{report.period.date_from}～{report.period.date_to}（台北時間）。{report.period.date_to === today ? "今天的資料尚未結束，不顯示前期比較。" : `前期比較：${report.comparison.period.date_from}～${report.comparison.period.date_to}。`}</p>
-        {activeFilterChips.length ? <div aria-label="已套用條件" className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-[#536168]">已套用條件</span>{activeFilterChips.map((chip) => <span className="rounded-full border border-[#B8CBD4] bg-white px-2.5 py-1 text-xs text-[#536168]" key={chip.key}>{chip.label}：{chip.value}</span>)}</div> : null}
+        <div aria-label="已套用條件" aria-live="polite" className="mt-3 flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-[#536168]">已套用條件</span>{appliedConditions.map((chip) => <span className="rounded-full border border-[#B8CBD4] bg-white px-2.5 py-1 text-xs text-[#536168]" key={chip.key}>{chip.label}：{chip.value}</span>)}</div>
+        <p className="mt-2 text-xs text-[#809099]">台北時間。{report.period.date_to === today ? "今天的資料尚未結束，不顯示前期比較。" : `前期比較：${report.comparison.period.date_from}～${report.comparison.period.date_to}。`}</p>
         {report.totals.active_companies > 0 && report.totals.active_companies < 5 ? <div className="rounded-xl border border-[#E8C27A] bg-[#FFF8E7] px-4 py-3 text-sm font-semibold text-[#7A4B00]" role="note">目前 {number(report.totals.active_companies)} 家企業，少於 5 家，依隱私規則隱藏明細。</div> : null}
         <section className="rounded-2xl border border-[#D8E1E5] bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-bold">客戶明細下鑽</h3><p className="mt-1 text-xs text-[#809099]">僅 Admin 可查看；只顯示企業層級聚合指標，不提供原始事件資料。</p></div><button className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`} disabled={report.totals.active_companies < 5 || drilldownLoading} onClick={() => void loadDrilldown(1)} type="button">{drilldownLoading ? "讀取中…" : "查看客戶明細"}</button></div>

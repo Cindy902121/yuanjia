@@ -107,10 +107,31 @@ test("Admin exposes the B2B report and the active B2B journeys emit all ten even
 test("Admin analytics explains filter keys and reports filter, date and download states", () => {
   const report = read("src/app/admin/analytics-report-panel.tsx");
   const summary = read("src/app/api/admin/analytics/summary/route.ts");
+  const exportRoute = read("src/app/api/admin/analytics/export/route.ts");
   for (const label of ["關鍵字搜尋", "通路分類", "主要通路", "按住 Cmd／Ctrl 可複選", "已套用條件", "少於 5 家，依隱私規則隱藏明細", "總事件數（含重複）", "每活躍企業平均事件數", "清除篩選條件", "起日不得晚於迄日", "選擇匯出用途", "已下載"]) {
     assert.match(report, new RegExp(label));
   }
   assert.doesNotMatch(report, /清除全部/);
+  assert.match(report, /label: "日期"/);
+  assert.match(report, /aria-label="已套用條件" aria-live="polite"/);
+  assert.match(report, /appliedConditions\.map/);
+  assert.match(report, /content-disposition/);
+  assert.match(report, /link\.download = filename/);
+  assert.match(report, /setDownloadMessage\(`已下載 \$\{filename\}。`\)/);
+  assert.match(exportRoute, /Content-Disposition/);
+  assert.match(exportRoute, /b2b-analytics-\$\{parsed\.query\.dateToValue\}\.csv/);
   assert.match(summary, /from\("b2b_products"\)/);
   assert.match(summary, /eq\("status", "published"\)/);
+});
+
+test("Admin analytics hides inactive product options by default and exposes an explicit opt-in", () => {
+  const report = read("src/app/admin/analytics-report-panel.tsx");
+  const summary = read("src/app/api/admin/analytics/summary/route.ts");
+  assert.match(report, /包含停用商品/);
+  assert.match(report, /type="checkbox"/);
+  assert.match(report, /include_inactive_products/);
+  assert.match(report, /status === "published"/);
+  assert.match(summary, /include_inactive_products/);
+  assert.match(summary, /status.*published/);
+  assert.match(summary, /is_active/);
 });
