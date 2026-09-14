@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import BusinessHeader from "../../../catalog/business-header";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import { getNewsArticle } from "../../news-data";
+import NewsBanner from "../../news-banner";
 
 export async function generateMetadata(props: PageProps<"/business/news/article/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -30,19 +31,22 @@ export default async function BusinessNewsArticlePage(props: PageProps<"/busines
 
   const categoryHref = `/business/news/${article.category}`;
   const categoryLabel = article.category === "offers" ? "大宗專案" : article.categoryLabel;
+  const categoryKicker = article.category === "activities" ? "ACTIVITY UPDATES" : article.category === "yuanjia" ? "YUANJIA NEWS" : "BUSINESS PROJECTS";
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-[#17242A]">
+    <div className="min-h-screen bg-white text-[#17242A]">
       <BusinessHeader companyName={access.companyName} />
-      <Image alt="元家最新消息" className="h-auto w-full" height={350} priority src="/news-banner.jpg" width={1920} />
-      <main className="mx-auto max-w-[960px] px-5 py-9 lg:px-8 lg:py-12">
-        <nav aria-label="麵包屑導覽" className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-sm text-[#718087]">
-          <Link className="shrink-0 transition hover:text-[#005DAA]" href="/business">首頁</Link>
+      <NewsBanner kicker={categoryKicker} title={categoryLabel} />
+      <div className="bg-white">
+        <nav aria-label="麵包屑導覽" className="flex items-center gap-2 overflow-hidden whitespace-nowrap px-5 py-5 text-sm text-[#718087] sm:px-8 lg:px-10">
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href="/business">首頁</Link>
           <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
-          <Link className="shrink-0 transition hover:text-[#005DAA]" href={categoryHref}>最新消息</Link>
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href={categoryHref}>最新消息</Link>
           <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
-          <Link className="shrink-0 transition hover:text-[#005DAA]" href={categoryHref}>{categoryLabel}</Link>
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href={categoryHref}>{categoryLabel}</Link>
         </nav>
-        <article className="mt-8 border-t-2 border-[#17242A] pt-6">
+      </div>
+      <main className="mx-auto max-w-[960px] px-5 py-9 lg:px-8 lg:py-12">
+        <article className="border-t-2 border-[#17242A] pt-6">
           <p className="text-sm font-bold text-[#005DAA]">{categoryLabel}</p>
           <time className="mt-5 block text-sm tabular-nums text-[#718087]">{article.date}</time>
           <h1 className="mt-3 max-w-none text-3xl font-bold leading-[1.28] tracking-tight sm:text-[34px] lg:text-[36px]">{article.title}</h1>

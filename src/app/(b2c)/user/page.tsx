@@ -4,6 +4,7 @@ import { getSessionContext } from "@/lib/auth-context";
 import { logout } from "@/lib/actions/auth";
 import { DEMO_MEMBER_PROFILE } from "@/lib/cart/demo-profile";
 import { editorialButtonSolid } from "@/lib/editorial/styles";
+import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
 
 /**
  * /user 頁面（2026-08-19，PRD B2C 伸展項目，8/17-8/22 團隊任務清單列為選做）。
@@ -86,6 +87,17 @@ export default async function UserPage() {
                 <dd className="text-[#2b2b2b]">{DEMO_MEMBER_PROFILE.deliveryAddress}</dd>
               </div>
             </dl>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 pt-6">
+            <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#8a8a8a]">
+              帳號安全
+            </span>
+            <div>
+              <h2 className="font-[family-name:var(--ep-font-serif)] text-xl font-light text-[#2b2b2b]">變更密碼</h2>
+              <p className="mt-2 text-sm font-light leading-6 text-[#4a4a4a]">更新後，請使用新密碼登入您的會員帳號。</p>
+              <ChangePasswordForm email={user.email ?? ""} />
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-[#2b2b2b]/15 pt-6">

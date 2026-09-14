@@ -296,6 +296,7 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [stage, setStage] = useState<"edit" | "review">("edit");
   const submissionSucceeded = feedback.startsWith("詢價已送出");
   return (
     <aside aria-label="詢價單" className="h-full overflow-y-auto bg-white p-5 shadow-[-16px_0_32px_rgba(23,36,42,0.12)] sm:p-6" id="inquiry-list" tabIndex={-1}>
@@ -309,7 +310,8 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
           <button aria-label="收起詢價單" className="grid size-10 place-items-center rounded-full text-xl text-[#536168] transition hover:bg-[#F1F5F7] hover:text-[#17242A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]" onClick={onClose} type="button">×</button>
         </div>
       </div>
-      {items.length ? (
+      {!submissionSucceeded ? <ol aria-label="詢價步驟" className="mt-5 grid grid-cols-2 gap-2 text-xs font-bold"><li aria-current={stage === "edit" ? "step" : undefined} className={`flex items-center gap-2 border-b-2 pb-2 ${stage === "edit" ? "border-[#005DAA] text-[#005DAA]" : "border-[#B5DCC7] text-[#18794E]"}`}><span className={`grid size-5 place-items-center rounded-full ${stage === "edit" ? "bg-[#005DAA] text-white" : "bg-[#E8F6EE] text-[#18794E]"}`}>{stage === "review" ? "✓" : "1"}</span>編輯詢價</li><li aria-current={stage === "review" ? "step" : undefined} className={`flex items-center gap-2 border-b-2 pb-2 ${stage === "review" ? "border-[#005DAA] text-[#005DAA]" : "border-[#D9E1E5] text-[#809099]"}`}><span className={`grid size-5 place-items-center rounded-full ${stage === "review" ? "bg-[#005DAA] text-white" : "bg-[#F3F7F8] text-[#809099]"}`}>2</span>確認送出</li></ol> : null}
+      {items.length && stage === "edit" ? (
         <ul className="divide-y divide-[#E2E8EB]">
           {items.map(({ key, product, quantity, selection }) => (
             <li className="py-4" key={key}>
@@ -329,6 +331,27 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
             </li>
           ))}
         </ul>
+      ) : items.length && stage === "review" ? (
+        <section className="mt-5" aria-labelledby="inquiry-review-title">
+          <div className="rounded-xl border border-[#CFE0E8] bg-[#F4FAFD] p-4">
+            <p className="text-xs font-bold tracking-[0.14em] text-[#005DAA]">REVIEW</p>
+            <h3 className="mt-2 font-bold text-[#17242A]" id="inquiry-review-title">確認本次詢價內容</h3>
+            <p className="mt-1 text-xs leading-5 text-[#536168]">送出後將由業務依供應、規格與交期回覆；您仍可返回修改。</p>
+          </div>
+          <ul className="mt-4 divide-y divide-[#E2E8EB] rounded-xl border border-[#E2E8EB] bg-white px-4">
+            {items.map(({ key, product, quantity, selection }) => (
+              <li className="py-3" key={key}>
+                <p className="font-semibold leading-5 text-[#17242A]">{product.name}</p>
+                <p className="mt-1 text-xs leading-5 text-[#536168]">{selectionSpecification(selection)} · {selectionPackaging(selection)}</p>
+                <p className="mt-2 text-sm font-bold text-[#005DAA]">預估 {quantity} 箱</p>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 rounded-xl border border-[#E2E8EB] bg-white p-4">
+            <p className="text-xs font-bold tracking-[0.12em] text-[#536168]">補充需求</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#17242A]">{note.trim() || "未填寫補充需求"}</p>
+          </div>
+        </section>
       ) : feedback && feedback.startsWith("詢價已送出") ? (
         <div className="flex min-h-[calc(100dvh-9rem)] flex-col items-center justify-center px-4 text-center sm:min-h-[24rem]">
           <div className="mx-auto grid size-11 place-items-center rounded-full bg-[#E8F6EE] text-lg text-[#18794E]">✓</div>
@@ -344,12 +367,15 @@ function InquiryPanel({ items, onClose, onRemove, onSubmit, onUpdateQuantity }: 
           <p className="mt-2 text-xs leading-5 text-[#536168]">從型錄選擇規格後，會集中在這裡一次送出。</p>
         </div>
       )}
-      {!submissionSucceeded ? <div className="mt-2 border-t border-[#D9E1E5] pt-5">
+      {!submissionSucceeded && stage === "edit" ? <div className="mt-2 border-t border-[#D9E1E5] pt-5">
         <label className="block text-sm font-semibold" htmlFor="inquiry-note">補充需求</label>
         <textarea className="mt-2 min-h-24 w-full resize-y rounded-lg border border-[#B9CCD5] p-3 text-sm outline-none placeholder:text-[#809099] focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]" id="inquiry-note" onChange={(event) => setNote(event.target.value)} placeholder="例如：希望交期、配送地區、使用通路" value={note} />
-        <button className="mt-4 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length || submitting} onClick={async () => { setSubmitting(true); setFeedback(""); const response = await onSubmit(note); setFeedback(response.message); setSubmitting(false); }} type="button">{submitting ? "送出中…" : "確認詢價內容"}</button>
-        {feedback && !feedback.startsWith("詢價已送出") ? <p aria-live="polite" className="mt-3 rounded-lg bg-[#FFF1F0] p-3 text-xs leading-5 text-[#B42318]">{feedback}</p> : null}
-          <p aria-live="polite" className="mt-3 text-xs leading-5 text-[#536168]">送出後由業務確認規格與報價；本頁不顯示價格或庫存。</p>
+        <button className="mt-4 min-h-12 w-full rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length} onClick={() => { setFeedback(""); setStage("review"); }} type="button">確認詢價內容</button>
+        <p className="mt-3 text-xs leading-5 text-[#536168]">下一步可檢查品項、規格、數量與補充需求，再決定是否送出。</p>
+      </div> : !submissionSucceeded && stage === "review" ? <div className="mt-5 grid gap-3 border-t border-[#D9E1E5] pt-5 sm:grid-cols-2">
+        <button className="min-h-12 rounded-lg border border-[#B9CCD5] px-4 text-sm font-bold text-[#536168] transition hover:border-[#005DAA] hover:text-[#005DAA]" disabled={submitting} onClick={() => setStage("edit")} type="button">返回修改</button>
+        <button className="min-h-12 rounded-lg bg-[#005DAA] px-4 text-sm font-bold text-white transition hover:bg-[#00457F] disabled:cursor-not-allowed disabled:bg-[#A2B5BF]" disabled={!items.length || submitting} onClick={async () => { setSubmitting(true); setFeedback(""); const response = await onSubmit(note); setFeedback(response.message); setSubmitting(false); }} type="button">{submitting ? "送出中…" : "送出詢價需求"}</button>
+        {feedback && !feedback.startsWith("詢價已送出") ? <p aria-live="polite" className="rounded-lg bg-[#FFF1F0] p-3 text-xs leading-5 text-[#B42318] sm:col-span-2">{feedback}</p> : null}
       </div> : null}
     </aside>
   );

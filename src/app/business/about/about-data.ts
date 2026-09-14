@@ -11,6 +11,7 @@ export type AboutPage = {
   points?: { title: string; description: string }[];
   stats?: { value: string; label: string }[];
   gallery?: { path: string; alt: string; caption: string }[];
+  missionVision?: { mission: string; vision: string };
   resources?: { title: string; description: string; href: string; label: string; imagePath?: string; imageAlt?: string; imageFit?: "cover" | "contain" }[];
   externalHref?: string;
   externalLabel?: string;
@@ -18,11 +19,12 @@ export type AboutPage = {
 
 export const aboutPages: AboutPage[] = [
   {
-    slug: "company", label: "企業介紹", kicker: "ABOUT YUANJIA", title: "從澎湖出發，連結全球食品供應。",
-    summary: "元家從水產運銷起步，持續發展為服務多元市場的食品供應夥伴。",
+    slug: "company", label: "企業介紹", kicker: "ABOUT YUANJIA", title: "起源",
+    summary: "從澎湖水產運銷起步，逐步建立多元食品供應與服務能力。",
     imagePath: "/brand/company-origin.jpg", imageAlt: "元家源起的澎湖桶盤嶼", imageCaption: "元家源起於澎湖的水產運銷事業。",
     content: ["1968 年，元家前身「元進行」於澎湖草創；1979 年於台北正式設立元家企業股份有限公司，隔年於高雄設立冷凍草蝦外銷廠，以自有品牌將產品行銷日本與美國。", "從冷凍水產的進口、銷售與生產加工出發，元家逐步拓展至調理食品與國際市場，服務零售、餐飲、食品加工與多元通路。企業採購服務以清楚的規格、包裝與供應溝通，協助合作夥伴找到合適的產品方案。"],
-    points: [["穩定供應", "以可靠的產品與服務，回應不同市場的食品需求。"], ["創新整合", "提供價值創新的商品與整合服務，支持合作夥伴持續成長。"], ["互信共贏", "建立長期、清楚且相互信賴的合作關係。"]].map(([title, description]) => ({ title, description })),
+    points: [["誠信", "以誠信作為經營與合作的基礎。"], ["傾聽", "理解消費者與合作夥伴的需求。"], ["挑戰", "持續提升服務與組織的能力。"], ["創新", "以商品與整合服務創造更多價值。"], ["綜效", "串連資源，營造互信共贏的合作關係。"]].map(([title, description]) => ({ title, description })),
+    missionVision: { mission: "致力滿足並引領消費者對食的期待，提供穩定高效能的發展平台，以及價值創新的商品與整合服務；並以安心飲食文化與生態環境平衡為長期關懷。", vision: "透過食的流通，傳遞幸福給世界。" },
     stats: [{ value: "60+", label: "業務服務人員" }, { value: "4,000+", label: "服務客戶" }, { value: "5 大洲", label: "外銷市場" }, { value: "21 國", label: "國際貿易據點與客戶網絡" }],
     gallery: [{ path: "/brand/channel-dining.jpg", alt: "元家食品供應現場", caption: "食品供應與批發服務現場" }, { path: "/brand/channel-trade.jpg", alt: "元家零售通路活動", caption: "零售與量販通路" }, { path: "/brand/channel-service.jpg", alt: "元家國際展覽", caption: "國際展覽與合作洽談" }],
     externalHref: "https://www.yens.com.tw/proimages/download/Company_Intro_V202402.pdf", externalLabel: "下載元家企業簡介",
@@ -30,10 +32,10 @@ export const aboutPages: AboutPage[] = [
   {
     slug: "strengths", label: "企業優勢", kicker: "OUR STRENGTHS", title: "讓合作被看見的，是每一段供應能力。",
     summary: "從國際選品到冷鏈交付，將食品專業轉化為企業合作的穩定基礎。",
-    imagePath: "/brand/production-facility.jpg", imageAlt: "元家高雄冷凍食品加工廠", imageCaption: "從加工生產到產品服務，持續延伸食品供應的專業。",
+    imagePath: "/brand/yuanjia-kaohsiung-factory.jpg", imageAlt: "元家高雄冷凍食品加工廠", imageCaption: "從加工生產到產品服務，持續延伸食品供應的專業。",
     content: ["企業採購不只是選擇商品，更需要供應端能回應品類、品質、規格與交期的整體能力。元家將各環節整合，協助不同合作情境找到合適的方案。以下四項能力，整理自元家官方企業優勢公開資訊。"],
     points: [["國際採購", "掌握全球水產源頭，並以 MSC-COC、ASC-COC 等國際海鮮認證支持永續選品。"], ["研發生產", "高雄冷凍食品加工廠、台南調理食品廠與食品研發中心，支援標準化生產與產品開發。"], ["食品安全", "20 位以上專職品保人員、每批進貨檢測、自有實驗室與產品追溯制度。"], ["倉儲物流", "大型冷凍倉庫 24 小時監控、全年低於 -20°C，搭配 LMS 與批號效期管理。"]].map(([title, description]) => ({ title, description })),
-    gallery: [{ path: "/brand/channel-global.jpg", alt: "元家國際採購與展覽", caption: "國際採購與全球合作" }, { path: "/brand/production-facility.jpg", alt: "元家冷凍食品加工廠", caption: "加工生產與研發能力" }, { path: "/brand/quality-team.jpg", alt: "元家食品品質檢測實驗室", caption: "品質檢驗與食品安全" }, { path: "/brand/cold-storage.jpg", alt: "元家食品檢測流程", caption: "冷鏈與流程管理" }],
+    gallery: [{ path: "/brand/channel-global.jpg", alt: "元家國際採購與展覽", caption: "國際採購與全球合作" }, { path: "/brand/yuanjia-kaohsiung-factory.jpg", alt: "元家冷凍食品加工廠", caption: "加工生產與研發能力" }, { path: "/brand/quality-team.jpg", alt: "元家食品品質檢測實驗室", caption: "品質檢驗與食品安全" }, { path: "/brand/cold-storage.jpg", alt: "元家食品檢測流程", caption: "冷鏈與流程管理" }],
   },
   {
     slug: "milestones", label: "發展歷程", kicker: "MILESTONES", title: "從水產事業，走向多元食品市場。",

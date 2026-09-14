@@ -7,5 +7,5 @@ export const metadata: Metadata = { robots: { index: false, follow: false }, tit
 
 export default function BusinessActivityNewsPage() {
   const category = newsCategories.activities;
-  return <NewsListPage articles={getNewsArticles("activities")} description={category.description} featuredSummary={category.featuredSummary} title={category.title} />;
+  return <NewsListPage articles={getNewsArticles("activities")} bannerKicker="ACTIVITY UPDATES" featuredSummary={category.featuredSummary} title={category.title} />;
 }

@@ -68,3 +68,61 @@
     transform: translateX(0);
   }
 }
+
+/*
+ * 全站動態語言：用短、可預期的回饋取代會干擾閱讀的大型特效。
+ *
+ * 動畫只動用 compositor 可處理的 opacity / transform；不對版面尺寸、位置或
+ * 濾鏡做連續動畫，避免影響捲動與圖片載入。site-page-motion 特意只有 opacity，
+ * 以免 transform 讓 B2B 固定 Header、詢價抽屜改以容器為定位基準。
+ */
+:root {
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 280ms;
+}
+
+@keyframes site-page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-page-motion {
+    animation: site-page-enter var(--motion-duration-base) var(--motion-ease-out) both;
+  }
+
+  /* 按鈕與導覽連結提供輕量、可辨識的互動回饋；不改變文字排版。 */
+  .site-page-motion :is(button, [role="button"], a[href]) {
+    transition-duration: var(--motion-duration-fast);
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-timing-function: var(--motion-ease-standard);
+  }
+
+  .site-page-motion :is(button, [role="button"], a[href]):where(:hover, :focus-visible) {
+    transform: translate3d(0, -1px, 0);
+  }
+
+  .site-page-motion :is(input, textarea, select) {
+    transition: border-color var(--motion-duration-fast) var(--motion-ease-standard),
+      box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+      background-color var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

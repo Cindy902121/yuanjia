@@ -79,7 +79,7 @@ export async function Header() {
     "text-[#4a4a4a] tracking-[0.1em] transition-colors hover:text-[#3E5C6B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3E5C6B]";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#2b2b2b]/10 bg-[#FAF9F6]">
+    <header className="sticky top-0 z-40 border-b border-[#2b2b2b]/10 bg-[#FAF9F6] shadow-[0_2px_12px_rgba(43,43,43,0.06)]">
       <div className="mx-auto flex w-full max-w-[1300px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4 sm:px-8 lg:h-[76px] lg:px-10 lg:py-0">
         <Link
           href="/"

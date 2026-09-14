@@ -11,11 +11,14 @@ export function FadeInSection({
   children,
   className = "",
   id,
+  delayMs = 0,
 }: {
   children: ReactNode;
   className?: string;
   /** 給錨點跳轉用（例如商品詳情頁的 #product-details），可選。 */
   id?: string;
+  /** 以毫秒延後淡入，可用於同組內容的閱讀節奏。 */
+  delayMs?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -44,7 +47,7 @@ export function FadeInSection({
   }, []);
 
   return (
-    <div ref={ref} id={id} className={`ep-fade-in ${className}`}>
+    <div ref={ref} id={id} className={`ep-fade-in ${className}`} style={delayMs ? { transitionDelay: `${delayMs}ms` } : undefined}>
       {children}
     </div>
   );
