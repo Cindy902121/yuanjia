@@ -256,7 +256,7 @@ export function CheckoutForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-8">
       <TrackPageView eventName="b2c_checkout_start" />
       <div className="flex flex-col gap-1 border-b border-[#0B1620]/15 pb-6">
-        <span className={sectionLabelClass}>CHECKOUT</span>
+        <span className={sectionLabelClass}>結帳</span>
         <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
           結帳
         </h1>
@@ -286,7 +286,7 @@ export function CheckoutForm() {
         {/* 左欄：商品明細、優惠券、備註。 */}
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <h2 className={sectionLabelClass}>商品明細 · ITEMS</h2>
+            <h2 className={sectionLabelClass}>商品明細</h2>
             <ul className="flex flex-col">
               {items.map((item) => (
                 <li key={item.productId} className="flex items-center gap-3 border-t border-[#0B1620]/10 py-4 first:border-t-0">
@@ -312,7 +312,7 @@ export function CheckoutForm() {
 
           <div className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-6">
             <label htmlFor="coupon" className={sectionLabelClass}>
-              優惠券 · COUPON
+              優惠券
             </label>
             <div className="flex gap-2">
               <input
@@ -334,7 +334,7 @@ export function CheckoutForm() {
 
           <div className="flex flex-col gap-2 border-t border-[#0B1620]/15 pt-6">
             <label htmlFor="note" className={sectionLabelClass}>
-              訂單備註（選填） · NOTE
+              訂單備註（選填）
             </label>
             <textarea
               id="note"
@@ -397,7 +397,7 @@ export function CheckoutForm() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
-            <span className={sectionLabelClass}>付款方式 · PAYMENT</span>
+            <span className={sectionLabelClass}>付款方式</span>
             <div className="flex flex-col gap-2">
               {PAYMENT_METHODS.map((method) => (
                 <label key={method.value} className="flex items-center gap-2 text-sm text-[#0B1620]">
@@ -415,7 +415,7 @@ export function CheckoutForm() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 pt-6">
-            <span className={sectionLabelClass}>寄送方式 · DELIVERY</span>
+            <span className={sectionLabelClass}>寄送方式</span>
             <div className="flex flex-col gap-2">
               {DELIVERY_METHODS.map((method) => (
                 <label key={method.value} className="flex items-center justify-between gap-2 text-sm text-[#0B1620]">

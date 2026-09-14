@@ -35,6 +35,13 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
 export function CartPageClient() {
   const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
 
+  function handleClearCart() {
+    if (!window.confirm("確定要清空購物車嗎？購物車內的所有商品將被移除。")) {
+      return;
+    }
+    clearCart();
+  }
+
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
@@ -54,7 +61,7 @@ export function CartPageClient() {
       <div className="flex items-baseline justify-between border-b border-[#0B1620]/15 pb-6">
         <div className="flex flex-col gap-1">
           <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
-            CART
+            購物車
           </span>
           <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">
             購物車
@@ -62,10 +69,10 @@ export function CartPageClient() {
         </div>
         <button
           type="button"
-          onClick={clearCart}
+          onClick={handleClearCart}
           className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#FF5A36]"
         >
-          CLEAR
+          清空購物車
         </button>
       </div>
 
@@ -130,7 +137,7 @@ export function CartPageClient() {
               aria-label={`移除 ${item.name}`}
               className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168] transition-colors hover:text-[#B42318]"
             >
-              REMOVE
+              移除商品
             </button>
           </li>
           );

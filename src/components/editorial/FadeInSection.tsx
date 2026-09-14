@@ -16,17 +16,24 @@ import { useEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from
  * `...rest` 轉發其餘 div 屬性，呼叫端要標記可捲動區塊時就能直接加
  * `tabIndex={0} role="region" aria-label="..."`，不用另外包一層 div；
  * 對其餘沒有傳這些 prop 的既有呼叫端完全不影響。
+ *
+ * 2026-09-14（main／B2C 分支合併）：main 這邊獨立加了 `delayMs`（用毫秒
+ * 延後淡入，方便同組內容做出閱讀節奏），跟上面的 `...rest` 轉發是兩個各自
+ * 獨立、互不影響的功能，合併時兩個都保留，不是二選一。
  */
 export function FadeInSection({
   children,
   className = "",
   id,
+  delayMs = 0,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
   /** 給錨點跳轉用（例如商品詳情頁的 #product-details），可選。 */
   id?: string;
+  /** 以毫秒延後淡入，可用於同組內容的閱讀節奏。 */
+  delayMs?: number;
 } & Omit<ComponentPropsWithoutRef<"div">, "children" | "className" | "id" | "ref">) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +62,13 @@ export function FadeInSection({
   }, []);
 
   return (
-    <div ref={ref} id={id} className={`ep-fade-in ${className}`} {...rest}>
+    <div
+      ref={ref}
+      id={id}
+      className={`ep-fade-in ${className}`}
+      style={delayMs ? { transitionDelay: `${delayMs}ms` } : undefined}
+      {...rest}
+    >
       {children}
     </div>
   );

@@ -254,7 +254,7 @@ export function EditorialProductList({
               className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]"
               aria-live="polite"
             >
-              {filtered.length} {hasActiveFilters ? "RESULTS" : "ITEMS"}
+              共 {filtered.length} 項商品
             </p>
           </div>
 

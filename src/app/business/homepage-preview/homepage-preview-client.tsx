@@ -7,9 +7,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 const banners = [
   { image: "/brand/banners/yuanjia-official-01.jpg", eyebrow: "", title: "", text: "" },
   { image: "/brand/banners/yuanjia-official-02.jpg", eyebrow: "", title: "", text: "" },
-  { image: "/brand/banners/yuanjia-official-03.jpg", eyebrow: "", title: "", text: "" },
+  { image: "/brand/banners/yuanjia-halibut-baby.jpg", eyebrow: "", title: "", text: "" },
   { image: "/brand/banners/yuanjia-official-04.jpg", eyebrow: "", title: "", text: "" },
-  { image: "/brand/banners/yuanjia-official-05.jpg", eyebrow: "", title: "", text: "" },
+  { image: "/brand/banners/yuanjia-crab-paste.jpg", eyebrow: "", title: "", text: "" },
 ] as const;
 
 const productGroups = [
@@ -17,6 +17,15 @@ const productGroups = [
   { key: "shellfish", label: "蝦蟹貝類", en: "SHELLFISH", image: "/products/b2b/B2B-SHELL-001/main.jpg", copy: "從日常餐飲到節慶菜單，提供穩定規格與包裝選擇。", items: "蝦類｜蟹類｜貝類" },
   { key: "prepared", label: "調理食品", en: "VALUE ADDED", image: "/products/b2b/B2B-PREP-001/main.jpg", copy: "兼顧效率與風味的調理品，支援餐飲與加工應用。", items: "即食料理｜裹粉品｜加工品" },
   { key: "meat", label: "肉類", en: "MEAT", image: "/products/b2b/B2B-MEAT-001/main.jpg", copy: "依企業規格與使用情境，提供穩定的肉品供應。", items: "豬肉｜雞肉｜牛肉" },
+] as const;
+
+const newsHighlights = [
+  { date: "2026.08.24", category: "活動訊息", image: "/news/shanghai-2026.jpg", imagePosition: "center 24%", title: "上海國際漁業博覽會 2026", href: "/business/news/article/shanghai-fisheries-2026" },
+  { date: "2026.07.02", category: "元家資訊", image: "/news/scallop-size-guide.jpg", imagePosition: "center 42%", title: "元家-日本干貝尺寸規格表", href: "/business/news/article/japan-scallop-size-guide" },
+  { date: "2026.07.30", category: "活動訊息", image: "/news/wofex-2026-01.jpg", imagePosition: "center", title: "菲律賓國際食品展 WOFEX MANILA 2026", href: "/business/news/article/wofex-manila-2026" },
+  { date: "2026.07.01", category: "活動訊息", image: "/news/food-taipei-2026-01.jpg", imagePosition: "center", title: "2026 台北國際食品展回顧", href: "/business/news/article/food-taipei-2026-recap" },
+  { date: "2026.05.19", category: "元家資訊", image: "/news/manyo-eel.jpg", imagePosition: "center", title: "《万葉 一味蒲燒鰻》極致美味，經典上市", href: "/business/news/article/manyo-grilled-eel" },
+  { date: "2026.03.16", category: "元家資訊", image: "/news/edamame-quinoa.jpg", imagePosition: "center", title: "毛豆藜麥洋栖菜獲 iTi 三星肯定", href: "/business/news/article/edamame-quinoa-award" },
 ] as const;
 
 function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
@@ -54,7 +63,7 @@ export function Hero({ includeHeader = true }: { includeHeader?: boolean } = {})
   const [index, setIndex] = useState(0);
   useEffect(() => { const timer = window.setInterval(() => setIndex((current) => (current + 1) % banners.length), 7000); return () => window.clearInterval(timer); }, []);
   const banner = banners[index];
-  return <section className="relative min-h-[680px] overflow-hidden bg-[#102C34] text-white"><Image alt="元家品牌與供應服務" className="object-cover transition-opacity duration-700" fill priority sizes="100vw" src={banner.image} /><div className="absolute inset-0 bg-gradient-to-r from-[#102C34]/35 via-transparent to-[#102C34]/20" />{includeHeader ? <SiteHeader /> : null}<div className="absolute inset-x-0 bottom-10 z-10 flex justify-center"><div className="rounded-full bg-[#102C34]/45 px-4 py-3" role="group" aria-label="Banner 切換"><div className="flex items-center gap-3">{banners.map((item, itemIndex) => <button aria-label={`切換至第 ${itemIndex + 1} 張 Banner`} aria-pressed={index === itemIndex} className={`h-1 transition-all ${index === itemIndex ? "w-14 bg-white" : "w-7 bg-white/50 hover:bg-white"}`} key={item.image} onClick={() => setIndex(itemIndex)} type="button" />)}</div></div></div></section>;
+  return <section className="relative min-h-[680px] overflow-hidden bg-[#102C34] text-white"><Image alt="元家品牌與供應服務" className="object-cover transition-opacity duration-700" fill priority sizes="100vw" src={banner.image} /><div className="absolute inset-0 bg-gradient-to-r from-[#102C34]/35 via-transparent to-[#102C34]/20" />{includeHeader ? <SiteHeader /> : null}<div className="absolute inset-x-0 bottom-10 z-10 flex justify-center"><fieldset className="m-0 rounded-full border-0 bg-[#102C34]/45 px-4 py-3"><legend className="sr-only">Banner 切換</legend><div className="flex items-center gap-3">{banners.map((item, itemIndex) => <label className="block" key={item.image}><input aria-label={`切換至第 ${itemIndex + 1} 張 Banner`} checked={index === itemIndex} className="peer sr-only" name="business-banner" onChange={() => setIndex(itemIndex)} type="radio" value={itemIndex} /><span aria-hidden="true" className={`block h-1 transition-all peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white ${index === itemIndex ? "w-14 bg-white" : "w-7 bg-white/50 hover:bg-white"}`} /></label>)}</div></fieldset></div></section>;
 }
 
 function Products() {
@@ -69,11 +78,38 @@ function Products() {
   );
 }
 
-function Media() { return <section className="border-t border-[#D9E1E5] bg-white py-24" id="media"><div className="mx-auto max-w-[1360px] px-6 lg:px-10"><Reveal><div className="flex items-start gap-4"><span className="mt-1 h-14 w-1 bg-[#C84B31]" /><div><p className="text-xs font-semibold tracking-[0.24em] text-[#C84B31]">MEDIA & STORIES</p><h2 className="mt-3 font-serif text-4xl text-[#17242A]">NEWS</h2></div></div></Reveal><div className="mt-12 grid gap-8 md:grid-cols-3"><Reveal delay={0}><article className="group transition-transform duration-300 ease-out hover:-translate-y-1 focus-within:-translate-y-1"><div className="relative aspect-[1.55/1] overflow-hidden bg-[#EAF5FB]"><Image alt="上海國際漁業博覽會" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 768px) 30vw, 100vw" src="/brand/channel-global.jpg" /></div><p className="mt-5 text-xs text-[#7C8585]">2026.08.24 · 活動訊息</p><h3 className="mt-3 text-xl font-semibold leading-8 text-[#17242A]">上海國際漁業博覽會 2026</h3><a className="mt-4 inline-block text-sm font-semibold text-[#005DAA]" href="/business/news/activities">閱讀全文 →</a></article></Reveal><Reveal delay={110}><article className="group transition-transform duration-300 ease-out hover:-translate-y-1 focus-within:-translate-y-1"><div className="relative aspect-[1.55/1] overflow-hidden bg-[#EAF5FB]"><Image alt="日本干貝尺寸規格表" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 768px) 30vw, 100vw" src="/brand/company-origin.jpg" /></div><p className="mt-5 text-xs text-[#7C8585]">2026.07.02 · 元家資訊</p><h3 className="mt-3 text-xl font-semibold leading-8 text-[#17242A]">元家-日本干貝尺寸規格表</h3><a className="mt-4 inline-block text-sm font-semibold text-[#005DAA]" href="/business/news/yuanjia">閱讀全文 →</a></article></Reveal><Reveal delay={220}><article className="group transition-transform duration-300 ease-out hover:-translate-y-1 focus-within:-translate-y-1"><div className="relative aspect-[1.55/1] overflow-hidden bg-[#EAF5FB]"><Image alt="WOFEX MANILA 2026" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 768px) 30vw, 100vw" src="/brand/channel-market.jpg" /></div><p className="mt-5 text-xs text-[#7C8585]">2026.07.30 · 活動訊息</p><h3 className="mt-3 text-xl font-semibold leading-8 text-[#17242A]">菲律賓國際食品展 WOFEX MANILA 2026</h3><a className="mt-4 inline-block text-sm font-semibold text-[#005DAA]" href="/business/news/activities">閱讀全文 →</a></article></Reveal></div></div></section>; }
+function Media() {
+  const [newsStart, setNewsStart] = useState(0);
+  const visibleNews = Array.from({ length: 3 }, (_, offset) => newsHighlights[(newsStart + offset) % newsHighlights.length]);
+
+  return (
+    <section className="border-t border-[#D9E1E5] bg-white py-24" id="media">
+      <div className="mx-auto max-w-[1360px] px-6 lg:px-10">
+        <Reveal>
+          <div className="flex items-end justify-between gap-6">
+            <div className="flex items-start gap-4"><span className="mt-1 h-14 w-1 bg-[#C84B31]" /><div><p className="text-xs font-semibold tracking-[0.24em] text-[#C84B31]">MEDIA & STORIES</p><h2 className="mt-3 font-serif text-4xl text-[#17242A]">NEWS</h2></div></div>
+            <div className="pb-1"><button aria-label="顯示更多新聞" className="grid size-10 place-items-center border border-[#9BB8C4] text-[#005DAA] transition hover:border-[#005DAA] hover:bg-[#005DAA] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]" onClick={() => setNewsStart((current) => (current + 1) % newsHighlights.length)} type="button"><svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 16 16"><path d="m5 2 6 6-6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg></button></div>
+          </div>
+        </Reveal>
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {visibleNews.map((news, index) => (
+            <Reveal delay={index * 110} key={news.href}>
+              <article className="group transition-transform duration-300 ease-out hover:-translate-y-1 focus-within:-translate-y-1">
+                <Link aria-label={`閱讀新聞：${news.title}`} className="relative block aspect-[1.55/1] overflow-hidden bg-[#EAF5FB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#005DAA]" href={news.href}><Image alt="" className="object-cover transition duration-500 group-hover:scale-105" fill quality={85} sizes="(min-width: 768px) 30vw, 100vw" src={news.image} style={{ objectPosition: news.imagePosition }} /></Link>
+                <p className="mt-5 text-xs text-[#7C8585]">{news.date} · {news.category}</p>
+                <h3 className="mt-3 text-xl font-semibold leading-8"><Link className="text-[#17242A] transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#005DAA]" href={news.href}>{news.title}</Link></h3>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function Safety() { return <section className="relative overflow-hidden bg-[#53636A] py-24 text-white" id="safety"><Image alt="元家食品安全管理" className="object-cover opacity-25" fill sizes="100vw" src="/brand/quality-team.jpg" /><div className="absolute inset-0 bg-[#53636A]/55" /><Reveal className="relative mx-auto max-w-[1360px] px-6 text-center lg:px-10"><p className="text-xs font-semibold tracking-[0.26em] text-[#D5EDF2]">FOOD SAFETY & QUALITY</p><h2 className="mt-5 font-serif text-4xl sm:text-5xl">食品安全</h2><div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 items-center gap-8 border-y border-white/30 py-8 sm:grid-cols-4 sm:gap-10"><div className="relative h-24"><Image alt="HACCP 認證標誌" className="object-contain brightness-0 invert" fill sizes="160px" src="/brand/certifications/certig_01.png" /></div><div className="relative h-24"><Image alt="ISO 22000 認證標誌" className="object-contain brightness-0 invert" fill sizes="160px" src="/brand/certifications/certig_02.png" /></div><div className="relative h-24"><Image alt="HALAL 認證標誌" className="object-contain brightness-0 invert" fill sizes="160px" src="/brand/certifications/certig_03.png" /></div><div className="relative h-24"><Image alt="EFC 認證標誌" className="object-contain brightness-0 invert" fill sizes="160px" src="/brand/certifications/certig_04.png" /></div></div><div className="mx-auto mt-9 max-w-4xl space-y-2 text-base font-semibold leading-8 text-white/90 sm:text-lg"><p>元家對於食品安全的重視極富責任與使命感。</p><p>自主性的控管，以及政府政策的落實皆領先同業；近年食安風暴不斷，我們總能自信以對。</p></div><Link className="mt-8 inline-flex min-h-12 items-center border border-white/70 px-8 text-sm font-semibold transition hover:bg-white hover:text-[#53636A]" href="/business/about/quality-safety">了解更多</Link></Reveal></section>; }
 
-function Sustainability() { return <section className="bg-[#EAF5FB] py-24" id="sustainability"><Reveal className="mx-auto grid max-w-[1360px] gap-10 px-6 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:px-10"><div><p className="text-xs font-semibold tracking-[0.24em] text-[#00712F]">SUSTAINABILITY</p><h2 className="mt-4 font-serif text-4xl leading-tight text-[#17242A] sm:text-5xl">永續發展</h2><p className="mt-6 max-w-md text-sm leading-7 text-[#536168]">從永續報告、公益行動到日常供應選擇，元家持續把企業責任放進每一個長期決策。</p><div className="mt-8"><Link className="inline-flex min-h-12 items-center bg-[#005DAA] px-7 text-sm font-semibold text-white transition hover:bg-[#004B89]" href="/business/about/sustainability">了解更多</Link></div></div><div className="grid gap-5 sm:grid-cols-2"><div className="group relative aspect-[4/3] overflow-hidden"><Image alt="元家永續報告書" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 640px) 30vw, 100vw" src="/brand/esg-2024-01.jpg" /></div><div className="group relative mt-8 aspect-[4/3] overflow-hidden"><Image alt="元家永續供應" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 640px) 30vw, 100vw" src="/brand/channel-service.jpg" /></div></div></Reveal></section>; }
+function Sustainability() { return <section className="bg-[#EAF5FB] py-24" id="sustainability"><Reveal className="mx-auto grid max-w-[1360px] gap-10 px-6 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:px-10"><div><p className="text-xs font-semibold tracking-[0.24em] text-[#00712F]">SUSTAINABILITY</p><h2 className="mt-4 font-serif text-4xl leading-tight text-[#17242A] sm:text-5xl">永續發展</h2><p className="mt-6 max-w-md text-sm leading-7 text-[#536168]">從永續報告、公益行動到日常供應選擇，元家持續把企業責任放進每一個長期決策。</p><div className="mt-8"><Link className="inline-flex min-h-12 items-center bg-[#005DAA] px-7 text-sm font-semibold text-white transition hover:bg-[#004B89]" href="/business/about/sustainability">了解更多</Link></div></div><div className="grid gap-5 sm:grid-cols-2"><div className="group relative aspect-[4/3] overflow-hidden"><Image alt="2023 元家企業永續報告書" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 640px) 30vw, 100vw" src="/brand/esg-2023-01.jpg" /></div><div className="group relative mt-8 aspect-[4/3] overflow-hidden"><Image alt="2024 元家企業永續報告書" className="object-cover transition duration-500 group-hover:scale-105" fill sizes="(min-width: 640px) 30vw, 100vw" src="/brand/esg-2024-01.jpg" /></div></div></Reveal></section>; }
 
 function Footer() { return <footer className="bg-[#252A2B] text-[#D6DEE0]"><div className="mx-auto grid max-w-[1360px] gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] lg:px-10"><div><Image alt="元家" height={42} src="/yens-logo.png" width={140} /><p className="mt-5 text-sm leading-7">元家企業股份有限公司<br />YEN &amp; Brothers Enterprise CO., LTD.</p></div><div><p className="text-xs tracking-[0.18em] text-[#9FD2E4]">元家產品</p><p className="mt-4 text-sm leading-7">魚類<br />蝦蟹貝類<br />調理食品<br />肉類</p></div><div><p className="text-xs tracking-[0.18em] text-[#9FD2E4]">企業服務</p><p className="mt-4 text-sm leading-7">企業型錄<br />需求篩選<br />大宗專案<br />詢價紀錄</p></div><div><p className="text-xs tracking-[0.18em] text-[#9FD2E4]">合作與責任</p><p className="mt-4 text-sm leading-7">食品安全<br />永續責任<br />媒體報導<br />聯絡元家</p></div></div><div className="border-t border-[#3A464A] px-6 py-5 text-center text-xs text-[#9EAAAD]">© 2026 YEN &amp; Brothers Enterprise CO., LTD. · B2B 首頁概念預覽</div></footer>; }
 

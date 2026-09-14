@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { buildOpenGraph, SITE_URL } from "@/lib/seo";
+import { SiteMotion } from "@/components/motion/SiteMotion";
 import "./globals.css";
 
 const DEFAULT_TITLE = "元家｜新鮮海鮮與調理食品";
@@ -94,7 +95,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-scroll-behavior="smooth"
       className="h-full antialiased"
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <SiteMotion>{children}</SiteMotion>
+      </body>
     </html>
   );
 }

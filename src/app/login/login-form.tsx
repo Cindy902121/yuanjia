@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics/track";
+import { createClient } from "@/lib/supabase/client";
 
 type LoginMode = "email" | "customer-code";
 
@@ -35,12 +37,33 @@ const modeContent = {
   }
 >;
 
-export function LoginForm() {
+export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) {
   const [mode, setMode] = useState<LoginMode>("email");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage);
   const content = modeContent[mode];
   const isEmail = mode === "email";
+
+  async function handleGoogleSignIn() {
+    setIsSubmitting(true);
+    setMessage("");
+
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+        provider: "google",
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch {
+      setMessage("Google 登入目前無法使用，請改用 Email 登入。");
+      setIsSubmitting(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,30 +102,18 @@ export function LoginForm() {
     <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
       <fieldset className="grid grid-cols-2 rounded-lg bg-[#EAF5FB] p-1" disabled={isSubmitting}>
         <legend className="sr-only">選擇登入方式</legend>
-        <button
-          aria-pressed={isEmail}
-          className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] ${
-            isEmail
-              ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]"
-              : "text-[#536168] hover:text-[#00457F]"
-          }`}
-          onClick={() => chooseMode("email")}
-          type="button"
-        >
-          會員登入
-        </button>
-        <button
-          aria-pressed={!isEmail}
-          className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] ${
-            !isEmail
-              ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]"
-              : "text-[#536168] hover:text-[#00457F]"
-          }`}
-          onClick={() => chooseMode("customer-code")}
-          type="button"
-        >
-          企業客戶
-        </button>
+        <label className="block">
+          <input checked={isEmail} className="peer sr-only" name="login-mode" onChange={() => chooseMode("email")} type="radio" value="email" />
+          <span className={`flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#005DAA] ${isEmail ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]" : "text-[#536168] hover:text-[#00457F]"}`}>
+            會員登入
+          </span>
+        </label>
+        <label className="block">
+          <input checked={!isEmail} className="peer sr-only" name="login-mode" onChange={() => chooseMode("customer-code")} type="radio" value="customer-code" />
+          <span className={`flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#005DAA] ${!isEmail ? "bg-white text-[#17242A] shadow-[0_1px_3px_rgba(23,36,42,0.16)]" : "text-[#536168] hover:text-[#00457F]"}`}>
+            企業客戶
+          </span>
+        </label>
       </fieldset>
 
       <p className="rounded-lg border border-[#CFE3F0] bg-[#EAF5FB] px-4 py-3 text-sm leading-6 text-[#00457F]">
@@ -153,10 +164,39 @@ export function LoginForm() {
         {isSubmitting ? "登入中…" : content.submitLabel}
       </button>
 
+      {isEmail ? (
+        <>
+          <div aria-hidden="true" className="flex items-center gap-3 text-xs text-[#809099]">
+            <span className="h-px flex-1 bg-[#D9E1E5]" />
+            <span>或</span>
+            <span className="h-px flex-1 bg-[#D9E1E5]" />
+          </div>
+          <button
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-[#D9E1E5] bg-white px-4 py-3 font-semibold text-[#17242A] transition duration-200 hover:-translate-y-0.5 hover:border-[#005DAA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA] disabled:cursor-not-allowed disabled:bg-[#F1F4F5]"
+            disabled={isSubmitting}
+            onClick={handleGoogleSignIn}
+            type="button"
+          >
+            <span aria-hidden="true" className="text-lg font-bold text-[#4285F4]">
+              G
+            </span>
+            使用 Google 帳號登入
+          </button>
+        </>
+      ) : null}
+
       <p className="text-center text-sm leading-6 text-[#536168]">
         {isEmail
-          ? "尚未建立會員帳號？可先瀏覽商品，或依網站指示申請會員服務。"
+          ? null
           : "尚未取得企業客戶代碼？請聯繫元家業務窗口協助開通。"}
+        {isEmail ? (
+          <>
+            尚未建立會員帳號？
+            <Link className="ml-1 font-semibold text-[#005DAA] underline underline-offset-4 hover:text-[#00457F]" href="/signup">
+              建立新帳號
+            </Link>
+          </>
+        ) : null}
       </p>
     </form>
   );

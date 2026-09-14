@@ -14,10 +14,19 @@ import { MemberCenter } from "./member-center";
 /**
  * /user 頁面（2026-08-19 原始建立，PRD B2C 伸展項目）。
  *
+ * B2C 帳號建立與登入由 Supabase Auth 的 `/signup`、Email／密碼與 Google OAuth
+ * 處理（main 分支新增，2026-09-14 併入）。
+ *
  * 2026-09-11：會員中心正式改版。使用者要求「課堂展示用 MVP，不會正式投入
  * 商業使用」，這次補上完整的會員總覽／會員資訊／訂單查詢／專屬優惠／
  * 收藏清單五個頁籤，優先做完整可互動的前端 UI/UX Demo，不要求全部功能都
  * 接 Supabase（詳細的 Demo Data 標記規則見 `member-demo-data.ts` 檔頭）。
+ *
+ * 2026-09-14（main／B2C 分支合併，main 這邊獨立加了「變更密碼」
+ * `ChangePasswordForm`）：這個功能移進 `sections/profile-section.tsx`
+ * 的「會員資訊」頁籤裡（真實帳號安全設定，緊接在姓名／Email／電話下面），
+ * 不是留在這個檔案——這裡本來就只負責 Auth 守門＋把資料交給
+ * `<MemberCenter />`，實際頁籤內容都在那個 Client Component 樹底下。
  *
  * 這個檔案（Server Component）保留原本就有、真正在運作的守門邏輯完全不動：
  * - B2B 公司 session 顯示 `B2BShoppingGuard`（登出確認），不是 B2C 會員中心。

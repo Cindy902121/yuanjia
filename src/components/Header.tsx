@@ -157,7 +157,7 @@ export async function Header() {
     "mt-1 inline-flex w-fit border border-white/30 px-4 py-1.5 text-xs tracking-[0.1em] text-white transition-colors hover:border-white hover:bg-white hover:text-[#071B2B]";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071B2B]">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071B2B] shadow-[0_2px_12px_rgba(0,0,0,0.22)]">
       {/* `sr-only`，不是 `hidden`——`hidden`＝`display:none` 會讓這顆 checkbox
           整個從 tab 順序跟無障礙樹裡消失，鍵盤使用者連 Tab 都碰不到、更打不
           開手機選單（測的時候用瀏覽器自動化工具點它才發現這個問題：工具跟

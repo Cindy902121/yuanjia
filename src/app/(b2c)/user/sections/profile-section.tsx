@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { editorialButtonLight, editorialButtonSolid } from "@/lib/editorial/styles";
+import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
 import type { DemoAddress } from "../member-demo-data";
 
 export interface DemoProfileFields {
@@ -15,6 +16,14 @@ export interface DemoProfileFields {
  * 姓名／電話跟收件地址是 Demo Data，編輯／新增／刪除／設為預設全部只在
  * `member-center.tsx` 的 Front-end State 運作，不寫入 Supabase，重新整理
  * 會恢復成 `member-demo-data.ts` 的預設值。
+ *
+ * 2026-09-14（main／B2C 分支合併）：main 那邊獨立做了「變更密碼」
+ * `ChangePasswordForm`（真的 Supabase Auth 改密碼，不是 Demo），原本掛在
+ * 舊版 /user 頁面裡，這裡把它接到「會員資訊」頁籤、姓名/Email/電話下面，
+ * 用 `tone="editorial"`（預設值）比照這個頁面既有的編輯風樣式，不是
+ * `ChangePasswordForm` 給 B2B 用的 `tone="business"` 版本。這是這個頁面
+ * 唯一一個「不是 Demo、會真的打 Supabase」的功能，跟其餘 Demo State 明確
+ * 分開放在自己的區塊裡。
  */
 export function ProfileSection({
   email,
@@ -41,6 +50,16 @@ export function ProfileSection({
       </div>
 
       <ProfileFields email={email} profile={profile} onProfileChange={onProfileChange} />
+
+      <div className="flex flex-col gap-3 border-t border-[#0B1620]/10 pt-8">
+        <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">帳號安全</span>
+        <div>
+          <h3 className="font-[family-name:var(--ep-font-serif)] text-xl font-light text-[#0B1620]">變更密碼</h3>
+          <p className="mt-2 text-sm font-light leading-6 text-[#536168]">更新後，請使用新密碼登入您的會員帳號。</p>
+          <ChangePasswordForm email={email} />
+        </div>
+      </div>
+
       <AddressBook addresses={addresses} onAddressesChange={onAddressesChange} />
     </div>
   );

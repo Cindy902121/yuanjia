@@ -7,7 +7,10 @@ export const metadata: Metadata = {
   title: "登入 | 元家",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const params = await searchParams;
+  const initialMessage = params.error === "oauth" ? "Google 登入驗證失敗，請再試一次或改用 Email 登入。" : undefined;
+
   return (
     <main
       className="flex min-h-screen items-center justify-center bg-[#F7F6F2] px-5 py-10 text-[#17242A] sm:px-8"
@@ -20,7 +23,7 @@ export default function LoginPage() {
         <p className="mt-3 text-base leading-7 text-[#536168]">
           請選擇適合您的登入方式。登入後，系統會依帳號權限帶您前往對應的服務。
         </p>
-        <LoginForm />
+        <LoginForm initialMessage={initialMessage} />
       </section>
     </main>
   );

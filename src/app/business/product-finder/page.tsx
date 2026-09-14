@@ -25,7 +25,7 @@ export default async function ProductFinderPage() {
   if (access.role === "b2c") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-[#17242A]">
+    <div className="min-h-screen bg-white text-[#17242A]">
       <BusinessHeader companyName={access.companyName} />
       <main className="mx-auto max-w-6xl px-5 py-8 lg:px-8">
         <BusinessBreadcrumb current="需求篩選器" />
