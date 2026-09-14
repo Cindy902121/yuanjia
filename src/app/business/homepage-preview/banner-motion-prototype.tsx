@@ -1,0 +1,42 @@
+"use client";
+
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+type Variant = "A" | "B" | "C";
+
+const variants: { key: Variant; name: string; description: string }[] = [
+  { key: "A", name: "分層沉穩", description: "全幅實景＋文字分層淡入" },
+  { key: "B", name: "供應鏈敘事", description: "雙欄資訊＋實景推進" },
+  { key: "C", name: "產品編輯感", description: "極簡字體＋底部資訊帶" },
+];
+
+function PreviewHeader() {
+  return <header className="absolute inset-x-0 top-0 z-20 flex h-[76px] items-center justify-between border-b border-white/20 px-6 text-white sm:px-10"><div className="flex items-center gap-4"><Image alt="元家" className="h-8 w-auto brightness-0 invert" height={42} src="/yens-logo.png" width={140} /><span className="hidden h-5 w-px bg-white/40 sm:block" /><span className="hidden text-xs tracking-[0.18em] text-white/85 sm:block">YUANJIA BUSINESS</span></div><nav className="hidden gap-7 text-sm text-white/90 lg:flex"><span>品牌故事</span><span>企業型錄</span><span>需求篩選</span></nav><span className="border border-white/70 px-3 py-2 text-xs tracking-[0.1em]">企業登入</span></header>;
+}
+
+function VariantA() {
+  return <section className="relative min-h-[680px] overflow-hidden bg-[#0E2931] text-white"><Image alt="元家食品供應服務" className="motion-safe:animate-[banner-pan_14s_ease-out_infinite_alternate] object-cover opacity-80" fill preload sizes="100vw" src="/brand/yuanjia-banner.jpg" /><div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,34,42,.88)_0%,rgba(10,34,42,.52)_42%,rgba(10,34,42,.12)_74%)]" /><PreviewHeader /><div className="relative z-10 mx-auto flex min-h-[680px] max-w-[1280px] items-end px-6 pb-24 sm:px-10"><div className="max-w-2xl"><p className="motion-safe:animate-[banner-rise_.7s_.1s_both] text-xs font-semibold tracking-[0.26em] text-[#A7D7E2]">YUANJIA BUSINESS SUPPLY</p><h1 className="motion-safe:animate-[banner-rise_.8s_.25s_both] mt-5 font-[family-name:var(--ep-font-serif)] text-4xl font-light leading-[1.25] sm:text-6xl">從全球選品，<br />到每一段供應。</h1><p className="motion-safe:animate-[banner-rise_.8s_.45s_both] mt-6 max-w-xl text-base leading-8 text-white/85">以規格化產品、品質管理與冷鏈服務，支持企業採購的長期決策。</p><div className="motion-safe:animate-[banner-rise_.8s_.6s_both] mt-9 flex gap-3"><span className="border border-white bg-white px-5 py-3 text-sm font-medium text-[#102C34]">瀏覽企業型錄</span><span className="border border-white/70 px-5 py-3 text-sm">了解供應能力</span></div></div></div><span className="absolute bottom-9 right-7 h-px w-28 bg-white/60 sm:right-12" /></section>;
+}
+
+function VariantB() {
+  return <section className="relative min-h-[680px] overflow-hidden bg-[#102C34] text-white"><PreviewHeader /><div className="grid min-h-[680px] lg:grid-cols-[.95fr_1.05fr]"><div className="relative z-10 flex items-end px-6 pb-20 pt-28 sm:px-10 lg:px-16"><div className="max-w-xl"><p className="motion-safe:animate-[banner-rise_.7s_.1s_both] text-xs font-semibold tracking-[0.22em] text-[#8FC5D2]">FOOD SUPPLY PARTNER</p><h1 className="motion-safe:animate-[banner-rise_.8s_.25s_both] mt-5 font-[family-name:var(--ep-font-serif)] text-4xl font-light leading-[1.28] sm:text-5xl">讓食品供應，<br />成為可被信賴的能力。</h1><div className="motion-safe:animate-[banner-rise_.8s_.45s_both] mt-9 grid grid-cols-3 border-y border-white/25 py-5"><div><strong className="block text-2xl font-light text-[#A7D7E2]">60+</strong><span className="mt-2 block text-xs text-white/75">業務服務人員</span></div><div className="border-x border-white/25 px-4"><strong className="block text-2xl font-light text-[#A7D7E2]">4,000+</strong><span className="mt-2 block text-xs text-white/75">服務客戶</span></div><div className="pl-4"><strong className="block text-2xl font-light text-[#A7D7E2]">5 大洲</strong><span className="mt-2 block text-xs text-white/75">外銷市場</span></div></div></div></div><div className="relative min-h-[360px] overflow-hidden"><Image alt="元家高雄冷凍食品加工廠" className="motion-safe:animate-[banner-pan_16s_ease-out_infinite_alternate] object-cover" fill preload sizes="(min-width: 1024px) 55vw, 100vw" src="/brand/yuanjia-kaohsiung-factory.jpg" /><div className="absolute inset-0 bg-gradient-to-r from-[#102C34]/75 via-transparent to-transparent lg:bg-gradient-to-t" /><p className="absolute bottom-8 right-8 text-xs tracking-[0.14em] text-white/85">PROCUREMENT · PRODUCTION · COLD CHAIN</p></div></div></section>;
+}
+
+function VariantC() {
+  return <section className="relative min-h-[680px] overflow-hidden bg-[#17272D] text-white"><Image alt="元家水產產品供應" className="motion-safe:animate-[banner-pan_15s_ease-out_infinite_alternate] object-cover opacity-80" fill preload sizes="100vw" src="/brand/banners/yuanjia-official-01.jpg" /><div className="absolute inset-0 bg-[#102C34]/30" /><PreviewHeader /><div className="relative z-10 mx-auto flex min-h-[680px] max-w-[1280px] items-center px-6 pt-12 sm:px-10"><div className="border-l-2 border-[#B9E1EA] pl-5"><p className="motion-safe:animate-[banner-rise_.7s_.1s_both] text-xs tracking-[0.24em] text-[#D4EEF3]">PRECISION IN EVERY SPECIFICATION</p><h1 className="motion-safe:animate-[banner-rise_.8s_.25s_both] mt-4 max-w-xl font-[family-name:var(--ep-font-serif)] text-4xl font-light leading-[1.25] sm:text-6xl">專業供應，<br />從一項規格開始。</h1></div></div><div className="absolute inset-x-0 bottom-0 z-10 border-t border-white/30 bg-[#102C34]/85 backdrop-blur-sm"><div className="mx-auto grid max-w-[1280px] gap-5 px-6 py-6 sm:grid-cols-[1.3fr_1fr_1fr] sm:px-10"><p className="text-sm leading-7 text-white/85">提供企業採購瀏覽品項、規格與包裝資訊，讓每一次詢價從更清楚的條件開始。</p><div className="border-l border-white/25 pl-5"><span className="text-[10px] tracking-[0.18em] text-[#A7D7E2]">PRODUCT CATALOG</span><p className="mt-2 text-sm">企業型錄與採購規格</p></div><div className="border-l border-white/25 pl-5"><span className="text-[10px] tracking-[0.18em] text-[#A7D7E2]">RFQ SERVICE</span><p className="mt-2 text-sm">集中詢價與業務確認</p></div></div></div></section>;
+}
+
+function PrototypeSwitcher({ current }: { current: Variant }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const index = variants.findIndex((item) => item.key === current);
+  const change = (offset: number) => { const next = variants[(index + offset + variants.length) % variants.length]; const nextParams = new URLSearchParams(params.toString()); nextParams.set("bannerPreview", "1"); nextParams.set("variant", next.key); router.replace(`${pathname}?${nextParams.toString()}`); };
+  return <div className="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4"><div className="flex items-center gap-3 border border-white/15 bg-[#14282F]/95 px-3 py-2 text-white shadow-2xl backdrop-blur"><button aria-label="上一個 Banner 版本" className="grid size-9 place-items-center border border-white/25 text-lg transition hover:bg-white hover:text-[#102C34]" onClick={() => change(-1)} type="button">←</button><div className="min-w-44 text-center"><span className="block text-[10px] tracking-[0.16em] text-[#9FD2E4]">BANNER MOTION PROTOTYPE</span><span className="mt-0.5 block text-xs">{current} — {variants[index].name}</span></div><button aria-label="下一個 Banner 版本" className="grid size-9 place-items-center border border-white/25 text-lg transition hover:bg-white hover:text-[#102C34]" onClick={() => change(1)} type="button">→</button></div></div>;
+}
+
+export default function BannerMotionPrototype({ initialVariant }: { initialVariant?: string }) {
+  const variant: Variant = initialVariant === "B" || initialVariant === "C" ? initialVariant : "A";
+  return <main className="min-h-screen bg-[#F4F1EB]"><div className="border-b border-[#DFCFAF] bg-[#FFF8E9] px-4 py-2 text-center text-xs text-[#6B5426]">Banner 動畫方向預覽 · 僅供選擇設計，不會套用至正式首頁</div>{variant === "A" ? <VariantA /> : variant === "B" ? <VariantB /> : <VariantC />}<section className="mx-auto max-w-5xl px-6 py-14 text-[#33434A]"><p className="text-xs font-semibold tracking-[0.18em] text-[#0F5B78]">DESIGN QUESTION</p><h2 className="mt-3 font-[family-name:var(--ep-font-serif)] text-3xl font-light">哪一種 Banner 最符合元家的企業感？</h2><p className="mt-4 max-w-3xl leading-8 text-[#536168]">三個版本都使用淡入上移與低速影像推進；動畫會自動尊重使用者的「減少動態效果」設定。請用下方浮動切換器比較版型與資訊層級。</p></section><PrototypeSwitcher current={variant} /><style jsx global>{`@keyframes banner-rise { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } } @keyframes banner-pan { from { transform: scale(1.02) translate3d(-.5%,0,0) } to { transform: scale(1.08) translate3d(.5%,-.5%,0) } }`}</style></main>;
+}

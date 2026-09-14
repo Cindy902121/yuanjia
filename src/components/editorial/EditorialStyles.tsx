@@ -7,13 +7,13 @@
 export function EditorialStyles() {
   return (
     <style>{`
-      .ep-fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.9s ease, transform 0.9s ease; }
+      .ep-fade-in { opacity: 0; transform: translate3d(0, 24px, 0); transition: opacity 0.72s var(--motion-ease-out), transform 0.72s var(--motion-ease-out); }
       .ep-fade-in.is-visible { opacity: 1; transform: translateY(0); }
       @media (prefers-reduced-motion: reduce) {
         .ep-fade-in { transition: none; }
       }
       .ep-hover-zoom { overflow: hidden; }
-      .ep-hover-zoom img { transition: transform 0.7s ease, opacity 0.7s ease; }
+      .ep-hover-zoom img { transition: transform 0.7s var(--motion-ease-out), opacity 0.7s var(--motion-ease-out); }
       .ep-hover-zoom:hover img { transform: scale(1.06); }
     `}</style>
   );

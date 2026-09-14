@@ -1,19 +1,19 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import BusinessHeader from "../catalog/business-header";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import type { NewsArticle } from "./news-data";
+import NewsBanner from "./news-banner";
 
 type NewsListPageProps = {
+  bannerKicker: string;
   title: string;
   articles: NewsArticle[];
-  description: string;
   featuredSummary: string;
 };
 
-export default async function NewsListPage({ title, articles, description, featuredSummary }: NewsListPageProps) {
+export default async function NewsListPage({ bannerKicker, title, articles, featuredSummary }: NewsListPageProps) {
   const access = await getB2BAccess();
   if (access.role === "anonymous") redirect("/login");
   if (access.role === "admin") redirect("/admin");
@@ -21,23 +21,20 @@ export default async function NewsListPage({ title, articles, description, featu
   if (access.role === "b2c") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-[#17242A]">
+    <div className="min-h-screen bg-white text-[#17242A]">
       <BusinessHeader companyName={access.companyName} />
-      <Image alt="元家最新消息" className="h-auto w-full" height={350} priority src="/news-banner.jpg" width={1920} />
+      <NewsBanner kicker={bannerKicker} title={title} />
+      <div className="bg-white">
+        <nav aria-label="麵包屑導覽" className="flex items-center gap-2 overflow-hidden whitespace-nowrap px-5 py-5 text-sm text-[#718087] sm:px-8 lg:px-10">
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href="/business">首頁</Link>
+          <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href="/business/news/activities">最新消息</Link>
+          <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
+          <span aria-current="page" className="truncate font-medium text-[#536168]">{title}</span>
+        </nav>
+      </div>
       <main className="mx-auto max-w-5xl px-5 py-10 lg:px-8 lg:py-16">
-        <div className="border-b border-[#D9E1E5] pb-7">
-          <nav aria-label="麵包屑導覽" className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-sm text-[#718087]">
-            <Link className="shrink-0 transition hover:text-[#005DAA]" href="/business">首頁</Link>
-            <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
-            <Link className="shrink-0 transition hover:text-[#005DAA]" href="/business/news/activities">最新消息</Link>
-            <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
-            <span aria-current="page" className="truncate font-medium text-[#536168]">{title}</span>
-          </nav>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#536168]">{description}</p>
-        </div>
-
-        <section className="mt-10">
+        <section>
             <div className="border-b-2 border-[#17242A] pb-3">
             <h2 className="text-2xl font-bold">焦點消息</h2>
           </div>

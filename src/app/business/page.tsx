@@ -19,7 +19,7 @@ export default async function BusinessPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F6F2] font-sans text-[#17242A]">
-      <BusinessHeader companyName={access.companyName} transparent />
+      <BusinessHeader companyName={access.companyName} />
       <main>
         <Hero includeHeader={false} />
         <Products />

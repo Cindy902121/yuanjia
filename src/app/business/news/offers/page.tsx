@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import BusinessHeader from "../../catalog/business-header";
 import { getB2BAccess } from "@/lib/b2b/catalog";
 import { getNewsArticles } from "../news-data";
+import NewsBanner from "../news-banner";
 
 export const metadata: Metadata = { robots: { index: false, follow: false }, title: "大宗專案 | 元家企業採購服務" };
 
@@ -29,15 +30,20 @@ export default async function BusinessOfferNewsPage() {
   if (!featuredOffer?.offer) return null;
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-[#17242A]">
+    <div className="min-h-screen bg-white text-[#17242A]">
       <BusinessHeader companyName={access.companyName} />
-      <main className="mx-auto max-w-[1100px] px-5 py-9 lg:px-8 lg:py-12">
-        <nav aria-label="麵包屑導覽" className="flex items-center gap-2 text-sm text-[#718087]">
-          <Link className="transition hover:text-[#005DAA]" href="/business">首頁</Link>
+      <NewsBanner kicker="BUSINESS PROJECTS" title="大宗專案" />
+      <div className="bg-white">
+        <nav aria-label="麵包屑導覽" className="flex items-center gap-2 overflow-hidden whitespace-nowrap px-5 py-5 text-sm text-[#718087] sm:px-8 lg:px-10">
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href="/business">首頁</Link>
           <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
-          <span aria-current="page" className="font-medium text-[#536168]">大宗專案</span>
+          <Link className="shrink-0 transition hover:text-[#005DAA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#005DAA]" href="/business/news/activities">最新消息</Link>
+          <span aria-hidden="true" className="text-[#B7C3C9]">/</span>
+          <span aria-current="page" className="truncate font-medium text-[#536168]">大宗專案</span>
         </nav>
-        <div className="mt-8 border-t-2 border-[#17242A] pt-6">
+      </div>
+      <main className="mx-auto max-w-[1100px] px-5 py-9 lg:px-8 lg:py-12">
+        <div className="border-t-2 border-black pt-6">
           <p className="text-sm font-bold text-[#005DAA]">BUSINESS OFFERS</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-[34px]">大宗專案</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[#536168]">依採購情境整理的專案方案。實際品項、供應、交期與合作條件，皆由業務依詢價內容確認。</p>

@@ -140,7 +140,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
 
   return (
     <main
-      className="min-h-screen bg-[#F7F4EE] text-[#17242A]"
+      className="min-h-screen bg-white text-[#17242A]"
       style={{ fontFamily: '"Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif' }}
     >
       <BusinessHeader companyName={access.companyName} />
@@ -156,7 +156,7 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         <section aria-labelledby="project-catalog-title" className="border-b border-[#B7D3E2] bg-[#EAF5FB]">
           <div className="mx-auto max-w-[1440px] px-5 py-6 lg:px-8 lg:py-7">
             <div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-xs font-bold tracking-[0.14em] text-[#005DAA]">PROJECT INQUIRY</p><h1 className="mt-2 text-2xl font-bold" id="project-catalog-title">正在洽詢：{activeProject.title}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-[#356277]">已預設顯示：{projectCategories.join("、")}。{activeProjectOffer.moq}；{activeProjectOffer.packaging}。</p></div><div className="flex flex-wrap gap-3"><Link className="border border-[#8FB8CD] bg-white px-4 py-2.5 text-sm font-bold text-[#005DAA] transition hover:bg-[#F7FCFF]" href={`/business/news/article/${activeProject.slug}`}>返回方案內容</Link><Link className="border border-[#B7C3C9] bg-white px-4 py-2.5 text-sm font-bold text-[#536168] transition hover:bg-[#F7FCFF]" href="/business/catalog">查看完整型錄</Link></div></div>
-            <ol className="mt-5 grid gap-3 border-t border-[#B7D3E2] pt-4 text-sm sm:grid-cols-3"><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#005DAA] text-xs font-bold text-white">1</span><span><strong className="block">選擇品項</strong><span className="text-[#536168]">依方案建議瀏覽規格與包裝</span></span></li><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#D3E5EF] text-xs font-bold text-[#005DAA]">2</span><span><strong className="block">加入詢價單</strong><span className="text-[#536168]">選擇規格並填寫預估箱數</span></span></li><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#D3E5EF] text-xs font-bold text-[#005DAA]">3</span><span><strong className="block">送出專案詢價</strong><span className="text-[#536168]">業務確認供應、交期與專案價</span></span></li></ol>
+            <ol className="mt-5 grid gap-3 border-t border-[#B7D3E2] pt-4 text-sm sm:grid-cols-2 xl:grid-cols-4"><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#005DAA] text-xs font-bold text-white">1</span><span><strong className="block">選擇品項</strong><span className="text-[#536168]">依方案建議瀏覽規格與包裝</span></span></li><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#D3E5EF] text-xs font-bold text-[#005DAA]">2</span><span><strong className="block">加入詢價單</strong><span className="text-[#536168]">選擇規格並填寫預估箱數</span></span></li><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#D3E5EF] text-xs font-bold text-[#005DAA]">3</span><span><strong className="block">Review 確認</strong><span className="text-[#536168]">檢查品項、數量與補充需求</span></span></li><li className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#D3E5EF] text-xs font-bold text-[#005DAA]">4</span><span><strong className="block">送出專案詢價</strong><span className="text-[#536168]">業務確認供應、交期與專案價</span></span></li></ol>
           </div>
         </section>
       ) : <section aria-labelledby="business-banner-title" className="border-b border-[#193C49] bg-[#102C37]">
@@ -275,6 +275,17 @@ export default async function BusinessCatalogPage({ searchParams }: CatalogPageP
         </aside>
 
         <section id="catalog-results">
+          <div className="mb-3 flex justify-end">
+            <a
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#005DAA] bg-white px-3.5 py-2 text-sm font-semibold text-[#005DAA] transition hover:bg-[#005DAA] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005DAA]"
+              href="https://www.yens.com.tw/proimages/catalogue.pdf"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24"><path d="M5 4.75A1.75 1.75 0 0 1 6.75 3h10.5A1.75 1.75 0 0 1 19 4.75v14.5a.75.75 0 0 1-1.14.64L12 16.36l-5.86 3.53A.75.75 0 0 1 5 19.25V4.75Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" /></svg>
+              下載元家產品型錄
+            </a>
+          </div>
           <div aria-live="polite" className="mb-5 rounded-2xl border border-[#CFE3F0] bg-[#EAF5FB] p-6 sm:flex sm:items-end sm:justify-between sm:gap-6">
             <div>
               <p className="text-xs font-bold tracking-[0.16em] text-[#005DAA]">BUSINESS CATALOG</p>
