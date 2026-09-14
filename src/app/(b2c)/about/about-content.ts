@@ -24,8 +24,23 @@ const milestonesPage = getAboutPage("milestones")!;
 
 export const heroContent = {
   kicker: "ABOUT YUANJIA",
-  // 標題本身就是 companyPage.title，不是另外編一句新文案。
-  title: companyPage.title,
+  /**
+   * 2026-09-14（main／B2C 分支合併後，使用者要求「把 Hero 標題改回自己
+   * 維護一份文案」）：這裡原本直接綁 `companyPage.title`，用意是跟 B2B
+   * 版本共用同一份事實、不用兩邊各自維護。但合併 main 之後才發現 B 為了
+   * B2B 新版頁面把這個欄位改成「起源」——放在 B2B 那種大 Banner 底下當
+   * 短標籤很合適，但這裡是這個頁面唯一的大型襯線字 Hero 標題，兩個字撐
+   * 不起版面，而且這個欄位之後只要 B2B 又改版，B2C 這裡會跟著被動跑掉，
+   * 不是我們自己決定的。
+   *
+   * 改成這裡自己固定維護一句——**不是新編的事實**，就是 `companyPage.title`
+   * 原本（在 B 這次 B2B 改版之前）的值，來源同樣是 yens.com.tw／
+   * about-data.ts，只是現在用字面常數的方式固定下來，不再跟著
+   * `about-data.ts` 之後的異動自動變化。這個頁面其餘內容（大事紀、企業
+   * 優勢、統計數字）維持原本做法，繼續直接讀 `getAboutPage()`，只有這一句
+   * Hero 標題單獨拉出來。
+   */
+  title: "從澎湖出發，連結全球食品供應。",
 };
 
 /**
