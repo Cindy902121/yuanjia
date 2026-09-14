@@ -5,6 +5,20 @@ import { isNonEmptyString } from "@/lib/api";
 export type AdminChannel = "b2c" | "b2b";
 export const B2B_PRODUCT_STATUSES = ["draft", "review", "published", "offline"] as const;
 export type B2bProductStatus = (typeof B2B_PRODUCT_STATUSES)[number];
+export const B2C_SLUG_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+
+export const B2C_PRODUCT_FIELD_RULES = [
+  { key: "slug", label: "網址代稱", maxLength: 160, required: true, hint: "限小寫英數與連字號；建立後不可修改。" },
+  { key: "name", label: "商品名稱", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "brand", label: "品牌", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "category", label: "分類", maxLength: 120, required: true, hint: "目前使用單一文字分類，最多 120 字元。" },
+  { key: "specification", label: "規格", maxLength: 500, required: true, hint: "最多 500 字元。" },
+  { key: "origin", label: "產地", maxLength: 160, required: true, hint: "最多 160 字元。" },
+  { key: "storage_method", label: "保存方式", maxLength: 240, required: true, hint: "最多 240 字元。" },
+  { key: "description", label: "商品描述", maxLength: 5000, required: true, hint: "最多 5,000 字元。" },
+  { key: "food_safety_info", label: "食品安全資訊", maxLength: 5000, required: false, hint: "選填，例如檢驗、過敏原或加工環境資訊。" },
+  { key: "quality_info", label: "品質／認證資訊", maxLength: 5000, required: false, hint: "選填，例如品質標準、選品方式或製程補充。" },
+] as const;
 
 export const ADMIN_PRODUCT_FIELDS: Record<AdminChannel, string> = {
   b2c: "id, slug, name, brand, category, specification, price, origin, storage_method, description, food_safety_info, quality_info, mock_inventory, image_path, is_active, created_at, updated_at",
@@ -99,7 +113,7 @@ function parseProductCode(value: unknown) {
 }
 
 function parseSlug(value: unknown) {
-  if (!isNonEmptyString(value) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.trim())) {
+  if (!isNonEmptyString(value) || !new RegExp(B2C_SLUG_PATTERN).test(value.trim())) {
     return null;
   }
   return value.trim();

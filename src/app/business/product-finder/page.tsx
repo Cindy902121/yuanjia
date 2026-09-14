@@ -5,6 +5,13 @@ import BusinessHeader from "../catalog/business-header";
 import BusinessBreadcrumb from "../catalog/business-breadcrumb";
 import ProductFinderClient from "./product-finder-client";
 
+/**
+ * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」；B 同時也在
+ * codex/b-b2b-portal-experience 加了同一個 metadata，合併 main 時兩邊撞在
+ * 一起——這頁登入前就會被導回 /login，內容也是 B2B 私有型錄的一部分，跟
+ * /business/catalog 同一個道理不該被索引，兩邊想法一致，保留 B 的 title
+ * 文案（跟其他 B2B 頁面的「...元家企業採購服務」格式一致）。
+ */
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
   title: "需求篩選器 | 元家企業採購服務",

@@ -6,17 +6,23 @@ export async function requireAdminPage(pathname: string) {
   const context = await getAdminContext();
   const loginPath = `/login?next=${encodeURIComponent(pathname)}`;
 
-  if (!context.user || context.configurationError || context.databaseError) {
+  if (context.configurationError || context.databaseError) {
+    return { unavailable: true };
+  }
+  if (!context.user) {
     redirect(loginPath);
   }
   if (context.role === "admin") {
-    return;
+    return { unavailable: false };
   }
   if (
     context.role === "business_staff" &&
     (pathname === "/admin/business" || pathname.startsWith("/admin/business/"))
   ) {
-    return;
+    return { unavailable: false };
+  }
+  if (context.role === "business_staff") {
+    redirect("/admin/business?tab=b2b-products");
   }
 
   const b2bContext = await getB2bContext();

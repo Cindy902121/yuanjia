@@ -12,10 +12,10 @@
  *   外框，hover 時填滿墨色、文字變白。
  */
 export const editorialButtonDark =
-  "inline-flex items-center justify-center gap-2 border border-white px-8 py-3.5 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-white transition-colors duration-300 hover:bg-white hover:text-[#2b2b2b]";
+  "inline-flex items-center justify-center gap-2 border border-white px-8 py-3.5 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-white transition-colors duration-300 hover:bg-white hover:text-[#0B1620]";
 
 export const editorialButtonLight =
-  "inline-flex items-center justify-center gap-2 border border-[#2b2b2b] px-6 py-2.5 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#2b2b2b] transition-colors duration-300 hover:bg-[#2b2b2b] hover:text-white disabled:cursor-not-allowed disabled:border-[#2b2b2b]/30 disabled:text-[#2b2b2b]/40 disabled:hover:bg-transparent disabled:hover:text-[#2b2b2b]/40";
+  "inline-flex items-center justify-center gap-2 border border-[#0B1620] px-6 py-2.5 font-[family-name:var(--ep-font-en)] text-xs tracking-[0.15em] text-[#0B1620] transition-colors duration-300 hover:bg-[#0B1620] hover:text-white disabled:cursor-not-allowed disabled:border-[#0B1620]/30 disabled:text-[#0B1620]/40 disabled:hover:bg-transparent disabled:hover:text-[#0B1620]/40";
 
 /**
  * 常駐填滿的主要 CTA（購物車「前往結帳」、結帳「送出訂單」這種頁面上最主要的
@@ -24,11 +24,11 @@ export const editorialButtonLight =
  * 最主要的按鈕」。
  */
 export const editorialButtonSolid =
-  "inline-flex items-center justify-center gap-2 border border-[#2b2b2b] bg-[#2b2b2b] px-6 py-3 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-white transition-colors hover:border-[#3E5C6B] hover:bg-[#3E5C6B] disabled:cursor-not-allowed disabled:border-[#2b2b2b]/30 disabled:bg-[#2b2b2b]/30";
+  "inline-flex items-center justify-center gap-2 border border-[#0B1620] bg-[#0B1620] px-6 py-3 font-[family-name:var(--ep-font-en)] text-sm tracking-[0.15em] text-white transition-colors hover:border-[#FF5A36] hover:bg-[#FF5A36] disabled:cursor-not-allowed disabled:border-[#0B1620]/30 disabled:bg-[#0B1620]/30";
 
 /** 商品詳情頁數量選擇器的方框，跟按鈕系統同一套「直角＋細框」語言。 */
-export const editorialStepperWrap = "flex items-center border border-[#2b2b2b]/30";
+export const editorialStepperWrap = "flex items-center border border-[#0B1620]/30";
 export const editorialStepperButton =
-  "flex h-11 w-11 items-center justify-center text-[#2b2b2b] transition-colors hover:bg-[#F3F1EB] disabled:cursor-not-allowed disabled:text-[#2b2b2b]/30 disabled:hover:bg-transparent";
+  "flex h-11 w-11 items-center justify-center text-[#0B1620] transition-colors hover:bg-[#F6FBFC] disabled:cursor-not-allowed disabled:text-[#0B1620]/30 disabled:hover:bg-transparent";
 export const editorialStepperInput =
-  "h-11 w-14 border-x border-[#2b2b2b]/30 bg-transparent text-center text-sm text-[#2b2b2b] outline-none disabled:text-[#2b2b2b]/40";
+  "h-11 w-14 border-x border-[#0B1620]/30 bg-transparent text-center text-sm text-[#0B1620] outline-none disabled:text-[#0B1620]/40";

@@ -51,7 +51,10 @@ export function OperationsOverview({ revision, scope }: { revision: number; scop
     <div className={s.columns}>
       <section className={s.panel} aria-busy={queue.pending}>
         <div className={s.headingRow}><div><h2 className={s.heading}>詢價待辦</h2><p className={s.caption}>每個狀態內，最早建立的案件在前</p></div><Link className={s.textButton} href={`${base}?tab=b2b-rfqs&rfq_status=${queueStatus}&rfq_sort=oldest`}>查看全部 <span aria-hidden="true">→</span></Link></div>
-        <div className={s.segment} aria-label="詢價待辦狀態">{[["new", "新詢價"], ["processing", "處理中"]].map(([value, label]) => <button type="button" key={value} aria-pressed={queueStatus === value} onClick={() => changeAdminQuery({ queue: value })}>{label}</button>)}</div>
+        <fieldset className={s.segment}>
+          <legend className="sr-only">詢價待辦狀態</legend>
+          {[["new", "新詢價"], ["processing", "處理中"]].map(([value, label]) => <label className={s.segmentOption} key={value}><input checked={queueStatus === value} className={s.segmentInput} name="inquiry-status" onChange={() => changeAdminQuery({ queue: value })} type="radio" value={value} /><span>{label}</span></label>)}
+        </fieldset>
         {!queue.data && queue.pending ? <div className={s.skeleton}>正在整理詢價…</div> : null}
         <div className={s.queue}>{queue.data?.rfqs.map((rfq) => <article className={s.queueRow} key={rfq.id}>
           <div><p className={s.company}>{rfq.company?.name ?? "未綁定企業"}</p><p className={s.caption}>{adminDate(rfq.created_at)} 建立 · {rfq.items.length} 項商品</p><p className={s.caption}>{rfq.items.slice(0, 2).map((item) => item.product?.name ?? "商品資料已異動").join("、")}</p></div>

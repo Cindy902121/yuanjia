@@ -29,12 +29,26 @@ import Link from "next/link";
  *   藍底上有對比，現在底色換成中性墨色，logo 直接放上去對比就足夠）。
  * - 欄位標題、連結字體改用內文字體＋拉寬字距，取代原本的粗體小標。
  * - 版權宣告改用更細的分隔線，維持整體「細線條」語言。
+ *
+ * 2026-09（配色遷移，只換色不換版面／結構——見使用者要求「Formal Version
+ * UI + Preview Color Palette」）：底色再從 `#2b2b2b` 換成 `/ui-preview` 的
+ * 深海色 `#071B2B`。文字全部本來就是 `text-white/NN` 這種透明度階層寫法，
+ * 跟 `/ui-preview` 深色區塊的文字處理方式一致，不需要再改；只有這個底色
+ * 本身需要換。排版、欄位結構、連結、文案完全沒有動。
+ *
+ * 2026-09（Ocean Motion Migration，首頁正式套用 `/about-preview` 核准過的
+ * 視覺設計）：底色再從 `#071B2B` 微調成 `#071923`——跟首頁 Ocean Gradient
+ * 收尾的終點色完全一致（見 `src/app/(b2c)/_ocean/ocean-styles.tsx` 的
+ * `.op-descent`／`.op-abyss-fade`），讓首頁捲到 Footer 是零接縫的深藍。
+ * 兩色幾乎看不出差異（只是更黑一階），這是全站共用元件，這次 Migration
+ * 唯一 touch 到、homepage 以外會受影響的正式檔案，但純粹一個顏色 token，
+ * 排版、欄位結構、連結、文案跟上面這段一樣完全沒有動。
  */
 export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#2b2b2b] text-white">
+    <footer className="bg-[#071923] text-white">
       <div className="mx-auto grid w-full max-w-[1300px] grid-cols-2 gap-x-8 gap-y-12 px-5 py-16 sm:px-8 lg:grid-cols-4 lg:px-10 lg:py-24">
         <div className="col-span-2 flex flex-col gap-4 lg:col-span-1">
           <Link href="/" className="w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
@@ -105,7 +119,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-[1300px] px-5 py-5 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/40 sm:px-8 lg:px-10">
+        <p className="mx-auto max-w-[1300px] px-5 py-5 font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50 sm:px-8 lg:px-10">
           © {year} YEN &amp; BROTHERS ENTERPRISE CO., LTD. ALL RIGHTS RESERVED.
         </p>
       </div>
@@ -113,10 +127,23 @@ export function Footer() {
   );
 }
 
+/**
+ * 2026-09（P1-4 Lighthouse／WCAG 稽核發現並修正）：欄位標題原本是 `<h3>`——
+ * Footer 跟 Header 一樣掛在 root layout、每一頁都會出現，內容深的頁面
+ * （首頁、商品列表）自己本文有 `<h2>` 銜接得上，但內容淺的頁面（`/cart`、
+ * `/checkout` 只有一個 `<h1>`）就會變成 `<h1>` 直接跳 `<h3>`、中間漏掉
+ * `<h2>`，違反 WCAG 1.3.1／2.4.6 標題階層不能跳級的要求，而且會因為
+ * 「這一頁本文寫得夠不夠深」而時好時壞，不是穩固的做法。
+ *
+ * 改成 `<p>`——這幾個其實是「商品探索」「服務與政策」這種重複出現在每一頁的
+ * 導覽欄位標籤，本來就不是這一頁「內容」的一部分，不需要被螢幕閱讀器的
+ * 標題導覽列出來（使用者用標題跳頁時，通常只想看到頁面本身的內容區塊，不是
+ * 每頁都一樣的頁尾樣板），語意上用純文字段落更精確，視覺完全不變。
+ */
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/40">{title}</h3>
+      <p className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-white/50">{title}</p>
       <div className="flex flex-col gap-3 text-sm font-light">{children}</div>
     </div>
   );
@@ -144,7 +171,16 @@ function FooterAnchor({ href, children }: { href: string; children: React.ReactN
   );
 }
 
-/** 還沒有對應頁面的項目，刻意不做成連結，避免死連結——跟 Header 的「即將推出」慣例一致。 */
+/**
+ * 還沒有對應頁面的項目，刻意不做成連結，避免死連結——跟 Header 的「即將推出」慣例一致。
+ *
+ * 2026-09（Lighthouse 行動裝置稽核發現並修正）：這裡原本跟上面 `FooterColumn`
+ * 標題、版權列一起用 `text-white/30`～`/40`，在 Footer 底色 `#071923` 上對比
+ * 只有 2.67～3.79，WCAG AA 文字最低要求 4.5:1。用 sRGB 相對亮度公式實際算過：
+ * `white/50` 在同一個底色上是 5.22，超過門檻留一點餘裕；改深一階不影響「非
+ * 連結、視覺降權」的原始設計意圖，三處（這裡、版權列、FooterColumn 標題）
+ * 統一改成 `/50`。
+ */
 function FooterPlaceholder({ children }: { children: React.ReactNode }) {
-  return <span className="text-white/30">{children}</span>;
+  return <span className="text-white/50">{children}</span>;
 }

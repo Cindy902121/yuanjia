@@ -1,9 +1,11 @@
 # 資料庫設計與契約
 
-> 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；本機
-> HTTP／seed／Admin real contract 34/34（15 個 API 靜態、11 個資料庫／文件靜態、
-> 8 個整合案例）已於 2026-08-29 重新執行通過；另依 2026-08-30 驗收回報，
-> hosted／staging 真實整合測試已通過；原 31/31 記錄已核對並更新。
+> 狀態：schema 已建立；C API、契約驗證與遠端 RFQ 公司隔離已完成；目前 `main`
+>（本次 `main` 驗收基準）執行 `pnpm test:contracts` 為 52 pass、0 fail、9 skipped（共 61 項），
+> 9 個跳過案例需另外載入本機／隔離測試 server、Auth identity 或資料庫。
+> 2026-09-09 最新一次在本機 Supabase 執行 `pnpm test:contracts:real`，結果為 44 pass、
+> 0 fail、0 skipped；Auth 重啟後已補回停用公司／第二公司 fixture identity。
+> 下方保留 2026-08-29 與 2026-08-30 的歷史驗收紀錄，但不作為目前測試統計。
 > 遠端 Supabase 已套用 `20260812150000_baseline_remote_schema` 與
 > `20260812150001_establish_mvp_security_contract`；展示資料由可重跑的
 > `supabase/seed.sql` 管理。這份文件是目前欄位、資料歸屬與權限的索引，
@@ -133,6 +135,10 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - 新制上線前的舊事件只計入總事件數，不回填公司／使用者／Session、強度、排行或漏斗；Admin summary 與 CSV 單次最多輸出 10,000 筆聚合列。
 - 少於 5 家公司的級距／通路群組、商品行為、Finder 選項與詢價商品列均顯示「其他（已遮罩）」；無資料回傳 200、零值與空集合，格式／篩選錯誤回傳 400，API／資料庫錯誤提供重試。
 - `GET /api/admin/analytics/export` 只輸出聚合列，不輸出原始事件、完整代碼或公司明細；下載前需填用途，並稽核管理者、時間、用途、查詢範圍、格式與筆數。原始事件與完整代碼保留 24 個月，每月清理。
+- 2026-09-11 已確認的 Analytics 擴充由 server-only seam 實作：所有 Admin 共用常用篩選、排程定義與告警；`business_staff` 不得讀取這些資源。
+- 客戶明細下鑽只允許 `admin` 從未遮罩的聚合列進入，採服務端分頁與名稱／客戶代碼搜尋；只回傳企業名稱、`client_code`、啟用狀態、查詢範圍聚合指標與最後活動時間，不回傳 Auth email、user ID、session ID 或原始 `event_data`。遮罩列不可下鑽。
+- 排程匯出保存獨立條件快照，使用台北時間每日／每週／每月頻率，由 Vercel Cron 每 5 分鐘呼叫受保護 server job；只產生聚合 CSV，存入私有 Storage 30 天並保留執行／稽核 metadata，不補跑錯過的執行時間。
+- 異常告警只在共用 Admin 告警中心顯示；狀態為未讀／已確認／已恢復，服務恢復後自動結案，同一規則與範圍在未恢復前不得重複建立。
 
 > 本節的 `[x]` 代表需求與驗收規格已確認；本次已整合商品 CRUD、圖片、CSV 批量匯入、規格選項、角色與 B2B 管理頁，以及對應 Storage／migration。
 
@@ -149,8 +155,9 @@ RFQ `POST` 的 `items` 可在同一個 `product_id` 下送出多筆不同的
 - [x] 展示資料改由 `supabase/seed.sql` 以穩定業務鍵重跑；seed 不建立或覆寫 Supabase Auth identity。
 - [x] B2B 多規格選項由獨立 migration 建表，展示選項由 `supabase/seed.sql` 可重跑建立。
 - [x] 後台商品、角色、圖片、規格選項、標籤與 B2B CSV 批量新增 API 已建立；B2C／B2B Storage 權限與圖片 metadata migration 已建立。
-- [x] C API 與 B 的登入／前端整合已完成；契約測試涵蓋權限矩陣、事件、隔離、fallback 與 seed 靜態契約，本機 HTTP／seed／Admin real contract 34/34 已於 2026-08-29 重新執行通過。
-- [x] 依 2026-08-30 驗收回報，hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
+- [x] C API 與 B 的登入／前端整合已完成；未載入本機／隔離整合環境時，`main` 加本輪工作樹的 `pnpm test:contracts` 為 52 pass、0 fail、9 skipped（2026-09-09）；最新本機 real runner 為 44 pass、0 fail、0 skipped。
+- [x] 歷史紀錄（2026-08-29）：本機 HTTP／seed／Admin real contract 34/34 通過。
+- [x] 歷史紀錄（2026-08-30）：hosted／staging 真實整合測試已通過匿名、B2C、B2B、Admin 權限矩陣、停用公司登入阻擋、停用商品型錄過濾、跨公司 RFQ 隔離、24 個事件 payload、customer prefix fallback 與 seed／Auth identity 保留；不把 credentials 或測試 URL 寫入 repository。
 - [x] `pnpm lint` 與 `pnpm test:contracts:static` 已加入 `.github/workflows/ci.yml`；CI 維持只跑靜態檢查，不連接測試資料庫；hosted／staging 驗收另依隔離環境執行。
 - [x] B2C schema 擴充延後至另一次有明確資料模型與 backfill／rollback 計畫的工作，
   決策記錄於 [ADR-0001](adr/0001-defer-b2c-schema-expansion.md)。

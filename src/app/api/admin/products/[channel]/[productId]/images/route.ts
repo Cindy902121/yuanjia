@@ -37,6 +37,12 @@ function parseAltText(value: unknown) {
   return isNonEmptyString(value) && value.trim().length <= 200 ? value.trim() : null;
 }
 
+function isProductStoragePath(value: unknown, productId: string): value is string {
+  if (!isNonEmptyString(value)) return false;
+  const prefix = `products/${productId}/`;
+  return value.startsWith(prefix) && /^[a-f0-9-]+\.(?:jpe?g|png|webp)$/i.test(value.slice(prefix.length));
+}
+
 async function productExists(admin: ReturnType<typeof createAdminClient>, channel: "b2c" | "b2b", productId: string) {
   const { data, error } = await admin
     .from(PRODUCT_TABLES[channel])
@@ -226,5 +232,44 @@ export async function PATCH(
     return json({ channel, product_id: productId, images: product?.images ?? [] });
   } catch {
     return apiError("目前無法更新商品圖片排序。", 503);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ channel: string; productId: string }> },
+) {
+  const { channel, productId } = await params;
+  if (!isAdminChannel(channel) || !isUuid(productId)) {
+    return apiError("商品圖片路徑不正確。", 400);
+  }
+  const guard = await (channel === "b2b" ? requireBusinessAdmin() : requireAdmin());
+  if (guard.response) return guard.response;
+
+  const body = (await readJson(request)) as { storage_path?: unknown } | null;
+  if (!isProductStoragePath(body?.storage_path, productId)) {
+    return apiError("商品圖片清理路徑不正確。", 400);
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data: referencedImages, error: referenceError } = await admin
+      .from(PRODUCT_IMAGE_TABLES[channel])
+      .select("id")
+      .eq("product_id", productId)
+      .eq("storage_path", body.storage_path)
+      .limit(1);
+    if (referenceError) return apiError("目前無法確認圖片檔案引用。", 503);
+    if ((referencedImages ?? []).length > 0) {
+      return apiError("不可清理目前仍在使用的圖片檔案。", 409);
+    }
+
+    const { error: cleanupError } = await admin.storage
+      .from(PRODUCT_IMAGE_BUCKETS[channel])
+      .remove([body.storage_path]);
+    if (cleanupError) return apiError("目前無法清理舊圖片檔案。", 503);
+    return json({ channel, product_id: productId, storage_cleanup: "ok" });
+  } catch {
+    return apiError("目前無法清理舊圖片檔案。", 503);
   }
 }

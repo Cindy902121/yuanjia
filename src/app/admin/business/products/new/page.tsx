@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/admin-page-auth";
 
 import { ProductEditor } from "../product-editor";
+import { AdminServiceUnavailable } from "../../../admin-service-unavailable";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewBusinessProductPage() {
-  await requireAdminPage("/admin/business/products/new");
+  const access = await requireAdminPage("/admin/business/products/new");
+  if (access.unavailable) return <AdminServiceUnavailable />;
   return <ProductEditor productId={null} />;
 }

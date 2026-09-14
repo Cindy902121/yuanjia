@@ -114,6 +114,8 @@ export type AnalyticsReport = {
       name: string;
       category: string;
       brand: string;
+      status?: string;
+      is_active?: boolean;
     }>;
     event_names: string[];
   };

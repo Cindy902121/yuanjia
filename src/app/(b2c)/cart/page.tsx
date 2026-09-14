@@ -29,12 +29,17 @@ export const metadata: Metadata = {
  *
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 cart-page-client.tsx。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：這裡原本是顯示
+ * B2BShoppingGuard（請先登出企業帳號的確認選項），main 上 B 已經改成
+ * requireB2cAccess() 直接 redirect("/business")，兩邊各自做了一版、合併時
+ * 撞上，採用已經併進 main 的版本，細節見 products/page.tsx 同批說明。
  */
 export default async function CartPage() {
   await requireB2cAccess();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#FAF9F6] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8 lg:py-20">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
       <CartPageClient />
     </main>
   );

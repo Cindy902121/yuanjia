@@ -5,6 +5,13 @@ import BusinessBreadcrumb from "../catalog/business-breadcrumb";
 import BusinessHeader from "../catalog/business-header";
 import RfqHistoryClient from "./rfq-history-client";
 
+/**
+ * 2026-09（P1-3，C 提出「SEO noindex 與 sitemap 尚未完全對齊」；B 同時也在
+ * codex/b-b2b-portal-experience 加了同一個 metadata，合併 main 時兩邊撞在
+ * 一起）：這頁比 /business/product-finder 更該擋——內容是公司自己的詢價
+ * 品項、數量、狀態，屬於商業機密等級的資料，兩邊想法一致，保留 B 的 title
+ * 文案（跟其他 B2B 頁面的「...元家企業採購服務」格式一致）。
+ */
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
   title: "詢價紀錄 | 元家企業採購服務",

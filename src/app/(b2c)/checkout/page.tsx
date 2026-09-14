@@ -22,12 +22,14 @@ export const metadata: Metadata = {
  *
  * 2026-08-19：A／B／C 三人都確認喜歡日系雜誌編排風，這裡也一起換成編輯風的
  * 底色／字體，實際版面在 checkout-form.tsx。
+ *
+ * 2026-09-09（main 合併，改採 B 的 requireB2cAccess()）：同 /cart 的說明。
  */
 export default async function CheckoutPage() {
   await requireB2cAccess();
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 bg-[#FAF9F6] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#2B2B2B] sm:px-8 lg:py-20">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
       <CheckoutForm />
     </main>
   );
