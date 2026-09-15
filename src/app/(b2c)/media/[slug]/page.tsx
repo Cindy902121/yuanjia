@@ -103,7 +103,7 @@ export default async function MediaArticlePage({ params }: PageProps<"/media/[sl
   };
 
   return (
-    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <main className="flex flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={articleJsonLd} />
       {faqJsonLd ? <JsonLd data={faqJsonLd} /> : null}
       <JsonLd data={breadcrumbJsonLd} />

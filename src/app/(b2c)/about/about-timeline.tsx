@@ -111,10 +111,10 @@ export function AboutTimeline({ timeline }: { timeline: TimelineEntry[] }) {
         {timeline.map((entry) => (
           <li
             key={entry.year}
-            className={`flex gap-6 border-b border-[#0B1620]/10 pb-10 last:border-0 ${entry.featured ? "" : "opacity-80"}`}
+            className="flex gap-6 border-b border-[#0B1620]/10 pb-10 last:border-0"
           >
             <span
-              className={`shrink-0 font-[family-name:var(--ep-font-en)] font-thin text-[#C2401D] ${
+              className={`shrink-0 font-[family-name:var(--ep-font-en)] font-thin text-[#A8492F] ${
                 entry.featured ? "w-20 text-3xl" : "w-16 text-lg"
               }`}
             >
@@ -123,7 +123,7 @@ export function AboutTimeline({ timeline }: { timeline: TimelineEntry[] }) {
             <div className="flex flex-1 flex-col gap-3">
               <p
                 className={`font-light leading-[1.8] ${
-                  entry.featured ? "text-[17px] text-[#0B1620]" : "text-base text-[#536168]"
+                    entry.featured ? "text-[17px] text-[#0B1620]" : "text-base text-[#425660]"
                 }`}
               >
                 {entry.description}
@@ -147,7 +147,7 @@ export function AboutTimeline({ timeline }: { timeline: TimelineEntry[] }) {
           <div ref={trackRef} className="flex gap-20 pl-5 will-change-transform sm:pl-8 lg:pl-10">
             {featured.map((entry) => (
               <article key={entry.year} className="flex w-[360px] shrink-0 flex-col gap-6">
-                <span className="font-[family-name:var(--ep-font-en)] text-6xl font-thin text-[#C2401D]">{entry.year}</span>
+                <span className="font-[family-name:var(--ep-font-en)] text-6xl font-thin text-[#A8492F]">{entry.year}</span>
                 <p className="max-w-[320px] text-[17px] font-light leading-[1.85] text-[#0B1620]">{entry.description}</p>
                 {entry.photo ? (
                   <div className="relative aspect-[4/3] w-full max-w-[320px] overflow-hidden">
@@ -169,7 +169,7 @@ export function AboutTimeline({ timeline }: { timeline: TimelineEntry[] }) {
         <ul className="mt-8 grid grid-cols-1 gap-x-10 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
           {minor.map((entry) => (
             <li key={entry.year} className="flex gap-4 border-t border-[#0B1620]/10 pt-5">
-              <span className="w-14 shrink-0 font-[family-name:var(--ep-font-en)] text-lg text-[#C2401D]">
+              <span className="w-14 shrink-0 font-[family-name:var(--ep-font-en)] text-lg text-[#A8492F]">
                 {entry.year}
               </span>
               <span className="text-base font-light leading-[1.75] text-[#0B1620]">{entry.description}</span>

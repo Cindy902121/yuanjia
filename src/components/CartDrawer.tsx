@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
 import { getProductPhoto } from "@/lib/product-photos";
 import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, editorialStepperWrap } from "@/lib/editorial/styles";
+import { GuestCartPrompt } from "@/components/GuestCartPrompt";
 
 /**
  * Header 的購物車入口。2026-08-17 兩次調整：
@@ -55,7 +56,7 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * 相容性問題。沒有對應照片的 slug（目前 6 筆商品都有）維持顯示「無圖片」
  * 佔位，不是把整個防呆邏輯拿掉。
  */
-export function CartDrawer() {
+export function CartDrawer({ isLoggedIn }: { isLoggedIn: boolean }) {
   const { items, totalPrice, updateQuantity, removeItem } = useCart();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -238,6 +239,7 @@ export function CartDrawer() {
                 </ul>
 
                 <div className="flex flex-col gap-3 border-t border-[#0B1620]/15 px-6 py-5">
+                  {!isLoggedIn ? <GuestCartPrompt /> : null}
                   <div className="flex items-baseline justify-between">
                     <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">總計</span>
                     <span className="font-[family-name:var(--ep-font-en)] text-lg tracking-widest text-[#0B1620]">

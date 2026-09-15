@@ -7,6 +7,7 @@ import { sortByAvailability, toCardData } from "@/lib/types/product";
 import type { ProductDetailData, ProductTagRef } from "@/lib/types/product";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { FadeInSection } from "@/components/editorial/FadeInSection";
+import { RiverAnnouncement } from "@/components/editorial/RiverAnnouncement";
 import { editorialButtonLight } from "@/lib/editorial/styles";
 import { collectTagGroups } from "@/lib/editorial/tag-groups";
 import { trackEvent } from "@/lib/analytics/track";
@@ -29,8 +30,9 @@ const GROUP_LABEL_COLOR = "#35515E";
  * /products/categories/[slug]、/products/tags/[slug] 這兩個還沒重新設計的頁面
  * 繼續沿用舊版，見 src/app/products/page.tsx 的檔頭說明。
  *
- * 篩選邏輯（搜尋字串、分類／標籤多選 AND）**完全照搬**
- * ProductListWithFilters.tsx，不是重新設計一套規則。
+ * 2026-09-14（使用者確認篩選語意）：同一群組內改採 OR，不同群組之間採
+ * AND。例如「魚類＋蝦類」是其中一類即可；再加「氣炸」時，才要同時符合
+ * 分類與料理方式。搜尋字串仍與所有群組互為 AND。
  *
  * 加入購物車按鈕直接重用 src/components/AddToCartButton.tsx（真的購物車
  * 邏輯），只是透過 `className` prop 換掉視覺樣式。商品卡整體點擊用
@@ -103,19 +105,31 @@ export function EditorialProductList({
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
 
   const tagGroups = useMemo(() => collectTagGroups(products), [products]);
+  const tagGroupBySlug = useMemo(
+    () => new Map(tagGroups.flatMap(([groupName, tags]) => tags.map((tag) => [tag.slug, groupName] as const))),
+    [tagGroups],
+  );
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     const matched = products.filter((product) => {
       const matchesSearch = term.length === 0 || product.name.toLowerCase().includes(term);
-      const matchesCategories = selectedCategorySlugs.every((slug) =>
-        product.categories.some((category) => category.slug === slug),
+      const matchesCategories =
+        selectedCategorySlugs.length === 0 ||
+        product.categories.some((category) => selectedCategorySlugs.includes(category.slug));
+      const selectedTagsByGroup = new Map<string, string[]>();
+      for (const slug of selectedTagSlugs) {
+        const groupName = tagGroupBySlug.get(slug);
+        if (!groupName) continue;
+        selectedTagsByGroup.set(groupName, [...(selectedTagsByGroup.get(groupName) ?? []), slug]);
+      }
+      const matchesTags = [...selectedTagsByGroup.values()].every((slugsInGroup) =>
+        product.tags.some((tag) => slugsInGroup.includes(tag.slug)),
       );
-      const matchesTags = selectedTagSlugs.every((slug) => product.tags.some((tag) => tag.slug === slug));
       return matchesSearch && matchesCategories && matchesTags;
     });
     return sortByAvailability(matched);
-  }, [products, searchTerm, selectedCategorySlugs, selectedTagSlugs]);
+  }, [products, searchTerm, selectedCategorySlugs, selectedTagSlugs, tagGroupBySlug]);
 
   const hasActiveFilters = searchTerm.length > 0 || selectedCategorySlugs.length > 0 || selectedTagSlugs.length > 0;
 
@@ -220,14 +234,16 @@ export function EditorialProductList({
   };
 
   return (
-    <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-16">
+    <div className="flex flex-col gap-8 bg-white lg:items-start xl:grid xl:grid-cols-[13rem_minmax(0,1fr)_15rem] xl:gap-8">
       {/* 桌機側欄：sticky（lg:top-28，避開 76px 高的 sticky Header），手機
           完全不顯示——手機改用下面的觸發列＋Bottom Sheet。 */}
-      <aside className="hidden lg:sticky lg:top-28 lg:flex lg:w-56 lg:shrink-0 lg:flex-col">
+      <aside className="hidden lg:sticky lg:top-28 lg:col-start-1 lg:row-start-1 lg:flex lg:w-56 lg:flex-col xl:w-auto">
         <FilterPanel {...filterPanelProps} />
       </aside>
 
-      <div className="flex flex-1 flex-col gap-2">
+      <RiverAnnouncement />
+
+      <div className="order-last flex min-w-0 flex-1 flex-col gap-2 xl:col-start-2 xl:row-start-1 xl:order-none">
         {/* 手機篩選觸發列：取代原本「整組篩選欄用 CSS order 排到商品下方」的
             做法，改成一個緊湊的列，點了才展開完整篩選內容。 */}
         <button

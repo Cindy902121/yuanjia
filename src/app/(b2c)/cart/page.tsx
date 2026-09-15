@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CartPageClient } from "./cart-page-client";
 import { buildOpenGraph, canonicalFor } from "@/lib/seo";
 import { requireB2cAccess } from "@/lib/b2c/access";
+import { createClient } from "@/lib/supabase/server";
 
 const TITLE = "購物車 | 元家";
 const DESCRIPTION = "查看購物車內容，調整數量後前往結帳。";
@@ -37,10 +38,12 @@ export const metadata: Metadata = {
  */
 export default async function CartPage() {
   await requireB2cAccess();
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
-      <CartPageClient />
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 bg-white px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-20">
+      <CartPageClient isLoggedIn={Boolean(data?.claims)} />
     </main>
   );
 }

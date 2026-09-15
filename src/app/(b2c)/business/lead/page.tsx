@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 
 export default function BusinessLeadPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 bg-[#EAF4F8] px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-24">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 bg-white px-5 py-16 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8 lg:py-24">
       <div className="flex flex-col gap-3 border-b border-[#0B1620]/15 pb-6">
         <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">
           BUSINESS

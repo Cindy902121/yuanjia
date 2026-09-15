@@ -35,7 +35,7 @@ export const metadata: Metadata = {
  */
 export default function NewsPage() {
   return (
-    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <main className="flex flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       {/* Header banner：元家員工團隊活動照（public/brand/company-network.jpg，

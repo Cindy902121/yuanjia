@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
 import { getProductPhoto } from "@/lib/product-photos";
 import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, editorialStepperWrap } from "@/lib/editorial/styles";
+import { GuestCartPrompt } from "@/components/GuestCartPrompt";
 
 /**
  * /cart 的實際內容。PRD B2C-04／FDD §7.2：空購物車、商品清單（數量調整／移除）、
@@ -32,7 +33,7 @@ import { editorialButtonSolid, editorialStepperButton, editorialStepperInput, ed
  * 查 `getProductPhoto()`（src/lib/product-photos.ts），詳細理由見
  * CartDrawer.tsx 同一天的檔頭註解，不重複寫一次。
  */
-export function CartPageClient() {
+export function CartPageClient({ isLoggedIn }: { isLoggedIn: boolean }) {
   const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
 
   function handleClearCart() {
@@ -145,6 +146,7 @@ export function CartPageClient() {
       </ul>
 
       <div className="flex flex-col gap-4 border-t border-[#0B1620]/15 pt-6">
+        {!isLoggedIn ? <GuestCartPrompt /> : null}
         <div className="flex items-baseline justify-between">
           <span className="font-[family-name:var(--ep-font-serif)] text-base text-[#0B1620]">總計</span>
           <span className="font-[family-name:var(--ep-font-en)] text-xl tracking-widest text-[#0B1620]">

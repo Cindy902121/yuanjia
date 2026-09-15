@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL as "chrome" | "msedge" | undefined;
+
 /**
  * P1-4（B2C 無障礙／手機驗收自動化，2026-09-09）：C 回報「沒有自動化驗收」
  * 之前這些檢查（axe 無障礙掃描、375px／768px 響應式）都是每次手動用瀏覽器
@@ -31,6 +33,9 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     baseURL: "http://localhost:3000",
+    // CI 沒設定時仍使用 Playwright 管理的 Chromium；本機可指定已安裝的
+    // msedge／chrome，避免為了驗收重複下載另一份瀏覽器。
+    channel: browserChannel,
     trace: "retain-on-failure",
     /**
      * FadeInSection（src/components/editorial/FadeInSection.tsx）用

@@ -245,7 +245,7 @@ export async function Header() {
             )}
           </div>
 
-          <CartDrawer />
+          <CartDrawer isLoggedIn={isLoggedIn} />
 
           <label
             htmlFor="mobile-nav-toggle"
