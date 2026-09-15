@@ -101,6 +101,14 @@ const statusLabels = {
   published: "已發布",
   offline: "已下架",
 };
+const roleLabels: Record<Staff["role"], string> = {
+  business_staff: "企業營運人員",
+  admin: "系統管理員",
+};
+const roleDescriptions: Record<Staff["role"], string> = {
+  business_staff: "可管理 B2B 商品、圖片、規格、CSV 匯入與企業詢價。",
+  admin: "可進入所有管理範圍，包含管理帳號。",
+};
 
 const inputClass =
   "mt-2 min-h-11 w-full rounded-lg border border-[#D8E1E5] bg-white px-3 py-2 text-sm text-[#17242A] outline-none transition focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]";
@@ -151,7 +159,7 @@ export function AdminDashboard({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [credentialNotice, setCredentialNotice] = useState("");
-  const [staffUserId, setStaffUserId] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
   const [staffRole, setStaffRole] = useState<Staff["role"]>("business_staff");
   const [companyForm, setCompanyForm] = useState<CompanyForm>({
     name: "",
@@ -307,10 +315,10 @@ export function AdminDashboard({
       await requestJson("/api/admin/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: staffUserId.trim(), role: staffRole }),
+        body: JSON.stringify({ email: staffEmail.trim(), role: staffRole }),
       });
       if (!await refreshAfterWrite(loadStaff)) return;
-      setStaffUserId("");
+      setStaffEmail("");
       setNotice("管理帳號已加入。");
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "管理帳號加入失敗。");
@@ -321,11 +329,11 @@ export function AdminDashboard({
 
   async function updateStaff(member: Staff, updates: Partial<Pick<Staff, "role" | "is_active">>) {
     const nextLabel = updates.role && updates.role !== member.role
-      ? `改為${updates.role === "admin" ? " admin" : " business_staff"}`
+      ? `改為${roleLabels[updates.role]}`
       : updates.is_active === false
         ? "停用"
         : "更新";
-    if (!window.confirm(`確定要${nextLabel}「${member.email ?? member.user_id}」嗎？`)) return;
+    if (!window.confirm(`確定要${nextLabel}「${member.email ?? "此管理帳號"}」嗎？`)) return;
 
     setBusyKey(`staff-${member.user_id}`);
     setError("");
@@ -450,9 +458,9 @@ export function AdminDashboard({
                     onToggle={(member) => void updateStaff(member, { is_active: !member.is_active })}
                     role={staffRole}
                     setRole={setStaffRole}
-                    setUserId={setStaffUserId}
+                    email={staffEmail}
+                    setEmail={setStaffEmail}
                     staff={staff}
-                    userId={staffUserId}
                   />
                 ) : null}
               </>
@@ -1038,9 +1046,9 @@ function CompanyPanel({
 function StaffPanel({
   staff,
   busyKey,
-  userId,
+  email,
   role,
-  setUserId,
+  setEmail,
   setRole,
   onAdd,
   onToggle,
@@ -1048,9 +1056,9 @@ function StaffPanel({
 }: {
   staff: Staff[];
   busyKey: string;
-  userId: string;
+  email: string;
   role: Staff["role"];
-  setUserId: (value: string) => void;
+  setEmail: (value: string) => void;
   setRole: (value: Staff["role"]) => void;
   onAdd: (event: FormEvent<HTMLFormElement>) => void;
   onToggle: (member: Staff) => void;
@@ -1059,19 +1067,21 @@ function StaffPanel({
   return (
     <div className="space-y-6">
       <PanelShell
-        description="輸入已存在的 Supabase Auth 使用者 UUID，將其加入管理成員。admin 可進入所有管理範圍；business_staff 僅能管理 B2B 商品與企業詢價。"
+        description="輸入已存在的登入 Email，系統會找到對應帳號並加入管理成員。企業營運人員可管理 B2B 商品、圖片、規格、CSV 匯入與企業詢價；系統管理員可進入所有管理範圍並管理帳號。"
         title="新增管理成員"
       >
         <form className="flex flex-col gap-4 md:flex-row md:items-end" onSubmit={onAdd}>
-          <label className="flex-1 text-sm font-semibold text-[#17242A]" htmlFor="staff-user-id">
-            Auth 使用者 UUID
+          <label className="flex-1 text-sm font-semibold text-[#17242A]" htmlFor="staff-email">
+            登入 Email
             <input
+              autoComplete="email"
               className={inputClass}
-              id="staff-user-id"
-              onChange={(event) => setUserId(event.target.value)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              id="staff-email"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@example.com"
               required
-              value={userId}
+              type="email"
+              value={email}
             />
           </label>
           <label className="text-sm font-semibold text-[#17242A]" htmlFor="staff-role">
@@ -1082,9 +1092,10 @@ function StaffPanel({
               onChange={(event) => setRole(event.target.value as Staff["role"])}
               value={role}
             >
-              <option value="business_staff">business_staff</option>
-              <option value="admin">admin</option>
+              <option value="business_staff">{roleLabels.business_staff}</option>
+              <option value="admin">{roleLabels.admin}</option>
             </select>
+            <span className="mt-2 block max-w-xs text-xs font-normal leading-5 text-[#536168]">{roleDescriptions[role]}</span>
           </label>
           <button
             className={`${buttonClass} bg-[#005DAA] text-white hover:bg-[#00457F]`}
@@ -1115,19 +1126,18 @@ function StaffPanel({
               {staff.map((member) => (
                 <tr key={member.user_id}>
                   <td className="px-4 py-4 align-top">
-                    <p className="font-semibold text-[#17242A]">{member.email ?? "未設定 Email"}</p>
-                    <p className="mt-1 break-all font-mono text-xs text-[#809099]">{member.user_id}</p>
+                    <p className="break-all font-semibold text-[#17242A]">{member.email ?? "未設定 Email"}</p>
                   </td>
                   <td className="px-4 py-4 align-top">
                     <select
-                      aria-label={`${member.email ?? member.user_id} 角色`}
+                      aria-label={`${member.email ?? "此管理帳號"} 角色`}
                       className="min-h-10 rounded-lg border border-[#D8E1E5] bg-white px-3 text-sm"
                       disabled={busyKey === `staff-${member.user_id}`}
                       onChange={(event) => onRoleChange(member, event.target.value as Staff["role"])}
                       value={member.role}
                     >
-                      <option value="business_staff">business_staff</option>
-                      <option value="admin">admin</option>
+                      <option value="business_staff">{roleLabels.business_staff}</option>
+                      <option value="admin">{roleLabels.admin}</option>
                     </select>
                   </td>
                   <td className="px-4 py-4 align-top text-[#536168]">{formatDate(member.created_at)}</td>

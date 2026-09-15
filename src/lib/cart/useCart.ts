@@ -5,6 +5,7 @@ import {
   addCartItem,
   clearCart,
   getCartSnapshot,
+  getCartReadySnapshot,
   removeCartItem,
   subscribeToCart,
   updateCartItemQuantity,
@@ -22,6 +23,10 @@ function getServerSnapshot(): CartItem[] {
   return EMPTY_CART;
 }
 
+function getServerReady() {
+  return false;
+}
+
 /**
  * 讀取／操作購物車的 hook；底層是 src/lib/cart/store.ts 那個 store，不是 Context，
  * 原因見該檔案開頭註解。用 useSyncExternalStore 訂閱，購物車在任何地方被改動
@@ -29,12 +34,14 @@ function getServerSnapshot(): CartItem[] {
  */
 export function useCart() {
   const items = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerSnapshot);
+  const isReady = useSyncExternalStore(subscribeToCart, getCartReadySnapshot, getServerReady);
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return {
     items,
+    isReady,
     totalQuantity,
     totalPrice,
     addItem: addCartItem,

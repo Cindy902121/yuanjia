@@ -59,6 +59,7 @@
 | `/checkout` | 建立展示用模擬訂單 | 可建立 | 可建立 | 伺服器阻擋並導向 `/business` | 僅查看，不可建立 | `noindex`／不加入 |
 | `/business/lead` | B2C 新客企業合作展示表單 | 允許 | 允許 | 可直接進入；導覽不顯示入口 | 允許 | 可索引／加入 |
 | `/login` | B2C、B2B、管理者統一登入 | 顯示登入表單 | 導向 `/` | 導向 `/business/catalog` | 導向 `/admin` | `noindex`／不加入 |
+| `/reset-password` | Email 密碼重設申請與連結後設定新密碼 | 顯示申請表單；有效連結可設定新密碼 | 顯示申請表單；有效連結可設定新密碼 | 顯示申請表單；不取代目前密碼驗證流程 | 顯示申請表單；有效連結可設定新密碼 | `noindex`／不加入 |
 | `/signup` | B2C 新客建立帳號 | 顯示註冊表單 | 可建立帳號 | 公開頁面，不影響 B2B session | 公開頁面，不影響 Admin session | `noindex`／不加入 |
 | `/user` | B2C 會員中心 | 導向 `/login` | 允許 | 登出確認[^1] | 導向 `/admin` | `noindex`／不加入 |
 | `/business` | B2B 登入後內容首頁 | 導向 `/login` | 導向 `/` | 允許；顯示 B2B 內容首頁 | 導向 `/admin` | `noindex`／不加入 |

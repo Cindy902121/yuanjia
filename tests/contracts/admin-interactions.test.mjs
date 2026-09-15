@@ -26,6 +26,7 @@ function load(relative, mocks = {}, cache = new Map()) {
 const dates = load('src/lib/admin-dates.ts');
 const views = load('src/lib/admin-view.ts');
 const analytics = load('src/lib/analytics/report.ts');
+const rfqWorkspace = readFileSync(resolve(root, 'src/app/admin/rfq-workspace.tsx'), 'utf8');
 const now = new Date('2026-09-06T04:00:00Z');
 const period = (from, to) => analytics.parseAnalyticsFilters(new URLSearchParams({date_from: from, date_to: to}), now);
 
@@ -62,6 +63,9 @@ test('navigation defaults, role constraints and invalid single values normalize 
   assert.equal(result.activeTab, 'b2b-products'); assert.equal(result.params.getAll('rfq_status').length,1); assert.equal(result.params.get('rfq_page'),'1'); assert.ok(result.corrected);
   assert.equal(views.normalizeAdminView(result.params.toString(),'business').corrected,false);
 });
+test('RFQ management defaults to all statuses when no status filter is selected', () => {
+  assert.match(rfqWorkspace, /const status = params\.get\("rfq_status"\) \?\? "all"/);
+});
 test('API pagination rejects ambiguous and unbounded input instead of expanding queries', () => {
   for (const value of ['page=0','page=-1','page=1.2','page=100001','page_size=501','status=new&status=closed','page=1&page=2']) assert.equal(views.parsePage(new URLSearchParams(value),25,500), null, value);
   assert.deepEqual(views.parsePage(new URLSearchParams('page=2&page_size=25'),25,500), {page:2,pageSize:25});
@@ -80,6 +84,25 @@ function rfqApi(response, denied) {
   const calls=[];
   const chain = new Proxy({}, {get(_,key) { if(key==='then') return (ok)=>Promise.resolve(response).then(ok); return (...args)=>{ calls.push([key,...args]);return chain; }; }});
   return {calls, route:load('src/app/api/admin/rfqs/route.ts',{'@/lib/admin-auth':{requireBusinessAdmin:async()=>({response:denied})},'@/lib/supabase/admin':{createAdminClient:()=>({from:(...args)=>{calls.push(['from',...args]);return chain;}})}})};
+}
+function staffApi(users) {
+  const inserts = [];
+  const member = { user_id: users[0]?.id, role: 'business_staff', is_active: true, created_at: '2026-09-15T00:00:00Z', updated_at: '2026-09-15T00:00:00Z' };
+  const chain = {
+    insert(value) { inserts.push(value); return chain; },
+    select() { return chain; },
+    single() { return Promise.resolve({ data: member, error: null }); },
+  };
+  return {
+    inserts,
+    route: load('src/app/api/admin/staff/route.ts', {
+      '@/lib/admin-auth': { requireAdmin: async () => ({ context: { user: { id: 'admin-user' } } }) },
+      '@/lib/supabase/admin': { createAdminClient: () => ({
+        auth: { admin: { listUsers: async () => ({ data: { users }, error: null }) } },
+        from: () => chain,
+      }) },
+    }),
+  };
 }
 const id='12345678-1234-4234-8234-123456789abc';
 const patch=(body)=>new Request('http://localhost/api/admin/rfqs',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -104,4 +127,15 @@ test('RFQ API rejects invalid filters, and detail lookup ignores source status/p
   assert.ok(api.calls.some(([method,key,value])=>method==='eq'&&key==='id'&&value===id));
   assert.ok(!api.calls.some(([method,key])=>method==='eq'&&key==='status'));
   assert.deepEqual(api.calls.filter(([method])=>method==='range').at(-1),['range',0,0]);
+});
+test('admin staff can be added by an existing Auth email without exposing UUID input', async () => {
+  const authUser = { id: '12345678-1234-4234-8234-123456789abc', email: 'Staff@Example.com' };
+  const api = staffApi([authUser]);
+  const response = await api.route.POST(new Request('http://localhost/api/admin/staff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: ' staff@example.com ', role: 'business_staff' }),
+  }));
+  assert.equal(response.status, 201);
+  assert.deepEqual(api.inserts[0], { user_id: authUser.id, role: 'business_staff', is_active: true });
 });

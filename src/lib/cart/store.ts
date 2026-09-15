@@ -87,6 +87,12 @@ export function getCartSnapshot(): CartItem[] {
   return cache;
 }
 
+/** 首次瀏覽器快照已同步讀取；空陣列也代表已完成讀取。 */
+export function getCartReadySnapshot(): boolean {
+  getCartSnapshot();
+  return isBrowser();
+}
+
 export function subscribeToCart(callback: () => void): () => void {
   if (!isBrowser()) {
     return () => {};

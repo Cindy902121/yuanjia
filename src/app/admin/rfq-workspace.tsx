@@ -19,10 +19,11 @@ export type RfqRecord = {
 };
 export type RfqResponse = { rfqs: RfqRecord[]; total: number; page: number; page_size: number };
 const labels = { new: "新詢價", processing: "處理中", closed: "已結案" };
+const statusGuide = "狀態對照：企業端「已送出」＝ Admin「新詢價」；企業端「業務確認中」＝ Admin「處理中」；企業端「已完成」＝ Admin「已結案」。";
 
 export function RfqWorkspace({ revision }: { revision: number }) {
   const params = useSearchParams();
-  const status = params.get("rfq_status") ?? "new", sort = params.get("rfq_sort") ?? "oldest";
+  const status = params.get("rfq_status") ?? "all", sort = params.get("rfq_sort") ?? "oldest";
   const page = Math.max(1, Number(params.get("rfq_page")) || 1), id = params.get("rfq_id");
   const invalidId = id !== null && (!validRfqId(id) || params.getAll("rfq_id").length > 1);
   const query = id ? `id=${encodeURIComponent(id)}` : `page=${page}&page_size=25&sort=${sort}${status !== "all" ? `&status=${status}` : ""}`;
@@ -67,6 +68,7 @@ export function RfqWorkspace({ revision }: { revision: number }) {
   }
   return <section className={s.panel} aria-busy={resource.pending || busy}>
     <div className={s.headingRow}><h2 id="rfq-heading" tabIndex={-1} className={s.heading}>{id ? "詢價詳情" : "企業詢價"}</h2>{id ? <button type="button" className={s.textButton} onClick={returnToRfqs}>← 返回詢價清單</button> : null}</div>
+    <p className={s.caption}>{statusGuide}</p>
     {message ? <p role="status" className={s.muted}>{message}</p> : null}
     {conflict ? <button type="button" className={s.button} disabled={resource.pending} onClick={async () => { if (await resource.reload()) { setConflict(false); setMessage("已重新讀取，請核對狀態後再操作。"); } }}>重新讀取核對</button> : null}
     {invalidId ? <p className={s.empty}>詢價連結格式不正確。</p> : null}

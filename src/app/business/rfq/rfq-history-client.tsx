@@ -29,9 +29,12 @@ const statusMeta: Record<Status, { label: string; description: string; className
 };
 
 function normalizeStatus(status: string): Status {
-  if (status === "reviewing" || status === "quoted" || status === "closed") return status;
+  if (status === "processing" || status === "reviewing") return "reviewing";
+  if (status === "quoted" || status === "closed") return status;
   return "submitted";
 }
+
+const statusGuide = "狀態對照：企業端「已送出／業務確認中／已完成」分別對應 Admin「新詢價／處理中／已結案」。不同畫面使用不同用語，代表同一處理進度。";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
@@ -112,6 +115,7 @@ export default function RfqHistoryClient() {
           </select>
         </label>
       </div>
+      <p className="mt-4 rounded-xl border border-[#D6E8F2] bg-[#F4FAFD] px-4 py-3 text-sm leading-6 text-[#536168]">{statusGuide}</p>
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {(Object.keys(statusMeta) as Status[]).map((status) => <div className="rounded-xl border border-[#D9E1E5] bg-white px-4 py-3" key={status}><p className="text-xs font-bold text-[#536168]">{statusMeta[status].label}</p><p className="mt-1 text-2xl font-bold text-[#17242A]">{counts[status]}</p></div>)}
       </div>

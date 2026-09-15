@@ -6,6 +6,10 @@ function isAdminRole(value: unknown): value is "admin" | "business_staff" {
   return value === "admin" || value === "business_staff";
 }
 
+function isEmail(value: unknown): value is string {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export async function GET() {
   const guard = await requireAdmin();
   if (guard.response) return guard.response;
@@ -41,29 +45,55 @@ export async function POST(request: Request) {
   const guard = await requireAdmin();
   if (guard.response) return guard.response;
 
-  const body = (await readJson(request)) as { user_id?: unknown; role?: unknown } | null;
-  if (!body || !isUuid(body.user_id) || (body.role !== undefined && !isAdminRole(body.role))) {
+  const body = (await readJson(request)) as { user_id?: unknown; email?: unknown; role?: unknown } | null;
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const userId = typeof body?.user_id === "string" ? body.user_id.trim() : "";
+  const hasEmail = email.length > 0;
+  const hasUserId = userId.length > 0;
+  if (
+    !body ||
+    hasEmail === hasUserId ||
+    (hasEmail && !isEmail(email)) ||
+    (hasUserId && !isUuid(userId)) ||
+    (body.role !== undefined && !isAdminRole(body.role))
+  ) {
     return apiError("管理帳號資料不正確。", 400);
   }
   const role = body.role ?? "business_staff";
 
   try {
     const admin = createAdminClient();
-    const { data: user, error: userError } = await admin.auth.admin.getUserById(body.user_id);
-    if (userError || !user.user) {
-      return apiError("找不到指定的登入帳號。", 404);
+    let resolvedUserId = userId;
+    let resolvedEmail: string | null = email || null;
+    if (email) {
+      const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (usersError) {
+        return apiError("目前無法搜尋登入帳號。", 503);
+      }
+      const user = (users?.users ?? []).find((candidate) => candidate.email?.trim().toLowerCase() === email);
+      if (!user) {
+        return apiError("找不到指定的登入 Email。", 404);
+      }
+      resolvedUserId = user.id;
+      resolvedEmail = user.email ?? email;
+    } else {
+      const { data: user, error: userError } = await admin.auth.admin.getUserById(userId);
+      if (userError || !user.user) {
+        return apiError("找不到指定的登入帳號。", 404);
+      }
+      resolvedEmail = user.user.email ?? null;
     }
 
     const { data: member, error } = await admin
       .from("app_admins")
-      .insert({ user_id: body.user_id, role, is_active: true })
+      .insert({ user_id: resolvedUserId, role, is_active: true })
       .select("user_id, role, is_active, created_at, updated_at")
       .single();
     if (error) {
       if (error.code === "23505") return apiError("該帳號已經是管理成員。", 409);
       return apiError("目前無法加入管理成員。", 503);
     }
-    return json({ staff: { ...member, email: user.user.email ?? null } }, 201);
+    return json({ staff: { ...member, email: resolvedEmail } }, 201);
   } catch {
     return apiError("目前無法加入 business staff。", 503);
   }

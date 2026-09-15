@@ -14,3 +14,12 @@ export const DEMO_MEMBER_PROFILE = {
   recipientEmail: "demo@yens.com.tw",
   deliveryAddress: "104台北市中山區南京東路二段100號5樓",
 } as const;
+
+export function getDemoRecipientFields() {
+  return {
+    recipient_name: DEMO_MEMBER_PROFILE.recipientName,
+    recipient_phone: DEMO_MEMBER_PROFILE.recipientPhone,
+    recipient_email: DEMO_MEMBER_PROFILE.recipientEmail,
+    delivery_address: DEMO_MEMBER_PROFILE.deliveryAddress,
+  };
+}

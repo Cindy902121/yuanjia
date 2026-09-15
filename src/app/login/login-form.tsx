@@ -137,9 +137,16 @@ export function LoginForm({ initialMessage = "" }: { initialMessage?: string }) 
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-[#17242A]" htmlFor="password">
-          密碼
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label className="block text-sm font-semibold text-[#17242A]" htmlFor="password">
+            密碼
+          </label>
+          {isEmail ? (
+            <Link className="text-sm font-semibold text-[#005DAA] underline underline-offset-4 hover:text-[#00457F]" href="/reset-password">
+              忘記密碼？
+            </Link>
+          ) : null}
+        </div>
         <input
           autoComplete="current-password"
           className="mt-2 min-h-12 w-full rounded-lg border border-[#D9E1E5] bg-white px-4 py-3 text-[#17242A] outline-none transition duration-200 focus:border-[#005DAA] focus:ring-4 focus:ring-[#EAF5FB]"

@@ -403,6 +403,16 @@ test("admin UI exposes the complete B2B catalog workflow in the correct scopes",
   assert.match(productEditor, /alt_text: item\.altText\.trim\(\) }/);
 });
 
+test("admin staff management uses human-readable roles and Auth email lookup", () => {
+  assert.match(adminDashboard, /登入 Email/);
+  assert.doesNotMatch(adminDashboard, /Auth 使用者 UUID/);
+  assert.match(adminDashboard, /企業營運人員/);
+  assert.match(adminDashboard, /系統管理員/);
+  assert.match(adminDashboard, /B2B 商品、圖片、規格、CSV 匯入與企業詢價/);
+  assert.match(routes.adminStaff, /listUsers/);
+  assert.match(routes.adminStaff, /email/);
+});
+
 test("admin UI exposes the B2C catalog create, edit, tag and media workflow", () => {
   assert.match(adminDashboard, /href="\/admin\/products\/new"/);
   assert.match(adminDashboard, /href=\{`\/admin\/products\/\$\{product\.id\}`\}/);

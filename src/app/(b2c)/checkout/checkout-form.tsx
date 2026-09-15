@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/useCart";
 import type { CartItem } from "@/lib/cart/store";
 import { createClient } from "@/lib/supabase/client";
 import { getProductBySlug } from "@/lib/supabase/products";
 import type { ProductDetailData } from "@/lib/types/product";
-import { DEMO_MEMBER_PROFILE } from "@/lib/cart/demo-profile";
+import { getDemoRecipientFields } from "@/lib/cart/demo-profile";
 import { trackEvent } from "@/lib/analytics/track";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { editorialButtonLight, editorialButtonSolid } from "@/lib/editorial/styles";
@@ -24,6 +24,13 @@ interface PriceCheck {
   priceChanged: boolean;
   nowOutOfStock: boolean;
   noLongerAvailable: boolean;
+}
+
+interface RecipientFields {
+  recipient_name: string;
+  recipient_phone: string;
+  recipient_email: string;
+  delivery_address: string;
 }
 
 const PAYMENT_METHODS = [
@@ -75,7 +82,7 @@ const sectionLabelClass = "font-[family-name:var(--ep-font-en)] text-xs tracking
  *   editorialButtonLight。
  */
 export function CheckoutForm() {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, isReady: isCartReady, totalPrice, clearCart } = useCart();
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]["value"]>(
@@ -88,11 +95,12 @@ export function CheckoutForm() {
   const [couponMessage, setCouponMessage] = useState("");
   const [note, setNote] = useState("");
   const [useMemberProfile, setUseMemberProfile] = useState(false);
-
-  const nameRef = useRef<HTMLInputElement>(null);
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const addressRef = useRef<HTMLInputElement>(null);
+  const [recipientFields, setRecipientFields] = useState<RecipientFields>({
+    recipient_name: "",
+    recipient_phone: "",
+    recipient_email: "",
+    delivery_address: "",
+  });
 
   const shippingFee = DELIVERY_METHODS.find((m) => m.value === deliveryMethod)?.fee ?? 0;
   const grandTotal = totalPrice + shippingFee;
@@ -136,10 +144,11 @@ export function CheckoutForm() {
     if (!checked) {
       return;
     }
-    if (nameRef.current) nameRef.current.value = DEMO_MEMBER_PROFILE.recipientName;
-    if (phoneRef.current) phoneRef.current.value = DEMO_MEMBER_PROFILE.recipientPhone;
-    if (emailRef.current) emailRef.current.value = DEMO_MEMBER_PROFILE.recipientEmail;
-    if (addressRef.current) addressRef.current.value = DEMO_MEMBER_PROFILE.deliveryAddress;
+    setRecipientFields(getDemoRecipientFields());
+  }
+
+  function handleRecipientFieldChange(field: keyof RecipientFields, value: string) {
+    setRecipientFields((current) => ({ ...current, [field]: value }));
   }
 
   function handleApplyCoupon() {
@@ -234,6 +243,15 @@ export function CheckoutForm() {
         <Link href="/products" className={`mt-2 ${editorialButtonSolid}`}>
           繼續逛逛
         </Link>
+      </div>
+    );
+  }
+
+  if (!isCartReady) {
+    return (
+      <div aria-busy="true" className="flex flex-col items-center gap-4 border border-[#0B1620]/15 px-12 py-20 text-center">
+        <h1 className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.03em] text-[#0B1620]">結帳</h1>
+        <p aria-live="polite" className="text-sm font-light text-[#536168]" role="status">正在載入購物車…</p>
       </div>
     );
   }
@@ -365,7 +383,8 @@ export function CheckoutForm() {
               name="recipient_name"
               label="收件人姓名"
               autoComplete="name"
-              inputRef={nameRef}
+              value={recipientFields.recipient_name}
+              onChange={(event) => handleRecipientFieldChange("recipient_name", event.target.value)}
               error={fieldErrors.recipient_name}
             />
             <Field
@@ -374,7 +393,8 @@ export function CheckoutForm() {
               label="聯絡電話"
               type="tel"
               autoComplete="tel"
-              inputRef={phoneRef}
+              value={recipientFields.recipient_phone}
+              onChange={(event) => handleRecipientFieldChange("recipient_phone", event.target.value)}
               error={fieldErrors.recipient_phone}
             />
             <Field
@@ -383,7 +403,8 @@ export function CheckoutForm() {
               label="Email"
               type="email"
               autoComplete="email"
-              inputRef={emailRef}
+              value={recipientFields.recipient_email}
+              onChange={(event) => handleRecipientFieldChange("recipient_email", event.target.value)}
               error={fieldErrors.recipient_email}
             />
             <Field
@@ -391,7 +412,8 @@ export function CheckoutForm() {
               name="delivery_address"
               label="配送地址"
               autoComplete="street-address"
-              inputRef={addressRef}
+              value={recipientFields.delivery_address}
+              onChange={(event) => handleRecipientFieldChange("delivery_address", event.target.value)}
               error={fieldErrors.delivery_address}
             />
           </div>
@@ -491,16 +513,18 @@ function Field({
   label,
   type = "text",
   autoComplete,
+  value,
+  onChange,
   error,
-  inputRef,
 }: {
   id: string;
   name: string;
   label: string;
   type?: string;
   autoComplete?: string;
+  value: string;
+  onChange: React.ChangeEventHandler<HTMLInputElement>;
   error?: string;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -512,8 +536,9 @@ function Field({
         name={name}
         type={type}
         autoComplete={autoComplete}
+        value={value}
+        onChange={onChange}
         aria-invalid={Boolean(error)}
-        ref={inputRef}
         className={inputClass}
       />
       {error ? (

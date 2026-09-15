@@ -9,7 +9,11 @@ export const metadata: Metadata = {
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
-  const initialMessage = params.error === "oauth" ? "Google 登入驗證失敗，請再試一次或改用 Email 登入。" : undefined;
+  const initialMessage = params.message === "password-reset"
+    ? "密碼已重設，請使用新密碼登入。"
+    : params.error === "oauth"
+      ? "Google 登入驗證失敗，請再試一次或改用 Email 登入。"
+      : undefined;
 
   return (
     <main
