@@ -142,7 +142,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
   ];
 
   return (
-    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <main className="flex flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <JsonLd data={productJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
       <EditorialStyles />
