@@ -13,6 +13,10 @@ import { CrabLineArt, ScallopLineArt } from "./_ocean/marine-line-art";
 import { BrandStoryPhoto, BrandStoryPhotoMobile, FoodSafetyPhoto } from "./_ocean/photo-moments";
 import { ScrollFish } from "./_ocean/scroll-fish";
 import { WaterRipple } from "./_ocean/water-ripple";
+import { FeaturedProductSpotlight } from "./_ocean/featured-product-spotlight";
+import { ProductConveyor } from "./_ocean/product-conveyor";
+import { createClient } from "@/lib/supabase/server";
+import { getAllActiveProducts } from "@/lib/supabase/products";
 
 const TITLE = "元家｜新鮮海鮮與調理食品";
 const DESCRIPTION = "元家精選冷凍海鮮與調理食品，從商品列表開始探索。";
@@ -115,6 +119,8 @@ const QUALITY_FACTS = [
  */
 export default async function HomePage() {
   await requireB2cAccess();
+  const supabase = await createClient();
+  const products = await getAllActiveProducts(supabase);
 
   return (
     <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
@@ -153,10 +159,14 @@ export default async function HomePage() {
         </FadeInSection>
       </section>
 
-      {/* 淺海 → 深海的連續漸層容器，涵蓋品牌故事～收尾引言這幾個 Section
-          （Ocean Motion Migration 新增，見上方檔頭說明）。 */}
-      <div className="op-descent relative">
+      <div className="relative isolate overflow-hidden">
         <ScrollFish />
+        <FeaturedProductSpotlight products={products} />
+        <ProductConveyor products={products} />
+
+        {/* 淺海 → 深海的連續漸層容器，涵蓋品牌故事～收尾引言這幾個 Section
+            （Ocean Motion Migration 新增，見上方檔頭說明）。 */}
+        <div className="op-descent relative">
 
         {/* 01 品牌故事 */}
         <section id="about" className="relative scroll-mt-20 overflow-hidden">
@@ -332,7 +342,22 @@ export default async function HomePage() {
         {/* 純裝飾的收尾色塊：.op-descent 終點已經是接近全黑的深藍，這裡只是
             再收一次尾確保跟 Footer（bg-[#071923]）零接縫。 */}
         <div aria-hidden="true" className="op-abyss-fade h-16 lg:h-24" />
+        </div>
       </div>
+
+      <section aria-labelledby="home-explore-title" className="bg-[#0F3041] px-5 py-16 text-white sm:px-8 lg:py-20">
+        <FadeInSection className="mx-auto flex w-full max-w-[1200px] flex-col items-center gap-6 text-center">
+          <span className="font-[family-name:var(--ep-font-en)] text-xs font-light tracking-[0.35em] text-white/65">
+            EXPLORE THE SEA
+          </span>
+          <h2 id="home-explore-title" className="font-[family-name:var(--ep-font-serif)] text-2xl font-light tracking-[0.06em] sm:text-3xl">
+            為下一餐，挑一道喜歡的海味
+          </h2>
+          <Link href="/products" className={[editorialButtonDark, "min-h-11 px-7 text-xs"].join(" ")}>
+            開始挑選
+          </Link>
+        </FadeInSection>
+      </section>
     </main>
   );
 }

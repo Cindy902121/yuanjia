@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/lib/cart/useCart";
 import type { CartItem } from "@/lib/cart/store";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +12,7 @@ import { getDemoRecipientFields } from "@/lib/cart/demo-profile";
 import { trackEvent } from "@/lib/analytics/track";
 import { TrackPageView } from "@/components/analytics/TrackPageView";
 import { editorialButtonLight, editorialButtonSolid } from "@/lib/editorial/styles";
+import { getProductPhoto } from "@/lib/product-photos";
 
 type SubmitState =
   | { status: "idle" }
@@ -306,14 +308,19 @@ export function CheckoutForm() {
           <div className="flex flex-col gap-4">
             <h2 className={sectionLabelClass}>商品明細</h2>
             <ul className="flex flex-col">
-              {items.map((item) => (
+              {items.map((item) => {
+                const photo = getProductPhoto(item.slug);
+                return (
                 <li key={item.productId} className="flex items-center gap-3 border-t border-[#0B1620]/10 py-4 first:border-t-0">
-                  <div
-                    aria-hidden="true"
-                    className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]"
-                  >
-                    無商品圖片
-                  </div>
+                  {photo ? (
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-[#F6FBFC]">
+                      <Image src={photo.url} alt={photo.alt} fill sizes="56px" className="object-cover" />
+                    </div>
+                  ) : (
+                    <div aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#F6FBFC] text-[10px] text-[#536168]">
+                      無商品圖片
+                    </div>
+                  )}
                   <div className="flex flex-1 flex-col">
                     <span className="font-[family-name:var(--ep-font-serif)] text-sm text-[#0B1620]">{item.name}</span>
                     <span className="font-[family-name:var(--ep-font-en)] text-xs tracking-widest text-[#536168]">
@@ -324,7 +331,8 @@ export function CheckoutForm() {
                     NT$ {item.price * item.quantity}
                   </span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
 

@@ -46,7 +46,7 @@ export default function MediaPage() {
   const textOnly = MEDIA_ITEMS.filter((item) => !item.image);
 
   return (
-    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <main className="flex flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       <section className="border-b border-[#D4DEE2]">

@@ -37,7 +37,8 @@ export const metadata: Metadata = {
  * ProductListWithFilters＋FeaturedProductsBanner＋ProductCard 的組合，換成
  * EditorialProductList（見 src/components/editorial/ProductList.tsx）。
  *
- * 篩選邏輯不變（搜尋、分類／標籤多選 AND），資料一樣查正式 Supabase；
+ * 篩選邏輯於 2026-09-14 依使用者確認改為同群組 OR、跨群組 AND，
+ * 資料一樣查正式 Supabase；
  * `?category=`／`?tag=` 查詢字串也接住（商品詳情頁的篩選連結會用這個導過來）。
  *
  * 舊版元件（ProductListWithFilters、ProductCard、FeaturedProductsBanner）
@@ -79,7 +80,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   const initialTagSlugs = [...new Set(tagParams.filter((tag) => allTagSlugs.includes(tag)))];
 
   return (
-    <main className="flex flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
+    <main className="flex flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620]">
       <EditorialStyles />
 
       {/* Banner：跟首頁 hero 同樣的「滿版圖片＋白字疊層」手法。 */}
@@ -105,7 +106,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
               MENU · 商品一覽
             </span>
             <p className="text-xs font-light text-[#536168]">
-              本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+              本網站商品資訊為 MVP 展示資料，商品照片為近似示意，包裝與規格請以商品詳情頁文字為準；實際價格與庫存請以正式商城公告為準。
             </p>
           </FadeInSection>
 

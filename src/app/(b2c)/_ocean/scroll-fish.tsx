@@ -10,13 +10,10 @@ import { useEffect, useRef } from "react";
  * 使用者回饋裡被明確列為 LOCKED／APPROVED，Migration 過程沒有動任何一行
  * 邏輯，只有搬動檔案位置。
  *
- * 掛在 page.tsx 的 `.op-descent`（涵蓋品牌故事／企業優勢／食安品質／媒體
- * 報導／收尾引言這幾個內容 Section，實際數量隨 page.tsx 增減，這裡不寫死）
- * 裡，`absolute inset-0`，貼齊「這些 Section 疊起來的總高度」，不是貼齊
- * 整個 viewport——使用者往下滑多少比例、魚就游到容器裡對應比例的位置，
- * 不是自己跑的固定時長動畫。進度公式本身是用「整份文件捲動比例」算（見
- * 下方 `computeProgress()`），跟這個容器裡實際有幾個 Section 無關，
- * page.tsx 增減 Section 不需要跟著改這個檔案。
+ * 掛在 page.tsx 的主打商品＋`.op-descent` 共同父層裡，`absolute inset-0`，
+ * 貼齊導購區到收尾引言的總高度。進度公式使用這個活動容器本身的捲動比例，
+ * 因此魚在使用者進入主打商品區時就從容器上方開始，會一路陪伴到內容尾端，
+ * 不是自己跑的固定時長動畫。
  *
  * 「不遮住文字、不搶閱讀內容」的做法：魚跟軌跡線刻意只在**貼著左邊界的一條
  * 窄帶**（離左邊 12–56px）內游動，不會進到 `max-w-[1200px]` 的內文欄位——
@@ -56,12 +53,10 @@ import { useEffect, useRef } from "react";
  * 到「容器尾端＋完整 Footer」，容器永遠不會真的「完全離開畫面」，魚用
  * 上面那條公式會卡在 100% 之前（實測卡在約 84%），到不了終點。
  *
- * 第二次修正：改成直接對應「整份文件」的捲動比例，不是「這個容器自己被
- * 捲過多少」：`window.scrollY / (document.documentElement.scrollHeight -
- * window.innerHeight)`。這才精確符合使用者的原始要求——「0% 頁面捲動≈0%
- * 魚的進度、50%≈50%、接近100%≈100%」——而且每次都即時讀
- * `document.documentElement.scrollHeight`，不是寫死的像素距離，之後任何
- * Section 增減內容、Header／Footer 高度變動，都會自動反映在這個比例裡。
+ * 本次修正：主打商品橫幅加入首頁後，魚的活動容器同步上移到導購區；進度改用
+ * `-container.getBoundingClientRect().top / (container.offsetHeight - innerHeight)`
+ * 計算，避免全文件比例讓魚在商品區仍被推到下方，也避免依賴固定像素。容器
+ * 內容增減、視窗高度改變時，比例會即時反映；到達容器底端時自然完成。
  *
  * 2026-09（使用者要求「魚進入深色背景後顏色太深看不清楚，Stroke Color
  * 必須隨海洋深度平滑變化」——只加這一件事，SVG 形狀／Motion Path 公式／
@@ -217,10 +212,10 @@ export function ScrollFish() {
       // 每次都重新讀 `document.documentElement.scrollHeight`，內容增減
       // （例如之後任何 Section 多幾行字）會自動反映在這個比例裡，不是寫死
       // 的像素值。
-      const doc = document.documentElement;
-      const max = doc.scrollHeight - window.innerHeight;
-      if (max <= 0) return 1;
-      return window.scrollY / max;
+      const rect = container.getBoundingClientRect();
+      const max = container.offsetHeight - window.innerHeight;
+      if (max <= 0) return rect.top <= 0 ? 1 : 0;
+      return Math.min(Math.max(-rect.top / max, 0), 1);
     }
 
     function onScroll() {

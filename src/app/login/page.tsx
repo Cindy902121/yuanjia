@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main
-      className="flex min-h-screen items-center justify-center bg-[#F7F6F2] px-5 py-10 text-[#17242A] sm:px-8"
+      className="flex min-h-screen items-center justify-center bg-white px-5 py-10 text-[#17242A] sm:px-8"
       style={{ fontFamily: '"Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif' }}
     >
       <section className="w-full max-w-md rounded-2xl border border-[#D9E1E5] bg-white p-7 shadow-[0_12px_32px_rgba(23,36,42,0.08)] sm:p-9">
