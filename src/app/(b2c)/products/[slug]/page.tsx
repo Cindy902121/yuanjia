@@ -98,6 +98,13 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
    * Product／BreadcrumbList 結構化資料。offers 直接用資料庫真實的
    * price／inventoryStatus——頁面上本來就顯示「本網站商品資訊為 MVP 展示資料」
    * 的揭露文字，結構化資料標記的是資料庫當下真的存在的值，不是另外編造。
+   *
+   * 2026-09（P2-2，商品照片決策）：src/lib/product-photos.ts 那批取自元家
+   * 官網的近似商品照，有 4 張照片本身印著規格重量色塊（例如鮭魚菲力照片印
+   * 「175g/包」，但這裡資料庫規格是「200g/包」），跟頁面文字的規格不一致，
+   * 使用者已確認的決策是「維持原圖，不裁圖也不換圖，改把頁面揭露文字寫
+   * 更明確」，所以下面這句話這次特別加了「商品照片為近似示意，包裝與
+   * 規格請以本頁文字為準」，不是含糊的「MVP 展示資料」帶過。
    */
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -215,7 +222,7 @@ export default async function ProductDetailPage({ params }: PageProps<"/products
               <span className="w-fit text-xs tracking-widest text-[#536168]">缺貨中</span>
             ) : null}
             <p className="text-xs font-light leading-[1.8] text-[#536168]">
-              本網站商品資訊為 MVP 展示資料，實際價格與庫存請以正式商城公告為準。
+              本網站商品資訊為 MVP 展示資料，商品照片為近似示意，包裝與規格請以本頁文字為準；實際價格與庫存請以正式商城公告為準。
             </p>
 
             <div className="h-px w-full bg-[#0B1620]/15" aria-hidden="true" />

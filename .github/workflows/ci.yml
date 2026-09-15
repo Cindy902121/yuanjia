@@ -36,3 +36,77 @@ jobs:
 
       - name: Static contract tests
         run: pnpm test:contracts:static
+
+  b2c-a11y:
+    name: B2C accessibility (Playwright + axe-core)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # P1-4（2026-09-09，A 自動化驗收）：pnpm build／next start 會實際渲染
+    # 頁面、打真實的 Supabase 查詢（商品列表等），不像上面的 quality job
+    # 只需要靜態 lint／contract 測試，這裡需要 NEXT_PUBLIC_SUPABASE_URL／
+    # NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY／SUPABASE_SECRET_KEY 這三個
+    # secrets 才跑得起來。目前這個 repo 還沒設定這些 secrets（跟 C 提出的
+    # 「8 項真實 integration tests 需要隔離測試環境」是同一個缺口）——這裡
+    # 先用 check-secrets 這個 step 判斷有沒有設定，沒有就直接跳過整個
+    # job（不會讓 CI 紅燈卡住其他人的 PR），設定好之後這個 job 會自動開始
+    # 真的執行，不需要再改這個檔案。
+    steps:
+      - name: Check required secrets
+        id: check-secrets
+        run: |
+          if [ -n "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] && [ -n "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" ] && [ -n "${{ secrets.SUPABASE_SECRET_KEY }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping B2C accessibility job — NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY / SUPABASE_SECRET_KEY are not configured as repo secrets yet."
+          fi
+
+      - name: Checkout
+        if: steps.check-secrets.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        if: steps.check-secrets.outputs.ready == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Set up Node.js
+        if: steps.check-secrets.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.check-secrets.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright chromium
+        if: steps.check-secrets.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        if: steps.check-secrets.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: pnpm build
+
+      - name: B2C axe-core + responsive tests
+        if: steps.check-secrets.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: pnpm test:e2e:b2c
+
+      - name: Upload Playwright report
+        if: steps.check-secrets.outputs.ready == 'true' && failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

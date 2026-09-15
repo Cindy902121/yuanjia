@@ -26,9 +26,8 @@ interface AddToCartButtonProps {
  *
  * 點擊後：
  * - 呼叫 src/lib/cart/store.ts 加入購物車（瀏覽器 localStorage，見該檔案註解）。
- * - 送出 b2c_cart_add 事件（FDD §6.7 白名單）。故意不帶 product_id——目前商品還是
- *   本機 fixture（id 像 "fx-01"），不是真的 UUID，伺服器的 isUuid() 檢查一定會拒絕
- *   （跟 TrackPageView 在 /products/[slug] 不帶 productId 是同一個理由，見該檔案）。
+ * - 送出 b2c_cart_add 事件（FDD §6.7 白名單），帶入實際商品 id；商品由目前
+ *   Supabase 查詢層提供，伺服器會再次驗證這個參照是否為啟用中的商品。
  * - 短暫顯示「已加入」文字回饋（1.5 秒後恢復），並用 aria-live 讓螢幕閱讀器使用者
  *   也能感知到動作結果，不是只有視覺變化。
  */
@@ -59,7 +58,7 @@ export function AddToCartButton({ product, quantity = 1, className }: AddToCartB
       },
       quantity,
     );
-    trackEvent({ event_name: "b2c_cart_add" });
+    trackEvent({ event_name: "b2c_cart_add", product_id: product.id });
     setJustAdded(true);
   }
 

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
  */
 export default function B2CNotFound() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-[#EAF4F8] px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8">
+    <main className="flex flex-1 flex-col items-center justify-center bg-white px-5 py-24 font-[family-name:var(--ep-font-sans)] text-[#0B1620] sm:px-8">
       <EditorialStyles />
       <div className="flex flex-col items-center gap-4 border border-dashed border-[#0B1620]/20 px-12 py-20 text-center">
         <span className="font-[family-name:var(--ep-font-en)] text-sm font-light tracking-[0.35em] text-[#536168]">

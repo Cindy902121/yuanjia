@@ -30,9 +30,10 @@ import { editorialFontClassName } from "@/lib/editorial/fonts";
  * 自己的版面（例如 BusinessHeader），/login 是 B2C／B2B／管理者共用的統一
  * 登入頁，本來就不該有 B2C 專屬導覽列。
  *
- * 底色／字體／文字色（`bg-[#EAF4F8]`／編輯風內文字體／`#0B1620`）原本掛在
- * root layout 的 `<body>` 上，現在收進來變成這個 group 專屬的外層 div——
- * B2B／Admin／登入頁不應該被迫套用 B2C 的視覺色彩，交給各自頁面自己決定。
+ * 底色／字體／文字色（`bg-white`／編輯風內文字體／`#0B1620`）原本掛在
+ * root layout 的 `<body>` 上，現在收進來變成這個 group 專屬的外層 div；首頁、商品列表與商品詳情
+ * 需要淡藍底的區塊則由各自頁面容器明確指定，其他 B2C 頁面維持白底。B2B／Admin／登入頁不會
+ * 被這個 route group 的外層色彩影響。
  * `flex-1 flex flex-col`／`min-h-full` 是為了維持原本「內容不夠長時 Footer
  * 仍貼齊視窗底部」的排版邏輯，跟原本 `<body>` 的 flex 設定等價，只是往下移了
  * 一層。
@@ -45,7 +46,7 @@ import { editorialFontClassName } from "@/lib/editorial/fonts";
  */
 export default function B2CLayout({ children }: { children: ReactNode }) {
   return (
-    <div className={`flex min-h-full flex-1 flex-col bg-[#EAF4F8] font-[family-name:var(--ep-font-sans)] text-[#0B1620] ${editorialFontClassName}`}>
+    <div className={`flex min-h-full flex-1 flex-col bg-white font-[family-name:var(--ep-font-sans)] text-[#0B1620] ${editorialFontClassName}`}>
       <GoogleAnalytics />
       <Header />
       {children}
